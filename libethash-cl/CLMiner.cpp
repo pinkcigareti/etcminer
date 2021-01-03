@@ -865,20 +865,11 @@ bool CLMiner::initEpoch_internal()
                   << dev::getFormattedMemory(
                          (double)(m_deviceDescriptor.totalMemory - RequiredMemory));
             m_dag.clear();
-            if (m_epochContext.dagNumItems & 1)
-            {
-                m_dag.push_back(
-                    cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + 64));
-                m_dag.push_back(
-                    cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - 64));
-            }
-            else
-            {
-                m_dag.push_back(
-                    cl::Buffer(m_context[0], CL_MEM_READ_ONLY, (m_epochContext.dagSize) / 2));
-                m_dag.push_back(
-                    cl::Buffer(m_context[0], CL_MEM_READ_ONLY, (m_epochContext.dagSize) / 2));
-            }
+            unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
+            m_dag.push_back(
+                cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + delta));
+            m_dag.push_back(
+                cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - delta));
             cllog << "Creating light cache buffer, size: "
                   << dev::getFormattedMemory((double)m_epochContext.lightSize);
             m_light.clear();

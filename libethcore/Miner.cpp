@@ -174,7 +174,6 @@ WorkPackage Miner::work() const
 
 void Miner::updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept
 {
-    m_groupCount += _increment;
     bool b = true;
     if (!m_hashRateUpdate.compare_exchange_strong(b, false))
         return;
@@ -184,8 +183,7 @@ void Miner::updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept
     m_hashTime = t;
 
     m_hashRate.store(
-        us ? (float(m_groupCount * _groupSize) * 1.0e6f) / us : 0.0f, std::memory_order_relaxed);
-    m_groupCount = 0;
+        us ? (float(_increment * _groupSize) * 1.0e6f) / us : 0.0f, std::memory_order_relaxed);
 }
 
 

@@ -470,7 +470,6 @@ private:
 
     std::chrono::steady_clock::time_point m_hashTime = std::chrono::steady_clock::now();
     std::atomic<float> m_hashRate = {0.0};
-    uint64_t m_groupCount = 0;
     atomic<bool> m_hashRateUpdate = {false};
 };
 
