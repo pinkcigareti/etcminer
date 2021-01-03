@@ -281,8 +281,6 @@ private:
     boost::asio::deadline_timer m_collectTimer;
     static const int m_collectInterval = 5000;
 
-    string m_pool_addresses;
-
     // StartNonce (non-NiceHash Mode) and
     // segment width assigned to each GPU as exponent of 2
     // considering an average block time of 15 seconds

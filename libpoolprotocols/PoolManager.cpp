@@ -60,17 +60,6 @@ void PoolManager::setClientHandlers()
 {
     p_client->onConnected([&]() {
         {
-
-            // If HostName is already an IP address no need to append the
-            // effective ip address.
-            if (p_client->getConnection()->HostNameType() == dev::UriHostNameType::Dns ||
-                p_client->getConnection()->HostNameType() == dev::UriHostNameType::Basic)
-            {
-                string ep = p_client->ActiveEndPoint();
-                if (!ep.empty())
-                    m_selectedHost = p_client->getConnection()->Host() + ep;
-            }
-
             cnote << "Established connection to " << m_selectedHost;
             m_connectionAttempt = 0;
 
@@ -198,7 +187,7 @@ void PoolManager::setClientHandlers()
             showMiningAt();
 
         cnote << "Job: " EthWhite << m_currentWp.header.abridged()
-              << (m_currentWp.block != -1 ? (" block " + to_string(m_currentWp.block)) : "")
+              << (m_currentWp.block != -1 ? (" blk " + to_string(m_currentWp.block)) : "")
               << EthReset << " " << m_selectedHost;
 
         Farm::f().setWork(m_currentWp);
