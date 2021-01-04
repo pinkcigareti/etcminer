@@ -317,11 +317,11 @@ public:
 
         app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
 
-        app.add_option("--cl-global-work", m_CLSettings.globalWorkSize, "", true);
+        app.add_option("--cl-global-work", m_CLSettings.globalWorkSizeMultiplier, "", true);
 
         app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
 
-        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
+        app.add_flag("--cl-bin", m_CLSettings.binary, "");
 
         app.add_flag("--cl-noexit", m_CLSettings.noExit, "");
 
@@ -899,8 +899,8 @@ public:
                  << "                        Value will be adjusted to nearest power of 2" << endl
                  << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
                  << "                        Set the local work size multiplier" << endl
-                 << "    --cl-nobin          FLAG" << endl
-                 << "                        Use openCL kernel. Do not load binary kernel" << endl
+                 << "    --cl-bin            FLAG" << endl
+                 << "                        Try binary kernel." << endl
                  << "    --cl-noexit         FLAG" << endl
                  << "                        Don't use fast exit algorithm" << endl;
         }

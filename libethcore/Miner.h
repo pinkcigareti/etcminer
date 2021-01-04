@@ -106,7 +106,7 @@ struct CUSettings : public MinerSettings
 // Holds settings for OpenCL Miner
 struct CLSettings : public MinerSettings
 {
-    bool noBinary = false;
+    bool binary = false;
     bool noExit = false;
     unsigned globalWorkSize = 0;
     unsigned globalWorkSizeMultiplier = 65536;
@@ -471,6 +471,7 @@ private:
     std::chrono::steady_clock::time_point m_hashTime = std::chrono::steady_clock::now();
     std::atomic<float> m_hashRate = {0.0};
     atomic<bool> m_hashRateUpdate = {false};
+    uint64_t m_groupCount = 0;
 };
 
 }  // namespace eth

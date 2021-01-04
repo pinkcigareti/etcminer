@@ -256,7 +256,6 @@ CLMiner::CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _devic
   : Miner("cl-", _index), m_settings(_settings)
 {
     m_deviceDescriptor = _device;
-    m_settings.localWorkSize = ((m_settings.localWorkSize + 7) / 8) * 8;
     m_settings.globalWorkSize = m_settings.localWorkSize * m_settings.globalWorkSizeMultiplier;
 }
 
@@ -620,7 +619,7 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.noBinary = true;
+        m_settings.binary = false;
     }
     else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Amd)
     {
@@ -633,14 +632,14 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.noBinary = true;
+        m_settings.binary = false;
     }
     else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Intel)
     {
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.noBinary = true;
+        m_settings.binary = false;
         m_settings.noExit = true;
     }
     else
@@ -693,13 +692,12 @@ bool CLMiner::initDevice()
         // make sure that global work size is evenly divisible by the local workgroup size
         if (m_settings.globalWorkSize % m_settings.localWorkSize != 0)
             m_settings.globalWorkSize =
-                ((m_settings.globalWorkSize / m_settings.localWorkSize) + 1) *
-                m_settings.localWorkSize;
+                (m_settings.globalWorkSize + m_settings.localWorkSize - 1) /
+                m_settings.localWorkSize * m_settings.localWorkSize;
         cnote << "Adjusting CL work multiplier for " << m_deviceDescriptor.clMaxComputeUnits
               << " CUs. Adjusted work multiplier: "
               << m_settings.globalWorkSize / m_settings.localWorkSize;
     }
-
 
     return true;
 
@@ -800,7 +798,7 @@ bool CLMiner::initEpoch_internal()
         bool loadedBinary = false;
         std::string device_name = m_deviceDescriptor.clName;
 
-        if (!m_settings.noBinary)
+        if (m_settings.binary)
         {
             std::ifstream kernel_file;
             vector<unsigned char> bin_data;
