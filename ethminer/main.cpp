@@ -89,7 +89,7 @@ public:
             &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
 
         // Start io_service in it's own thread
-        m_io_thread = std::thread{boost::bind(&boost::asio::io_service::run, &g_io_service)};
+        m_io_thread = thread{boost::bind(&boost::asio::io_service::run, &g_io_service)};
 
         // Io service is now live and running
         // All components using io_service should post to reference of g_io_service
@@ -177,43 +177,43 @@ public:
 #if API_CORE
 
     static void ParseBind(
-        const std::string& inaddr, std::string& outaddr, int& outport, bool advertise_negative_port)
+        const string& inaddr, string& outaddr, int& outport, bool advertise_negative_port)
     {
-        std::regex pattern("([\\da-fA-F\\.\\:]*)\\:([\\d\\-]*)");
-        std::smatch matches;
+        regex pattern("([\\da-fA-F\\.\\:]*)\\:([\\d\\-]*)");
+        smatch matches;
 
-        if (std::regex_match(inaddr, matches, pattern))
+        if (regex_match(inaddr, matches, pattern))
         {
             // Validate Ip address
             boost::system::error_code ec;
             outaddr = boost::asio::ip::address::from_string(matches[1], ec).to_string();
             if (ec)
-                throw std::invalid_argument("Invalid Ip Address");
+                throw invalid_argument("Invalid Ip Address");
 
             // Parse port ( Let exception throw )
-            outport = std::stoi(matches[2]);
+            outport = stoi(matches[2]);
             if (advertise_negative_port)
             {
                 if (outport < -65535 || outport > 65535 || outport == 0)
-                    throw std::invalid_argument(
+                    throw invalid_argument(
                         "Invalid port number. Allowed non zero values in range [-65535 .. 65535]");
             }
             else
             {
                 if (outport < 1 || outport > 65535)
-                    throw std::invalid_argument(
+                    throw invalid_argument(
                         "Invalid port number. Allowed non zero values in range [1 .. 65535]");
             }
         }
         else
         {
-            throw std::invalid_argument("Invalid syntax");
+            throw invalid_argument("Invalid syntax");
         }
     }
 #endif
     bool validateArgs(int argc, char** argv)
     {
-        std::queue<string> warnings;
+        queue<string> warnings;
 
         CLI::App app("Ethminer - GPU Ethash miner");
 
@@ -243,8 +243,6 @@ public:
             "", true);
 
         bool version = false;
-
-        app.add_option("--ergodicity", m_FarmSettings.ergodicity, "", true)->check(CLI::Range(0, 2));
 
         app.add_flag("-V,--version", version, "Show program version");
 
@@ -292,7 +290,7 @@ public:
                 {
                     MinerCLI::ParseBind(bind_arg, this->m_api_address, this->m_api_port, true);
                 }
-                catch (const std::exception& ex)
+                catch (const exception& ex)
                 {
                     throw CLI::ValidationError("--api-bind", ex.what());
                 }
@@ -424,7 +422,7 @@ public:
             m_mode = OperationMode::Simulation;
             pools.clear();
             m_PoolSettings.connections.push_back(
-                std::shared_ptr<URI>(new URI("simulation://localhost:0", true)));
+                shared_ptr<URI>(new URI("simulation://localhost:0", true)));
         }
         else
         {
@@ -434,16 +432,16 @@ public:
         if (!m_shouldListDevices && m_mode != OperationMode::Simulation)
         {
             if (!pools.size())
-                throw std::invalid_argument(
+                throw invalid_argument(
                     "At least one pool definition required. See -P argument.");
 
             for (size_t i = 0; i < pools.size(); i++)
             {
-                std::string url = pools.at(i);
+                string url = pools.at(i);
                 if (url == "exit")
                 {
                     if (i == 0)
-                        throw std::invalid_argument(
+                        throw invalid_argument(
                             "'exit' failover directive can't be the first in -P arguments list.");
                     else
                         url = "stratum+tcp://-:x@exit:0";
@@ -451,7 +449,7 @@ public:
 
                 try
                 {
-                    std::shared_ptr<URI> uri = std::shared_ptr<URI>(new URI(url));
+                    shared_ptr<URI> uri = shared_ptr<URI>(new URI(url));
                     if (uri->SecLevel() != dev::SecureLevel::NONE &&
                         uri->HostNameType() != dev::UriHostNameType::Dns && !getenv("SSL_NOVERIFY"))
                     {
@@ -461,10 +459,10 @@ public:
                     }
                     m_PoolSettings.connections.push_back(uri);
                 }
-                catch (const std::exception& _ex)
+                catch (const exception& _ex)
                 {
                     string what = _ex.what();
-                    throw std::runtime_error("Bad URI : " + what);
+                    throw runtime_error("Bad URI : " + what);
                 }
             }
         }
@@ -484,11 +482,11 @@ public:
         if (m_FarmSettings.tempStop)
         {
             // If temp threshold set HWMON at least to 1
-            m_FarmSettings.hwMon = std::max((unsigned int)m_FarmSettings.hwMon, 1U);
+            m_FarmSettings.hwMon = max((unsigned int)m_FarmSettings.hwMon, 1U);
             if (m_FarmSettings.tempStop <= m_FarmSettings.tempStart)
             {
-                std::string what = "-tstop must be greater than -tstart";
-                throw std::invalid_argument(what);
+                string what = "-tstop must be greater than -tstart";
+                throw invalid_argument(what);
             }
         }
 
@@ -522,7 +520,7 @@ public:
 
         // Can't proceed without any GPU
         if (!m_DevicesCollection.size())
-            throw std::runtime_error("No usable mining devices found");
+            throw runtime_error("No usable mining devices found");
 
         // If requested list detected devices and exit
         if (m_shouldListDevices)
@@ -584,10 +582,10 @@ public:
             }
 #endif
             cout << resetiosflags(ios::left) << endl;
-            std::map<string, DeviceDescriptor>::iterator it = m_DevicesCollection.begin();
+            map<string, DeviceDescriptor>::iterator it = m_DevicesCollection.begin();
             while (it != m_DevicesCollection.end())
             {
-                auto i = std::distance(m_DevicesCollection.begin(), it);
+                auto i = distance(m_DevicesCollection.begin(), it);
                 cout << setw(3) << i << " ";
                 cout << setiosflags(ios::left) << setw(10) << it->first;
                 cout << setw(5);
@@ -648,9 +646,9 @@ public:
                 if (index < m_DevicesCollection.size())
                 {
                     auto it = m_DevicesCollection.begin();
-                    std::advance(it, index);
+                    advance(it, index);
                     if (!it->second.cuDetected)
-                        throw std::runtime_error("Can't CUDA subscribe a non-CUDA device.");
+                        throw runtime_error("Can't CUDA subscribe a non-CUDA device.");
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
                 }
             }
@@ -665,11 +663,11 @@ public:
                 if (index < m_DevicesCollection.size())
                 {
                     auto it = m_DevicesCollection.begin();
-                    std::advance(it, index);
+                    advance(it, index);
                     if (!it->second.clDetected)
-                        throw std::runtime_error("Can't OpenCL subscribe a non-OpenCL device.");
+                        throw runtime_error("Can't OpenCL subscribe a non-OpenCL device.");
                     if (it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                        throw std::runtime_error(
+                        throw runtime_error(
                             "Can't OpenCL subscribe a CUDA subscribed device.");
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
                 }
@@ -684,7 +682,7 @@ public:
                 if (index < m_DevicesCollection.size())
                 {
                     auto it = m_DevicesCollection.begin();
-                    std::advance(it, index);
+                    advance(it, index);
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
                 }
             }
@@ -739,7 +737,7 @@ public:
 
         // If no OpenCL and/or CUDA devices subscribed then throw error
         if (!subscribedDevices)
-            throw std::runtime_error("No mining device selected. Aborting ...");
+            throw runtime_error("No mining device selected. Aborting ...");
 
         // Enable
         g_running = true;
@@ -827,7 +825,7 @@ public:
              << endl;
     }
 
-    void helpExt(std::string ctx)
+    void helpExt(string ctx)
     {
         // Help text for benchmarking options
         if (ctx == "test")
@@ -1008,16 +1006,6 @@ public:
                  << "                        1 Monitor temperature and fan percentage" << endl
                  << "                        2 As 1 plus monitor power drain" << endl
                  << "    --exit              FLAG Stop ethminer whenever an error is encountered"
-                 << endl
-                 << "    --ergodicity        INT[0 .. 2] Default = 0" << endl
-                 << "                        Sets how ethminer chooses the nonces segments to"
-                 << endl
-                 << "                        search on." << endl
-                 << "                        0 A search segment is picked at startup" << endl
-                 << "                        1 A search segment is picked on every pool "
-                    "connection"
-                 << endl
-                 << "                        2 A search segment is picked on every new job" << endl
                  << endl
                  << "    --nocolor           FLAG Monochrome display log lines" << endl
                  << "    --syslog            FLAG Use syslog appropriate output (drop timestamp "
@@ -1253,13 +1241,13 @@ private:
     }
 
     // Global boost's io_service
-    std::thread m_io_thread;                        // The IO service thread
+    thread m_io_thread;                        // The IO service thread
     boost::asio::deadline_timer m_cliDisplayTimer;  // The timer which ticks display lines
     boost::asio::io_service::strand m_io_strand;    // A strand to serialize posts in
                                                     // multithreaded environment
 
     // Physical Mining Devices descriptor
-    std::map<std::string, DeviceDescriptor> m_DevicesCollection = {};
+    map<string, DeviceDescriptor> m_DevicesCollection = {};
 
     // Mining options
     MinerType m_minerType = MinerType::Mixed;
@@ -1273,7 +1261,7 @@ private:
     CPSettings m_CPSettings;          // Operating settings for CPU Miners
 
     //// -- Pool manager related params
-    //std::vector<std::shared_ptr<URI>> m_poolConns;
+    //vector<shared_ptr<URI>> m_poolConns;
 
 
     // -- CLI Interface related params
@@ -1337,6 +1325,7 @@ int main(int argc, char** argv)
             setenv("GPU_MAX_HEAP_SIZE", "100");
             setenv("GPU_MAX_ALLOC_PERCENT", "100");
             setenv("GPU_SINGLE_ALLOC_PERCENT", "100");
+            setenv("GPU_USE_SYNC_OBJECTS", "1");
 
             // Argument validation either throws exception
             // or returns false which means do not continue
@@ -1372,19 +1361,19 @@ int main(int argc, char** argv)
             cout << endl << endl;
             return 0;
         }
-        catch (std::invalid_argument& ex1)
+        catch (invalid_argument& ex1)
         {
             cerr << "Error: " << ex1.what() << endl
                  << "Try ethminer --help to get an explained list of arguments." << endl
                  << endl;
             return 1;
         }
-        catch (std::runtime_error& ex2)
+        catch (runtime_error& ex2)
         {
             cerr << "Error: " << ex2.what() << endl << endl;
             return 2;
         }
-        catch (std::exception& ex3)
+        catch (exception& ex3)
         {
             cerr << "Error: " << ex3.what() << endl << endl;
             return 3;
@@ -1395,7 +1384,7 @@ int main(int argc, char** argv)
             return 4;
         }
     }
-    catch (const std::exception& ex)
+    catch (const exception& ex)
     {
         cerr << "Could not initialize CLI interface " << endl
              << "Error: " << ex.what() << endl

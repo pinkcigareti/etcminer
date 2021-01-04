@@ -323,7 +323,6 @@ public:
     virtual ~FarmFace() = default;
     virtual unsigned get_tstart() = 0;
     virtual unsigned get_tstop() = 0;
-    virtual unsigned get_ergodicity() = 0;
 
     /**
      * @brief Called from a Miner to note a WorkPackage has a solution.

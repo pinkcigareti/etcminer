@@ -67,10 +67,6 @@ void PoolManager::setClientHandlers()
             m_currentWp.job.clear();
             m_currentWp.header = h256();
 
-            // Shuffle if needed
-            if (Farm::f().get_ergodicity() == 1U)
-                Farm::f().shuffle();
-
             // Rough implementation to return to primary pool
             // after specified amount of time
             if (m_activeConnectionIdx != 0 && m_Settings.poolFailoverTimeout)

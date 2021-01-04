@@ -684,21 +684,6 @@ bool CLMiner::initDevice()
     s << " (" << m_deviceDescriptor.totalMemory << " B)";
     cllog << s.str();
 
-    if ((m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Amd) &&
-        (m_deviceDescriptor.clMaxComputeUnits != 36))
-    {
-        m_settings.globalWorkSize =
-            (m_settings.globalWorkSize * m_deviceDescriptor.clMaxComputeUnits) / 36;
-        // make sure that global work size is evenly divisible by the local workgroup size
-        if (m_settings.globalWorkSize % m_settings.localWorkSize != 0)
-            m_settings.globalWorkSize =
-                (m_settings.globalWorkSize + m_settings.localWorkSize - 1) /
-                m_settings.localWorkSize * m_settings.localWorkSize;
-        cnote << "Adjusting CL work multiplier for " << m_deviceDescriptor.clMaxComputeUnits
-              << " CUs. Adjusted work multiplier: "
-              << m_settings.globalWorkSize / m_settings.localWorkSize;
-    }
-
     return true;
 
 }
@@ -857,9 +842,8 @@ bool CLMiner::initEpoch_internal()
         // create buffer for dag
         try
         {
-            cllog << "Creating DAG buffer, size: "
-                  << dev::getFormattedMemory((double)m_epochContext.dagSize)
-                  << ", free: "
+            cllog << "Creating split DAG buffer, total size: "
+                  << dev::getFormattedMemory((double)m_epochContext.dagSize) << ", free: "
                   << dev::getFormattedMemory(
                          (double)(m_deviceDescriptor.totalMemory - RequiredMemory));
             m_dag.clear();
@@ -882,7 +866,6 @@ bool CLMiner::initEpoch_internal()
                 {
                     // Ok, no room for light cache on GPU. Try allocating on host
                     clog(WarnChannel) << "No room on GPU, allocating light cache on host";
-                    clog(WarnChannel) << "Generating DAG will take minutes instead of seconds";
                     light_on_host = true;
                 }
                 else
@@ -915,7 +898,6 @@ bool CLMiner::initEpoch_internal()
             return true;
         }
         // create buffer for header
-        cllog << "Creating buffer for header.";
         m_header.clear();
         m_header.push_back(cl::Buffer(m_context[0], CL_MEM_READ_ONLY, 32));
 
@@ -925,7 +907,6 @@ bool CLMiner::initEpoch_internal()
         m_searchKernel.setArg(4, m_dagItems);
 
         // create mining buffers
-        cllog << "Creating mining buffer";
         m_searchBuffer.clear();
         m_searchBuffer.emplace_back(m_context[0], CL_MEM_WRITE_ONLY, sizeof(SearchResults));
 
