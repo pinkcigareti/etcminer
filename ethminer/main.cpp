@@ -167,7 +167,7 @@ public:
             // this makes it happy.
             break;
         default:
-            cnote << "Got interrupt ...";
+            cwarn << "Got interrupt ...";
             g_running = false;
             g_shouldstop.notify_all();
             break;
@@ -1301,17 +1301,13 @@ int main(int argc, char** argv)
 
     // Always out release version
     auto* bi = ethminer_get_buildinfo();
-    cout << endl
-         << endl
-         << "ethminer " << bi->project_version << endl
-         << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id << endl
-         << endl;
+    cnote << "ethminer " << bi->project_version;
+    cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
 
     if (argc < 2)
     {
-        cerr << "No arguments specified. " << endl
-             << "Try 'ethminer --help' to get a list of arguments." << endl
-             << endl;
+        cwarn << "No arguments specified.";
+        cwarn << "Try 'ethminer --help' to get a list of arguments.";
         return 1;
     }
 
@@ -1356,39 +1352,36 @@ int main(int argc, char** argv)
                 }
             }
 #endif
-
             cli.execute();
             cout << endl << endl;
             return 0;
         }
         catch (invalid_argument& ex1)
         {
-            cerr << "Error: " << ex1.what() << endl
-                 << "Try ethminer --help to get an explained list of arguments." << endl
-                 << endl;
+            cwarn << "Error: " << ex1.what();
+            cwarn << "Try ethminer --help to get an explained list of arguments.";
             return 1;
         }
         catch (runtime_error& ex2)
         {
-            cerr << "Error: " << ex2.what() << endl << endl;
+            cwarn << "Error: " << ex2.what();
             return 2;
         }
         catch (exception& ex3)
         {
-            cerr << "Error: " << ex3.what() << endl << endl;
+            cwarn << "Error: " << ex3.what();
             return 3;
         }
         catch (...)
         {
-            cerr << "Error: Unknown failure occurred. Possible memory corruption." << endl << endl;
+            cwarn << "Error: Unknown failure occurred. Possible memory corruption.";
             return 4;
         }
     }
     catch (const exception& ex)
     {
-        cerr << "Could not initialize CLI interface " << endl
-             << "Error: " << ex.what() << endl
-             << endl;
+        cwarn << "Could not initialize CLI interface ";
+        cwarn << "Error: " << ex.what();
         return 4;
     }
 }

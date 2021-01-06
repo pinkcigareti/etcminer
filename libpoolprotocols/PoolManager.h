@@ -94,6 +94,8 @@ private:
     std::atomic<unsigned> m_epochChanges = {0};
 
     static PoolManager* m_this;
+
+    int m_lastBlock;
 };
 
 }  // namespace eth

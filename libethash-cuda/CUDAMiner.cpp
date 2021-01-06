@@ -80,7 +80,7 @@ bool CUDAMiner::initEpoch_internal()
     // to check again dag sizes. They're changed for sure
     bool retVar = false;
     m_current_target = 0;
-    auto startInit = std::chrono::steady_clock::now();
+    auto startInit = chrono::steady_clock::now();
     size_t RequiredTotalMemory = (m_epochContext.dagSize + m_epochContext.lightSize);
     size_t RequiredDagMemory = m_epochContext.dagSize;
 
@@ -162,8 +162,8 @@ bool CUDAMiner::initEpoch_internal()
             m_epochContext.dagSize, m_settings.gridSize, m_settings.blockSize, m_streams[0]);
 
         cudalog << "Generated DAG + Light in "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::steady_clock::now() - startInit)
+                << chrono::duration_cast<chrono::milliseconds>(
+                       chrono::steady_clock::now() - startInit)
                        .count()
                 << " ms. "
                 << dev::getFormattedMemory(
@@ -240,13 +240,13 @@ void CUDAMiner::workLoop()
     {
         string _what = "GPU error: ";
         _what.append(_e.what());
-        throw std::runtime_error(_what);
+        throw runtime_error(_what);
     }
 }
 
 void CUDAMiner::kick_miner()
 {
-    m_new_work.store(true, std::memory_order_relaxed);
+    m_new_work.store(true, memory_order_relaxed);
     m_new_work_signal.notify_one();
 }
 
@@ -262,20 +262,17 @@ int CUDAMiner::getNumDevices()
         int driverVersion = 0;
         cudaDriverGetVersion(&driverVersion);
         if (driverVersion == 0)
-            std::cerr << "CUDA Error : No CUDA driver found" << std::endl;
+            cwarn << "No CUDA driver found";
         else
-            std::cerr << "CUDA Error : Insufficient CUDA driver " << std::to_string(driverVersion)
-                      << std::endl;
+            cwarn << "Insufficient CUDA driver " << to_string(driverVersion);
     }
     else
-    {
-        std::cerr << "CUDA Error : " << cudaGetErrorString(err) << std::endl;
-    }
+        cwarn << "CUDA Error : " << cudaGetErrorString(err);
 
     return 0;
 }
 
-void CUDAMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
+void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
 {
     int numDevices = getNumDevices();
 
@@ -317,7 +314,7 @@ void CUDAMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollecti
         }
         catch (const cuda_runtime_error& _e)
         {
-            std::cerr << _e.what() << std::endl;
+            cwarn << _e.what();
         }
     }
 }
@@ -373,13 +370,13 @@ void CUDAMiner::search(
 
             if (shouldStop())
             {
-                m_new_work.store(false, std::memory_order_relaxed);
+                m_new_work.store(false, memory_order_relaxed);
                 done = true;
             }
 
             // Detect solutions in current stream's solution buffer
             volatile Search_results& buffer(*m_search_buf[current_index]);
-            uint32_t found_count = std::min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
+            uint32_t found_count = min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
 
             uint32_t gids[MAX_SEARCH_RESULTS];
             h256 mixes[MAX_SEARCH_RESULTS];
@@ -413,7 +410,7 @@ void CUDAMiner::search(
                     uint64_t nonce = nonce_base + gids[i];
 
                     Farm::f().submitProof(
-                        Solution{nonce, mixes[i], w, std::chrono::steady_clock::now(), m_index});
+                        Solution{nonce, mixes[i], w, chrono::steady_clock::now(), m_index});
                     cudalog << EthWhite << "Job: " << w.header.abridged() << " Sol: 0x"
                             << toHex(nonce) << EthReset;
                 }
@@ -426,7 +423,7 @@ void CUDAMiner::search(
         // Bail out if it's shutdown time
         if (shouldStop())
         {
-            m_new_work.store(false, std::memory_order_relaxed);
+            m_new_work.store(false, memory_order_relaxed);
             break;
         }
     }
@@ -435,8 +432,8 @@ void CUDAMiner::search(
     // Optionally log job switch time
     if (!shouldStop() && (g_logOptions & LOG_SWITCH))
         cudalog << "Switch time: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::steady_clock::now() - m_workSwitchStart)
+                << chrono::duration_cast<chrono::milliseconds>(
+                       chrono::steady_clock::now() - m_workSwitchStart)
                        .count()
                 << " ms.";
 #endif

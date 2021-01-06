@@ -13,7 +13,8 @@ PoolManager::PoolManager(PoolSettings _settings)
     m_io_strand(g_io_service),
     m_failovertimer(g_io_service),
     m_submithrtimer(g_io_service),
-    m_reconnecttimer(g_io_service)
+    m_reconnecttimer(g_io_service),
+    m_lastBlock(-1)
 {
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "PoolManager::PoolManager() begin");
 
@@ -183,8 +184,10 @@ void PoolManager::setClientHandlers()
             showMiningAt();
 
         cnote << "Job: " EthWhite << m_currentWp.header.abridged()
+              << (m_lastBlock == m_currentWp.block ? EthGray : "")
               << (m_currentWp.block != -1 ? (" blk " + to_string(m_currentWp.block)) : "")
               << EthReset << " " << m_selectedHost;
+        m_lastBlock = m_currentWp.block;
 
         Farm::f().setWork(m_currentWp);
     });

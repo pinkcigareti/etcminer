@@ -435,7 +435,7 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
             // Use error code like http 401 Unauthorized
             jResponse["error"]["code"] = -401;
             jResponse["error"]["message"] = "Invalid password";
-            cerr << "API : Invalid password provided.";
+            cwarn << "API : Invalid password provided.";
             // Should we close the connection in the outer function after invalid password ?
         }
         /*
