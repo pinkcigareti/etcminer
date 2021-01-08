@@ -167,6 +167,7 @@ public:
             // this makes it happy.
             break;
         default:
+            cerr << endl;
             cwarn << "Got interrupt ...";
             g_running = false;
             g_shouldstop.notify_all();
@@ -211,6 +212,7 @@ public:
         }
     }
 #endif
+
     bool validateArgs(int argc, char** argv)
     {
         queue<string> warnings;
@@ -1298,6 +1300,8 @@ int main(int argc, char** argv)
     // UTF-8 characters are displayed correctly in the console
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    dev::setThreadName("miner");
 
     // Always out release version
     auto* bi = ethminer_get_buildinfo();
