@@ -261,10 +261,8 @@ CLMiner::CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _devic
 
 CLMiner::~CLMiner()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::~CLMiner() begin");
     stopWorking();
     kick_miner();
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::~CLMiner() end");
 }
 
 // NOTE: The following struct must match the one defined in
@@ -437,13 +435,14 @@ void CLMiner::workLoop()
     }
 }
 
+static uint32_t one = 1;
+
 void CLMiner::kick_miner()
 {
     // Memory for abort Cannot be static because crashes on macOS.
-    const uint32_t one = 1;
     if (!m_settings.noExit && !m_abortqueue.empty())
         m_abortqueue[0].enqueueWriteBuffer(
-            m_searchBuffer[0], CL_TRUE, offsetof(SearchResults, abort), sizeof(one), &one);
+            m_searchBuffer[0], CL_FALSE, offsetof(SearchResults, abort), sizeof(one), &one);
 
     m_new_work_signal.notify_one();
 }

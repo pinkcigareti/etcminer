@@ -123,7 +123,7 @@ float Miner::RetrieveHashRate() noexcept
 void Miner::TriggerHashRateUpdate() noexcept
 {
     bool b = false;
-    if (m_hashRateUpdate.compare_exchange_strong(b, true))
+    if (m_hashRateUpdate.compare_exchange_weak(b, true))
         return;
     // GPU didn't respond to last trigger, assume it's dead.
     // This can happen on CUDA if:
@@ -176,7 +176,7 @@ void Miner::updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept
 {
     m_groupCount += _increment;
     bool b = true;
-    if (!m_hashRateUpdate.compare_exchange_strong(b, false))
+    if (!m_hashRateUpdate.compare_exchange_weak(b, false))
         return;
     using namespace std::chrono;
     auto t = steady_clock::now();

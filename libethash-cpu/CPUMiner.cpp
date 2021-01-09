@@ -180,10 +180,8 @@ CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _dev
 
 CPUMiner::~CPUMiner()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() begin");
     stopWorking();
     kick_miner();
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::~CPUMiner() end");
 }
 
 
@@ -192,8 +190,6 @@ CPUMiner::~CPUMiner()
  */
 bool CPUMiner::initDevice()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice begin");
-
     cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.cuName
            << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
@@ -225,7 +221,6 @@ bool CPUMiner::initDevice()
         // Handle Errorcode (GetLastError) ??
     }
 #endif
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::initDevice end");
     return true;
 }
 
@@ -301,8 +296,6 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
  */
 void CPUMiner::workLoop()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::workLoop() begin");
-
     WorkPackage current;
     current.header = h256();
 
@@ -349,8 +342,6 @@ void CPUMiner::workLoop()
             throw std::runtime_error("Algo : " + w.algo + " not yet implemented");
         }
     }
-
-    DEV_BUILD_LOG_PROGRAMFLOW(cpulog, "cp-" << m_index << " CPUMiner::workLoop() end");
 }
 
 

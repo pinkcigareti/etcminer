@@ -389,22 +389,6 @@ public:
             return false;
         }
 
-
-#ifndef DEV_BUILD
-
-        if (g_logOptions & LOG_CONNECT)
-            warnings.push("Socket connections won't be logged. Compile with -DDEVBUILD=ON");
-        if (g_logOptions & LOG_SWITCH)
-            warnings.push("Job switch timings won't be logged. Compile with -DDEVBUILD=ON");
-        if (g_logOptions & LOG_SUBMIT)
-            warnings.push(
-                "Solution internal submission timings won't be logged. Compile with -DDEVBUILD=ON");
-        if (g_logOptions & LOG_PROGRAMFLOW)
-            warnings.push("Program flow won't be logged. Compile with -DDEVBUILD=ON");
-
-#endif
-
-
         if (cl_miner)
             m_minerType = MinerType::CL;
         else if (cuda_miner)
@@ -1049,7 +1033,6 @@ public:
                  << "                        32  to log socket (dis)connections" << endl
                  << "                        64  to log timing of job switches" << endl
                  << "                        128 to log time for solution submission" << endl
-                 << "                        256 to log program flow" << endl
 #endif
                  << endl;
         }
