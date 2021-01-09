@@ -256,7 +256,7 @@ private:
      */
     bool spawn_file_in_bin_dir(const char* filename, const std::vector<std::string>& args);
 
-    mutable Mutex x_minerWork;
+    std::mutex x_minerWork;
     std::vector<std::shared_ptr<Miner>> m_miners;  // Collection of miners
 
     WorkPackage m_currentWp;

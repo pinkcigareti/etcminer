@@ -24,10 +24,9 @@
 #include <signal.h>
 #include <atomic>
 #include <cassert>
+#include <mutex>
 #include <string>
 #include <thread>
-
-#include "Guards.h"
 
 extern bool g_exitOnError;
 
@@ -69,7 +68,7 @@ private:
 
     std::string m_name;
 
-    mutable Mutex x_work;                 ///< Lock for the network existence.
+    std::mutex x_work;                    ///< Lock for the network existence.
     std::unique_ptr<std::thread> m_work;  ///< The network thread.
     std::atomic<WorkerState> m_state = {WorkerState::Starting};
 };

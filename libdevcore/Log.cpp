@@ -24,8 +24,6 @@
 #include <pthread.h>
 #endif
 
-#include "Guards.h"
-
 using namespace std;
 using namespace dev;
 

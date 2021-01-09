@@ -192,7 +192,7 @@ void Farm::shuffle()
 void Farm::setWork(WorkPackage const& _newWp)
 {
     // Set work to each miner giving it's own starting nonce
-    Guard l(x_minerWork);
+    lock_guard<mutex> l(x_minerWork);
 
     // Retrieve appropriate EpochContext
     if (m_currentWp.epoch != _newWp.epoch)
@@ -232,7 +232,7 @@ bool Farm::start()
     if (m_isMining.load(std::memory_order_relaxed))
         return true;
 
-    Guard l(x_minerWork);
+    lock_guard<mutex> l(x_minerWork);
 
     // Start all subscribed miners if none yet
     if (!m_miners.size())
@@ -297,7 +297,7 @@ void Farm::stop()
     if (isMining())
     {
         {
-            Guard l(x_minerWork);
+            lock_guard<mutex> l(x_minerWork);
             for (auto const& miner : m_miners)
             {
                 miner->triggerStopWorking();
@@ -315,7 +315,7 @@ void Farm::stop()
 void Farm::pause()
 {
     // Signal each miner to suspend mining
-    Guard l(x_minerWork);
+    lock_guard<mutex> l(x_minerWork);
     m_paused.store(true, std::memory_order_relaxed);
     for (auto const& m : m_miners)
         m->pause(MinerPauseEnum::PauseDueToFarmPaused);
@@ -336,7 +336,7 @@ void Farm::resume()
 {
     // Signal each miner to resume mining
     // Note ! Miners may stay suspended if other reasons
-    Guard l(x_minerWork);
+    lock_guard<mutex> l(x_minerWork);
     m_paused.store(false, std::memory_order_relaxed);
     for (auto const& m : m_miners)
         m->resume(MinerPauseEnum::PauseDueToFarmPaused);

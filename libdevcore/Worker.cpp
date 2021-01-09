@@ -31,7 +31,7 @@ using namespace dev;
 void Worker::startWorking()
 {
     //	cnote << "startWorking for thread" << m_name;
-    Guard l(x_work);
+    lock_guard<mutex> l(x_work);
     if (m_work)
     {
         WorkerState ex = WorkerState::Stopped;
@@ -55,7 +55,7 @@ void Worker::startWorking()
                 {
                     workLoop();
                 }
-                catch (std::exception const& _e)
+                catch (exception const& _e)
                 {
                     clog(WarnChannel) << "Exception thrown in Worker thread: " << _e.what();
                     if (g_exitOnError)
@@ -85,7 +85,7 @@ void Worker::startWorking()
 
 void Worker::triggerStopWorking()
 {
-    DEV_GUARDED(x_work)
+    lock_guard<mutex> l(x_work);
     if (m_work)
     {
         WorkerState ex = WorkerState::Started;
@@ -95,7 +95,7 @@ void Worker::triggerStopWorking()
 
 void Worker::stopWorking()
 {
-    DEV_GUARDED(x_work)
+    lock_guard<mutex> l(x_work);
     if (m_work)
     {
         WorkerState ex = WorkerState::Started;
@@ -108,7 +108,7 @@ void Worker::stopWorking()
 
 Worker::~Worker()
 {
-    DEV_GUARDED(x_work)
+    lock_guard<mutex> l(x_work);
     if (m_work)
     {
         m_state.exchange(WorkerState::Killing);
