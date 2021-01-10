@@ -109,8 +109,8 @@ struct CLSettings : public MinerSettings
     bool binary = false;
     bool noExit = false;
     unsigned globalWorkSize = 0;
-    unsigned globalWorkSizeMultiplier = 65536 * 2;
-    unsigned localWorkSize = 256;
+    unsigned globalWorkSizeMultiplier = 65536 * 4;
+    unsigned localWorkSize = 128;
 };
 
 // Holds settings for CPU Miner
