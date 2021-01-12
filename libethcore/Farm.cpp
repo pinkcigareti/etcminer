@@ -212,8 +212,14 @@ void Farm::setWork(WorkPackage const& _newWp)
     m_currentWp = _newWp;
 
     // Get the randomly selected nonce
-    if (m_currentWp.exSizeBytes == 0)
-        m_currentWp.startNonce = m_nonce_scrambler;
+    if (m_Settings.startNonce == -1ULL)
+    {
+        if (m_currentWp.exSizeBytes == 0)
+            m_currentWp.startNonce = m_nonce_scrambler;
+    }
+    else
+        m_currentWp.startNonce = m_Settings.startNonce;
+
 
     uint64_t nonce = m_currentWp.startNonce;
     unsigned bits = ceil(log2(m_miners.size()));
