@@ -5,7 +5,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/lockfree/queue.hpp>
 
 #include <json/json.h>
@@ -21,6 +21,7 @@
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
+using namespace boost::placeholders;
 
 template <typename Verifier>
 class verbose_verification

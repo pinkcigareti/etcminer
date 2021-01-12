@@ -22,7 +22,7 @@
 #include <thread>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>
@@ -41,6 +41,8 @@
 #else
 #include <libhwmon/wrapadl.h>
 #endif
+
+using namespace boost::placeholders;
 
 extern boost::asio::io_service g_io_service;
 
