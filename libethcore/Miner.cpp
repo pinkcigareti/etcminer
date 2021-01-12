@@ -22,10 +22,6 @@ namespace dev
 namespace eth
 {
 
-unsigned Miner::s_dagLoadMode = 0;
-unsigned Miner::s_dagLoadIndex = 0;
-unsigned Miner::s_minersCount = 0;
-
 FarmFace* FarmFace::m_this = nullptr;
 
 DeviceDescriptor Miner::getDescriptor()
@@ -133,37 +129,9 @@ void Miner::TriggerHashRateUpdate() noexcept
 
 bool Miner::initEpoch()
 {
-    // When loading of DAG is sequential wait for
-    // this instance to become current
-    if (s_dagLoadMode == DAG_LOAD_MODE_SEQUENTIAL)
-    {
-        while (s_dagLoadIndex < m_index)
-        {
-            boost::system_time const timeout =
-                boost::get_system_time() + boost::posix_time::seconds(3);
-            boost::mutex::scoped_lock l(x_work);
-            m_dag_loaded_signal.timed_wait(l, timeout);
-        }
-        if (shouldStop())
-            return false;
-    }
-
     // Run the internal initialization
     // specific for miner
-    bool result = initEpoch_internal();
-
-    // Advance to next miner or reset to zero for 
-    // next run if all have processed
-    if (s_dagLoadMode == DAG_LOAD_MODE_SEQUENTIAL)
-    {
-        s_dagLoadIndex = (m_index + 1);
-        if (s_minersCount == s_dagLoadIndex)
-            s_dagLoadIndex = 0;
-        else
-            m_dag_loaded_signal.notify_all();
-    }
-
-    return result;
+    return initEpoch_internal();
 }
 
 WorkPackage Miner::work() const

@@ -165,7 +165,7 @@ unsigned CPUMiner::getNumDevices()
 
 struct CPUChannel : public LogChannel
 {
-    static const char* name() { return EthOrange "cp"; }
+    static bool name() { return false; }
     static const int verbosity = 2;
 };
 #define cpulog clog(CPUChannel)

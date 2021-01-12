@@ -26,7 +26,7 @@ const size_t c_maxSearchResults = 4;
 
 struct CLChannel : public LogChannel
 {
-    static const char* name() { return EthOrange "cl"; }
+    static bool name() { return false; }
     static const int verbosity = 2;
     static const bool debug = false;
 };

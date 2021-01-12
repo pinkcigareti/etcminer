@@ -216,9 +216,10 @@ void Farm::setWork(WorkPackage const& _newWp)
         m_currentWp.startNonce = m_nonce_scrambler;
 
     uint64_t nonce = m_currentWp.startNonce;
+    unsigned bits = ceil(log2(m_miners.size()));
     for (unsigned int i = 0; i < m_miners.size(); i++)
     {
-        m_currentWp.startNonce = nonce ^ (uint64_t(i) << 60);
+        m_currentWp.startNonce = nonce ^ (uint64_t(i) << (64 - bits));
         m_miners.at(i)->setWork(m_currentWp);
     }
 }
@@ -271,9 +272,6 @@ bool Farm::start()
             m_telemetry.miners.push_back(minerTelemetry);
             m_miners.back()->startWorking();
         }
-
-        // Initialize DAG Load mode
-        Miner::setDagLoadInfo(m_Settings.dagLoadMode, (unsigned int)m_miners.size());
 
         m_isMining.store(true, std::memory_order_relaxed);
     }
@@ -464,7 +462,7 @@ void Farm::submitProof(Solution const& _s)
 
 void Farm::submitProofAsync(Solution const& _s)
 {
-    if (!m_Settings.noEval)
+    if (m_Settings.eval)
     {
         Result r = EthashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
         if (r.value > _s.work.boundary)

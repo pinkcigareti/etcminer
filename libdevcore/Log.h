@@ -60,21 +60,21 @@ std::string getThreadName();
 /// ). Channels should inherit from LogChannel and define name() and verbosity.
 struct LogChannel
 {
-    static const char* name();
+    static bool name();
 };
 struct WarnChannel : public LogChannel
 {
-    static const char* name();
+    static bool name();
 };
 struct NoteChannel : public LogChannel
 {
-    static const char* name();
+    static bool name();
 };
 
 class LogOutputStreamBase
 {
 public:
-    LogOutputStreamBase(char const* _id);
+    LogOutputStreamBase(bool error);
 
     template <class T>
     void append(T const& _t)

@@ -61,7 +61,7 @@ boost::asio::io_service g_io_service;  // The IO service itself
 
 struct MiningChannel : public LogChannel
 {
-    static const char* name() { return EthGreen " m"; }
+    static bool name() { return false; }
     static const int verbosity = 2;
 };
 
@@ -352,9 +352,7 @@ public:
 
 #endif
 
-        app.add_flag("--noeval", m_FarmSettings.noEval, "");
-
-        app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
+        app.add_flag("--eval", m_FarmSettings.eval, "");
 
         bool cl_miner = false;
         app.add_flag("-G,--opencl", cl_miner, "");
@@ -999,7 +997,7 @@ public:
                  << endl
                  << "                        channel prefix)" << endl
                  << "    --stdout            FLAG Log to stdout instead of stderr" << endl
-                 << "    --noeval            FLAG By-pass host software re-evaluation of GPUs"
+                 << "    --eval              FLAG Enable host software re-evaluation of GPUs"
                  << endl
                  << "                        found nonces. Trims some ms. from submission" << endl
                  << "                        time but it may increase rejected solution rate."
@@ -1008,11 +1006,6 @@ public:
                     "exits"
                  << endl
                  << "                        Must be combined with -G or -U or -X flags" << endl
-                 << "    -L,--dag-load-mode  INT[0 .. 1] Default = 0" << endl
-                 << "                        Set DAG load mode. Can be one of:" << endl
-                 << "                        0 Parallel load mode (each GPU independently)" << endl
-                 << "                        1 Sequential load mode (one GPU after another)" << endl
-                 << endl
                  << "    --tstart            UINT[30 .. 100] Default = 0" << endl
                  << "                        Suspend mining on GPU which temperature is above"
                  << endl

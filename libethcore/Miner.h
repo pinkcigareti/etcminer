@@ -352,14 +352,6 @@ public:
 
     ~Miner() override = default;
 
-    // Sets basic info for eventual serialization of DAG load
-    static void setDagLoadInfo(unsigned _mode, unsigned _devicecount)
-    {
-        s_dagLoadMode = _mode;
-        s_dagLoadIndex = 0;
-        s_minersCount = _devicecount;
-    };
-
     /**
      * @brief Gets the device descriptor assigned to this instance
      */
@@ -442,11 +434,6 @@ protected:
 
     void updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept;
 
-    static unsigned s_minersCount;   // Total Number of Miners
-    static unsigned s_dagLoadMode;   // Way dag should be loaded
-    static unsigned s_dagLoadIndex;  // In case of serialized load of dag this is the index of miner
-                                     // which should load next
-
     const unsigned m_index = 0;           // Ordinal index of the Instance (not the device)
     DeviceDescriptor m_deviceDescriptor;  // Info about the device
 
@@ -460,7 +447,6 @@ protected:
     mutable boost::mutex x_work;
     mutable boost::mutex x_pause;
     boost::condition_variable m_new_work_signal;
-    boost::condition_variable m_dag_loaded_signal;
 
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;

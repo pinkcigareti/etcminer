@@ -33,20 +33,20 @@ bool g_logNoColor = false;
 bool g_logSyslog = false;
 bool g_logStdout = false;
 
-const char* LogChannel::name()
+bool LogChannel::name()
 {
-    return EthGray "..";
+    return false;
 }
-const char* WarnChannel::name()
+bool WarnChannel::name()
 {
-    return EthRed " X";
+    return true;
 }
-const char* NoteChannel::name()
+bool NoteChannel::name()
 {
-    return EthBlue " i";
+    return false;
 }
 
-LogOutputStreamBase::LogOutputStreamBase(char const* _id)
+LogOutputStreamBase::LogOutputStreamBase(bool error)
 {
     static std::locale logLocl = std::locale("");
         m_sstr.imbue(logLocl);
@@ -58,8 +58,8 @@ LogOutputStreamBase::LogOutputStreamBase(char const* _id)
             char buf[24];
             if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
                 buf[0] = '\0';  // empty if case strftime fails
-            m_sstr << _id << " " EthViolet << buf << " " EthBlue << std::left << std::setw(5)
-                   << getThreadName() << " " EthReset;
+            m_sstr << (error ? EthRed : EthViolet) << buf << " " EthBlue << std::left
+                   << std::setw(5) << getThreadName() << " " EthReset;
         }
 }
 

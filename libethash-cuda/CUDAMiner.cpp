@@ -26,13 +26,13 @@ using namespace eth;
 
 struct CUDAChannel : public LogChannel
 {
-    static const char* name() { return EthOrange "cu"; }
+    static bool name() { return false; }
     static const int verbosity = 2;
 };
 #define cudalog clog(CUDAChannel)
 
 CUDAMiner::CUDAMiner(unsigned _index, CUSettings _settings, DeviceDescriptor& _device)
-  : Miner("cuda-", _index),
+  : Miner("cu-", _index),
     m_settings(_settings),
     m_batch_size(_settings.gridSize * _settings.blockSize),
     m_streams_batch_size(_settings.gridSize * _settings.blockSize * _settings.streams)

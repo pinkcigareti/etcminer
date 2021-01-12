@@ -50,8 +50,7 @@ namespace eth
 {
 struct FarmSettings
 {
-    unsigned dagLoadMode = 0;  // 0 = Parallel; 1 = Serialized
-    bool noEval = false;       // Whether or not to re-evaluate solutions
+    bool eval = false;         // Whether or not to re-evaluate solutions
     unsigned hwMon = 0;        // 0 - No monitor; 1 - Temp and Fan; 2 - Temp Fan Power
     unsigned tempStart = 40;   // Temperature threshold to restart mining (if paused)
     unsigned tempStop = 0;     // Temperature threshold to pause mining (overheating)
