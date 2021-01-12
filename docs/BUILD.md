@@ -6,7 +6,6 @@
     * [Common](#common)
     * [Linux](#linux)
         * [OpenCL support on Linux](#opencl-support-on-linux)
-    * [macOS](#macos)
     * [Windows](#windows)
 * [CMake configuration options](#cmake-configuration-options)
 * [Disable Hunter](#disable-hunter)
@@ -42,12 +41,6 @@ you have to install the OpenGL libraries. E.g. on Ubuntu run:
 ```shell
 sudo apt-get install mesa-common-dev
 ```
-
-If you want to use locally installed [ROCm-OpenCL](https://rocmdocs.amd.com/en/latest/) package, use build flag `-DUSE_SYS_OPENCL=ON` with cmake config.
-
-### macOS
-
-1. GCC version >= TBF
 
 ### Windows
 

@@ -498,11 +498,7 @@
 #include <CL/cl_ext.h>
 #endif
 
-#if defined(__APPLE__) || defined(__MACOSX)
-#include <OpenCL/opencl.h>
-#else
 #include <CL/opencl.h>
-#endif // !__APPLE__
 
 #if (__cplusplus >= 201103L)
 #define CL_HPP_NOEXCEPT_ noexcept
@@ -2588,15 +2584,11 @@ private:
         try
 #endif
         {
-#if !defined(__APPLE__) && !defined(__MACOS)
             const Platform &p = Platform::getDefault();
             cl_platform_id defaultPlatform = p();
             cl_context_properties properties[3] = {
                 CL_CONTEXT_PLATFORM, (cl_context_properties)defaultPlatform, 0
             };
-#else // #if !defined(__APPLE__) && !defined(__MACOS)
-            cl_context_properties *properties = nullptr;
-#endif // #if !defined(__APPLE__) && !defined(__MACOS)
 
             default_ = Context(
                 CL_DEVICE_TYPE_DEFAULT,
@@ -2713,7 +2705,6 @@ public:
     {
         cl_int error;
 
-#if !defined(__APPLE__) && !defined(__MACOS)
         cl_context_properties prop[4] = {CL_CONTEXT_PLATFORM, 0, 0, 0 };
 
         if (properties == nullptr) {
@@ -2771,7 +2762,6 @@ public:
             prop[1] = platform_id;
             properties = &prop[0];
         }
-#endif
         object_ = ::clCreateContextFromType(
             properties, type, notifyFptr, data, &error);
 

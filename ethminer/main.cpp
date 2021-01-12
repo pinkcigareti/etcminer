@@ -43,7 +43,7 @@
 #include <regex>
 #endif
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 #include <execinfo.h>
 #elif defined(_WIN32)
 #include <Windows.h>
@@ -129,7 +129,7 @@ public:
 
         switch (sig)
         {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 #define BACKTRACE_MAX_FRAMES 100
         case SIGSEGV:
             static bool in_handler = false;
@@ -729,7 +729,7 @@ public:
         g_running = true;
 
         // Signal traps
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
         signal(SIGSEGV, MinerCLI::signalHandler);
 #endif
         signal(SIGINT, MinerCLI::signalHandler);
