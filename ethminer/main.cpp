@@ -20,6 +20,8 @@
 #include <ethminer/buildinfo.h>
 #include <condition_variable>
 
+#include <openssl/crypto.h>
+
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
@@ -1283,6 +1285,9 @@ int main(int argc, char** argv)
     auto* bi = ethminer_get_buildinfo();
     cnote << "ethminer " << bi->project_version;
     cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
+    cnote << SSLeay_version(SSLEAY_VERSION);
+    cnote << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
+          << BOOST_VERSION % 100;
 
     if (argc < 2)
     {
