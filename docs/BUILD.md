@@ -67,7 +67,8 @@ sudo apt-get install mesa-common-dev
     cmake ..
     ```
 
-    **Note:** On Windows, it's possible to have issues with VS 2017 default compilers, due to CUDA expecting a specific toolset version; in that case, use the VS 2017 installer to get the VS 2015 compilers and pass the `-T v140` option:
+    **Note:** On Windows, it's possible to have issues with VS 2017 default compilers, due to CUDA expecting a specific
+    toolset version; in that case, use:
 
     ```shell
     cmake .. -G "Visual Studio 15 2017 Win64"
@@ -136,16 +137,14 @@ cmake .. -DETHASHCUDA=ON -DETHASHCL=OFF
 * `-DETHASHCL=ON` - enable OpenCL mining, `ON` by default.
 * `-DETHASHCUDA=ON` - enable CUDA mining, `ON` by default.
 * `-DAPICORE=ON` - enable API Server, `ON` by default.
-* `-DBINKERN=ON` - install AMD binary kernels, `ON` by default.
+* `-DBINKERN=ON` - install AMD binary kernels, `OFF` by default.
 * `-DETHDBUS=ON` - enable D-Bus support, `OFF` by default.
-* `-DUSE_SYS_OPENCL=ON` - Use system OpenCL, `OFF` by default, unless on macOS. Specify to use local **ROCm-OpenCL** package.
 
 ## Disable Hunter
 
 If you want to install dependencies yourself or use system package manager you can disable Hunter by adding
 [`-DHUNTER_ENABLED=OFF`](https://docs.hunter.sh/en/latest/reference/user-variables.html#hunter-enabled)
 to the configuration options.
-
 
 [CMake]: https://cmake.org/
 [CMake Build Tool Mode]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#build-tool-mode

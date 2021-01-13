@@ -272,8 +272,6 @@ public:
 
         app.add_option("--HWMON", m_FarmSettings.hwMon, "", true)->check(CLI::Range(0, 2));
 
-        app.add_option("--start-nonce", m_FarmSettings.startNonce, "", true);
-
         app.add_flag("--exit", g_exitOnError, "");
 
         vector<string> pools;
@@ -1031,7 +1029,6 @@ public:
                  << "                        64  to log timing of job switches" << endl
                  << "                        128 to log time for solution submission" << endl
 #endif
-                 << "    --start_nonce       Miner start nonce." << endl
                  << endl;
         }
 
