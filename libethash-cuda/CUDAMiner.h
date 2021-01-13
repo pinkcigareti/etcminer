@@ -53,7 +53,7 @@ private:
 
     void workLoop() override;
 
-    std::vector<volatile Search_results*> m_search_buf;
+    std::vector<Search_results*> m_search_buf;
     std::vector<cudaStream_t> m_streams;
     uint64_t m_current_target = 0;
 

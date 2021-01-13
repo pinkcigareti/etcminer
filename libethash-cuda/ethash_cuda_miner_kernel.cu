@@ -16,7 +16,7 @@
 
 #include "dagger_shuffled.cuh"
 
-__global__ void ethash_search(volatile Search_results* g_output, uint64_t start_nonce)
+__global__ void ethash_search(Search_results* g_output, uint64_t start_nonce)
 {
     uint32_t const gid = blockIdx.x * blockDim.x + threadIdx.x;
     uint2 mix[4];
@@ -37,7 +37,7 @@ __global__ void ethash_search(volatile Search_results* g_output, uint64_t start_
 }
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    volatile Search_results* g_output, uint64_t start_nonce)
+    Search_results* g_output, uint64_t start_nonce)
 {
     ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
     CUDA_SAFE_CALL(cudaGetLastError());

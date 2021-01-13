@@ -130,8 +130,7 @@ bool CUDAMiner::initEpoch_internal()
                 cudalog << "WARNING: Generating DAG will take minutes, not seconds";
             }
             else
-                CUDA_SAFE_CALL(
-                    cudaMalloc(reinterpret_cast<void**>(&light), m_epochContext.lightSize));
+                CUDA_SAFE_CALL(cudaMalloc(&light, m_epochContext.lightSize));
             m_allocated_memory_light_cache = m_epochContext.lightSize;
             CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&dag), m_epochContext.dagSize));
             m_allocated_memory_dag = m_epochContext.dagSize;
@@ -139,7 +138,7 @@ bool CUDAMiner::initEpoch_internal()
             // create mining buffers
             for (unsigned i = 0; i != m_settings.streams; ++i)
             {
-                CUDA_SAFE_CALL(cudaMallocHost(&m_search_buf[i], sizeof(Search_results)));
+                CUDA_SAFE_CALL(cudaMalloc(&m_search_buf[i], sizeof(Search_results)));
                 CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
             }
         }
@@ -150,8 +149,8 @@ bool CUDAMiner::initEpoch_internal()
             get_constants(&dag, NULL, &light, NULL);
         }
 
-        CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(light), m_epochContext.lightCache,
-            m_epochContext.lightSize, cudaMemcpyHostToDevice));
+        CUDA_SAFE_CALL(cudaMemcpy(
+            light, m_epochContext.lightCache, m_epochContext.lightSize, cudaMemcpyHostToDevice));
 
         set_constants(dag, m_epochContext.dagNumItems, light,
             m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
@@ -317,6 +316,8 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
     }
 }
 
+static uint32_t zero = 0;  // zero the result count
+
 void CUDAMiner::search(
     uint8_t const* header, uint64_t target, uint64_t start_nonce, const dev::eth::WorkPackage& w)
 {
@@ -333,16 +334,17 @@ void CUDAMiner::search(
          current_index++, start_nonce += m_batch_size)
     {
         cudaStream_t stream = m_streams[current_index];
-        volatile Search_results& buffer(*m_search_buf[current_index]);
-        buffer.count = 0;
+        CUDA_SAFE_CALL(
+            cudaMemcpy((uint8_t*)m_search_buf[current_index] + offsetof(Search_results, count),
+                &zero, sizeof(zero), cudaMemcpyHostToDevice));
 
         // Run the batch for this stream
-        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
+        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream,
+            m_search_buf[current_index], start_nonce);
     }
 
     // process stream batches until we get new work.
     bool done = false;
-
 
     while (!done)
     {
@@ -373,32 +375,42 @@ void CUDAMiner::search(
             }
 
             // Detect solutions in current stream's solution buffer
-            volatile Search_results& buffer(*m_search_buf[current_index]);
-            uint32_t found_count = min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
+            uint32_t found_count;
+            CUDA_SAFE_CALL(cudaMemcpy(&found_count,
+                (uint8_t*)m_search_buf[current_index] + offsetof(Search_results, count),
+                sizeof(found_count), cudaMemcpyDeviceToHost));
+            found_count = min(found_count, MAX_SEARCH_RESULTS);
 
             uint32_t gids[MAX_SEARCH_RESULTS];
             h256 mixes[MAX_SEARCH_RESULTS];
 
             if (found_count)
             {
-                buffer.count = 0;
+                CUDA_SAFE_CALL(cudaMemcpy(
+                    (uint8_t*)m_search_buf[current_index] + offsetof(Search_results, count), &zero,
+                    sizeof(zero), cudaMemcpyHostToDevice));
 
                 // Extract solution and pass to higer level
                 // using io_service as dispatcher
 
                 for (uint32_t i = 0; i < found_count; i++)
                 {
-                    gids[i] = buffer.result[i].gid;
-                    memcpy(mixes[i].data(), (void*)&buffer.result[i].mix,
-                        sizeof(buffer.result[i].mix));
+                    CUDA_SAFE_CALL(cudaMemcpy(gids + i,
+                        (uint8_t*)m_search_buf[current_index] + offsetof(Search_results, result) +
+                            i * sizeof(Search_Result) + offsetof(Search_Result, gid),
+                        sizeof(gids[0]), cudaMemcpyDeviceToHost));
+                    CUDA_SAFE_CALL(cudaMemcpy(mixes[i].data(),
+                        (uint8_t*)m_search_buf[current_index] + offsetof(Search_results, result) +
+                            i * sizeof(Search_Result) + offsetof(Search_Result, mix),
+                        sizeof(Search_Result::mix), cudaMemcpyDeviceToHost));
                 }
             }
 
             // restart the stream on the next batch of nonces
             // unless we are done for this round.
             if (!done)
-                run_ethash_search(
-                    m_settings.gridSize, m_settings.blockSize, stream, &buffer, start_nonce);
+                run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream,
+                    m_search_buf[current_index], start_nonce);
 
             if (found_count)
             {
