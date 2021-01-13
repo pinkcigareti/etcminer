@@ -54,7 +54,7 @@ LogOutputStreamBase::LogOutputStreamBase(bool error)
             char buf[24];
             if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
                 buf[0] = '\0';  // empty if case strftime fails
-            m_sstr << (error ? EthRed : EthViolet) << buf << " " EthBlue << std::left
+            m_sstr << (error ? EthRed : EthCoalBold) << buf << " " EthWhite << std::left
                    << std::setw(5) << getThreadName() << " " EthReset;
         }
 }
