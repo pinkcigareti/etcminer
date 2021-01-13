@@ -98,7 +98,6 @@ struct MinerSettings
 struct CUSettings : public MinerSettings
 {
     unsigned streams = 2;
-    unsigned schedule = 4;
     unsigned gridSize = 8192;
     unsigned blockSize = 128;
 };
