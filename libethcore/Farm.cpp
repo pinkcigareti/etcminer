@@ -144,9 +144,6 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
         }
     }
 
-    // Initialize nonce_scrambler
-    shuffle();
-
     // Start data collector timer
     // It should work for the whole lifetime of Farm
     // regardless it's mining state
@@ -176,19 +173,6 @@ Farm::~Farm()
         stop();
 }
 
-/**
- * @brief Randomizes the nonce scrambler
- */
-void Farm::shuffle()
-{
-    // Given that all nonces are equally likely to solve the problem
-    // we could reasonably always start the nonce search ranges
-    // at a fixed place, but that would be boring. Provide a once
-    // per run randomized start place, without creating much overhead.
-    random_device engine;
-    m_nonce_scrambler = uniform_int_distribution<uint64_t>()(engine);
-}
-
 void Farm::setWork(WorkPackage const& _newWp)
 {
     // Set work to each miner giving it's own starting nonce
@@ -212,8 +196,9 @@ void Farm::setWork(WorkPackage const& _newWp)
     m_currentWp = _newWp;
 
     // Get the randomly selected nonce
+    random_device engine;
     if (m_currentWp.exSizeBytes == 0)
-        m_currentWp.startNonce = m_nonce_scrambler;
+        m_currentWp.startNonce = uniform_int_distribution<uint64_t>()(engine);
 
     uint16_t bits = uint16_t(ceil(log2(m_miners.size())));
     for (unsigned int i = 0; i < m_miners.size(); i++)
@@ -432,20 +417,6 @@ SolutionAccountType Farm::getSolutions(unsigned _minerIdx)
     {
         return SolutionAccountType();
     }
-}
-
-/**
- * @brief Provides the description of segments each miner is working on
- * @return a JsonObject
- */
-Json::Value Farm::get_nonce_scrambler_json()
-{
-    Json::Value jRes;
-    jRes["start_nonce"] = toHex(m_nonce_scrambler, HexPrefix::Add);
-    jRes["device_width"] = m_nonce_segment_with;
-    jRes["device_count"] = (uint64_t)m_miners.size();
-
-    return jRes;
 }
 
 void Farm::setTStartTStop(unsigned tstart, unsigned tstop)

@@ -77,11 +77,6 @@ public:
     static Farm& f() { return *m_this; }
 
     /**
-     * @brief Randomizes the nonce scrambler
-     */
-    void shuffle();
-
-    /**
      * @brief Sets the current mining mission.
      * @param _wp The work package we wish to be mining.
      */
@@ -200,34 +195,9 @@ public:
     void onMinerRestart(MinerRestart const& _handler) { m_onMinerRestart = _handler; }
 
     /**
-     * @brief Gets the actual start nonce of the segment picked by the farm
-     */
-    uint64_t get_nonce_scrambler() override { return m_nonce_scrambler; }
-
-    /**
-     * @brief Gets the actual width of each subsegment assigned to miners
-     */
-    unsigned get_segment_width() override { return m_nonce_segment_with; }
-
-    /**
-     * @brief Sets the actual start nonce of the segment picked by the farm
-     */
-    void set_nonce_scrambler(uint64_t n) { m_nonce_scrambler = n; }
-
-    /**
-     * @brief Sets the actual width of each subsegment assigned to miners
-     */
-    void set_nonce_segment_width(unsigned n)
-    {
-        if (!m_currentWp.exSizeBytes)
-            m_nonce_segment_with = n;
-    }
-
-    /**
      * @brief Provides the description of segments each miner is working on
      * @return a JsonObject
      */
-    Json::Value get_nonce_scrambler_json();
 
     void setTStartTStop(unsigned tstart, unsigned tstop);
 
@@ -284,8 +254,6 @@ private:
     // considering an average block time of 15 seconds
     // a single device GPU should need a speed of 286 Mh/s
     // before it consumes the whole 2^32 segment
-    uint64_t m_nonce_scrambler;
-    unsigned int m_nonce_segment_with = 32;
 
     // Wrappers for hardware monitoring libraries and their mappers
     wrap_nvml_handle* nvmlh = nullptr;

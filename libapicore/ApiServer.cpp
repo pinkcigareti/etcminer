@@ -79,41 +79,6 @@ static bool getRequestValue(const char* membername, unsigned& refValue, Json::Va
     return true;
 }
 
-static bool getRequestValue(const char* membername, uint64_t& refValue, Json::Value& jRequest,
-    bool optional, Json::Value& jResponse)
-{
-    if (!jRequest.isMember(membername))
-    {
-        if (!optional)
-        {
-            jResponse["error"]["code"] = -32602;
-            jResponse["error"]["message"] =
-                std::string("Missing '") + std::string(membername) + std::string("'");
-        }
-        return optional;
-    }
-    /* as there is no isUInt64() function we can not check the type */
-    if (jRequest[membername].empty())
-    {
-        jResponse["error"]["code"] = -32602;
-        jResponse["error"]["message"] =
-            std::string("Empty '") + std::string(membername) + std::string("'");
-        return false;
-    }
-    try
-    {
-        refValue = jRequest[membername].asUInt64();
-    }
-    catch (...)
-    {
-        jRequest["error"]["code"] = -32602;
-        jResponse["error"]["message"] =
-            std::string("Bad value in '") + std::string(membername) + std::string("'");
-        return false;
-    }
-    return true;
-}
-
 static bool getRequestValue(const char* membername, Json::Value& refValue, Json::Value& jRequest,
     bool optional, Json::Value& jResponse)
 {
@@ -457,15 +422,6 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         jResponse["result"] = getMinerStatDetail();
     }
 
-    else if (_method == "miner_shuffle")
-    {
-        if (!checkApiWriteAccess(m_readonly, jResponse))
-             return;
-        // Gives nonce scrambler a new range
-        jResponse["result"] = true;
-        Farm::f().shuffle();
-    }
-
     else if (_method == "miner_ping")
     {
         // Replies back to (check for liveness)
@@ -607,75 +563,6 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
             jResponse["error"]["message"] = what;
             return;
         }
-    }
-
-    else if (_method == "miner_getscramblerinfo")
-    {
-        jResponse["result"] = Farm::f().get_nonce_scrambler_json();
-    }
-
-    else if (_method == "miner_setscramblerinfo")
-    {
-        if (!checkApiWriteAccess(m_readonly, jResponse))
-            return;
-
-        Json::Value jRequestParams;
-        if (!getRequestValue("params", jRequestParams, jRequest, false, jResponse))
-            return;
-
-        bool any_value_provided = false;
-        uint64_t nonce = Farm::f().get_nonce_scrambler();
-        unsigned exp = Farm::f().get_segment_width();
-
-        if (jRequestParams.isMember("noncescrambler"))
-        {
-            string nonceHex;
-
-            any_value_provided = true;
-
-            nonceHex = jRequestParams["noncescrambler"].asString();
-            if (nonceHex.substr(0, 2) == "0x")
-            {
-                try
-                {
-                    nonce = std::stoul(nonceHex, nullptr, 16);
-                }
-                catch (const std::exception&)
-                {
-                    jResponse["error"]["code"] = -422;
-                    jResponse["error"]["message"] = "Invalid nonce";
-                    return;
-                }
-            }
-            else
-            {
-                // as we already know there is a "noncescrambler" element we can use optional=false
-                if (!getRequestValue("noncescrambler", nonce, jRequestParams, false, jResponse))
-                    return;
-            }
-        }
-
-        if (jRequestParams.isMember("segmentwidth"))
-        {
-            any_value_provided = true;
-            if (!getRequestValue("segmentwidth", exp, jRequestParams, false, jResponse))
-                return;
-        }
-
-        if (!any_value_provided)
-        {
-            jResponse["error"]["code"] = -32602;
-            jResponse["error"]["message"] = "Missing parameters";
-            return;
-        }
-
-        if (exp < 10)
-            exp = 10;  // Not below
-        if (exp > 50)
-            exp = 40;  // Not above
-        Farm::f().set_nonce_scrambler(nonce);
-        Farm::f().set_nonce_segment_width(exp);
-        jResponse["result"] = true;
     }
 
     else if (_method == "miner_pausegpu")
@@ -1068,13 +955,6 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(
     mininginfo["shares"] = jshares;
     mininginfo["paused"] = _miner->paused();
     mininginfo["pause_reason"] = _miner->paused() ? _miner->pausedString() : Json::Value::null;
-
-    /* Nonce infos */
-    auto segment_width = Farm::f().get_segment_width();
-    uint64_t gpustartnonce = Farm::f().get_nonce_scrambler() + ((uint64_t)_index << segment_width);
-    jsegment.append(toHex(uint64_t(gpustartnonce), HexPrefix::Add));
-    jsegment.append(toHex(uint64_t(gpustartnonce + (1LL << segment_width)), HexPrefix::Add));
-    mininginfo["segment"] = jsegment;
 
     /* Hash & Share infos */
     mininginfo["hashrate"] = toHex((uint32_t)_t.miners.at(_index).hashrate, HexPrefix::Add);

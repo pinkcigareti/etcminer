@@ -331,8 +331,6 @@ public:
      */
     virtual void submitProof(Solution const& _p) = 0;
     virtual void accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting) = 0;
-    virtual uint64_t get_nonce_scrambler() = 0;
-    virtual unsigned get_segment_width() = 0;
 
 private:
     static FarmFace* m_this;
