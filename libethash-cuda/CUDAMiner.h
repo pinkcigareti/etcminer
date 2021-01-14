@@ -32,7 +32,7 @@ namespace eth
 class CUDAMiner : public Miner
 {
 public:
-    CUDAMiner(unsigned _index, CUSettings _settings, DeviceDescriptor& _device);
+    CUDAMiner(unsigned _index, DeviceDescriptor& _device);
     ~CUDAMiner() override;
 
     static int getNumDevices();
@@ -55,8 +55,6 @@ private:
     volatile uint32_t* m_abort = nullptr;
     std::vector<cudaStream_t> m_streams;
     uint64_t m_current_target = 0;
-
-    CUSettings m_settings;
 
     const uint32_t m_batch_size;
     const uint32_t m_streams_batch_size;

@@ -252,11 +252,9 @@ std::vector<cl::Device> getDevices(
 }  // namespace eth
 }  // namespace dev
 
-CLMiner::CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _device)
-  : Miner("cl-", _index), m_settings(_settings)
+CLMiner::CLMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cl-", _index)
 {
     m_deviceDescriptor = _device;
-    m_settings.globalWorkSize = m_settings.localWorkSize * m_settings.globalWorkSizeMultiplier;
 }
 
 CLMiner::~CLMiner()
@@ -382,8 +380,9 @@ void CLMiner::workLoop()
 
             // Run the kernel.
             m_searchKernel.setArg(5, startNonce);
-            m_queue[0].enqueueNDRangeKernel(
-                m_searchKernel, cl::NullRange, m_settings.globalWorkSize, m_settings.localWorkSize);
+            m_queue[0].enqueueNDRangeKernel(m_searchKernel, cl::NullRange,
+                m_deviceDescriptor.clPreferedGroupSize * m_deviceDescriptor.clPreferedGroupMultiple,
+                m_deviceDescriptor.clPreferedGroupSize);
 
             if (results.count)
             {
@@ -408,9 +407,10 @@ void CLMiner::workLoop()
             current = w;  // kernel now processing newest work
             current.startNonce = startNonce;
             // Increase start nonce for following kernel execution.
-            startNonce += m_settings.globalWorkSize;
+            startNonce +=
+                m_deviceDescriptor.clPreferedGroupSize * m_deviceDescriptor.clPreferedGroupMultiple;
             // Report hash count
-            updateHashRate(m_settings.localWorkSize, results.hashCount);
+            updateHashRate(m_deviceDescriptor.clPreferedGroupSize, results.hashCount);
         }
 
         if (m_queue.size())
@@ -560,11 +560,8 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
             deviceDescriptor.clMaxMemAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
             deviceDescriptor.clMaxWorkGroup = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-            deviceDescriptor.clMaxComputeUnits = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-
-            // Apparently some 36 CU devices return a bogus 14!!!
-            deviceDescriptor.clMaxComputeUnits =
-                deviceDescriptor.clMaxComputeUnits == 14 ? 36 : deviceDescriptor.clMaxComputeUnits;
+            deviceDescriptor.clPreferedGroupSize = 64;
+            deviceDescriptor.clPreferedGroupMultiple = 4096 * 4;
 
             // Is it an NVIDIA card ?
             if (platformType == ClPlatformTypeEnum::Nvidia)
@@ -610,7 +607,6 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.binary = false;
     }
     else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Amd)
     {
@@ -623,14 +619,12 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.binary = false;
     }
     else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Intel)
     {
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.binary = false;
     }
     else
     {
@@ -733,7 +727,7 @@ bool CLMiner::initEpoch_internal()
         cllog << "OpenCL kernel";
         code = string(ethash_cl, ethash_cl + sizeof(ethash_cl));
 
-        addDefinition(code, "WORKSIZE", m_settings.localWorkSize);
+        addDefinition(code, "WORKSIZE", m_deviceDescriptor.clPreferedGroupSize);
         addDefinition(code, "ACCESSES", 64);
         addDefinition(code, "MAX_OUTPUTS", c_maxSearchResults);
         addDefinition(code, "PLATFORM", static_cast<unsigned>(m_deviceDescriptor.clPlatformType));
@@ -764,7 +758,7 @@ bool CLMiner::initEpoch_internal()
         bool loadedBinary = false;
         std::string device_name = m_deviceDescriptor.clName;
 
-        if (m_settings.binary)
+        if (false /*m_settings.binary*/)
         {
             std::ifstream kernel_file;
             vector<unsigned char> bin_data;
@@ -773,8 +767,8 @@ bool CLMiner::initEpoch_internal()
             /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
             std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
             fname_strm << boost::dll::program_location().parent_path().string()
-                       << "/kernels/ethash_" << device_name << "_lws" << m_settings.localWorkSize
-                       << ".bin";
+                       << "/kernels/ethash_" << device_name << "_lws"
+                       << m_deviceDescriptor.clPreferedGroupSize << ".bin";
             cllog << "Loading binary kernel " << fname_strm.str();
             try
             {
@@ -899,21 +893,24 @@ bool CLMiner::initEpoch_internal()
         const uint32_t workItems = m_dagItems * 2;  // GPU computes partial 512-bit DAG items.
 
         uint32_t start;
-        const uint32_t chunk = 10000 * m_settings.localWorkSize;
+        const uint32_t chunk =
+            m_deviceDescriptor.clPreferedGroupSize * m_deviceDescriptor.clPreferedGroupMultiple;
         for (start = 0; start <= workItems - chunk; start += chunk)
         {
             m_dagKernel.setArg(0, start);
             m_queue[0].enqueueNDRangeKernel(
-                m_dagKernel, cl::NullRange, chunk, m_settings.localWorkSize);
+                m_dagKernel, cl::NullRange, chunk, m_deviceDescriptor.clPreferedGroupSize);
             m_queue[0].finish();
         }
         if (start < workItems)
         {
             uint32_t groupsLeft = workItems - start;
-            groupsLeft = (groupsLeft + m_settings.localWorkSize - 1) / m_settings.localWorkSize;
+            groupsLeft = (groupsLeft + m_deviceDescriptor.clPreferedGroupSize - 1) /
+                         m_deviceDescriptor.clPreferedGroupSize;
             m_dagKernel.setArg(0, start);
             m_queue[0].enqueueNDRangeKernel(m_dagKernel, cl::NullRange,
-                groupsLeft * m_settings.localWorkSize, m_settings.localWorkSize);
+                groupsLeft * m_deviceDescriptor.clPreferedGroupSize,
+                m_deviceDescriptor.clPreferedGroupSize);
             m_queue[0].finish();
         }
 

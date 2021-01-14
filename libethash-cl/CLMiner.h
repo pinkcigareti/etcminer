@@ -43,8 +43,7 @@ namespace eth
 class CLMiner : public Miner
 {
 public:
-
-    CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _device);
+    CLMiner(unsigned _index, DeviceDescriptor& _device);
     ~CLMiner() override;
 
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
@@ -81,8 +80,6 @@ private:
         m_context.clear();
         m_abortqueue.clear();
     }
-
-    CLSettings m_settings;
 
     unsigned m_dagItems = 0;
     uint64_t m_lastNonce = 0;

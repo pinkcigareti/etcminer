@@ -94,28 +94,6 @@ struct MinerSettings
     vector<unsigned> devices;
 };
 
-// Holds settings for CUDA Miner
-struct CUSettings : public MinerSettings
-{
-    unsigned streams = 2;
-    unsigned gridSize = 32768;
-    unsigned blockSize = 128;
-};
-
-// Holds settings for OpenCL Miner
-struct CLSettings : public MinerSettings
-{
-    bool binary = false;
-    unsigned globalWorkSize = 0;
-    unsigned globalWorkSizeMultiplier = 65536 * 4;
-    unsigned localWorkSize = 128;
-};
-
-// Holds settings for CPU Miner
-struct CPSettings : public MinerSettings
-{
-};
-
 struct SolutionAccountType
 {
     unsigned accepted = 0;
@@ -184,7 +162,8 @@ struct DeviceDescriptor
     string clBoardName;
     size_t clMaxMemAlloc;
     size_t clMaxWorkGroup;
-    unsigned int clMaxComputeUnits;
+    unsigned int clPreferedGroupSize;
+    unsigned int clPreferedGroupMultiple;
     string clNvCompute;
     unsigned int clNvComputeMajor;
     unsigned int clNvComputeMinor;
@@ -196,6 +175,7 @@ struct DeviceDescriptor
     string cuCompute;
     unsigned int cuComputeMajor;
     unsigned int cuComputeMinor;
+    int cuGridSize;
 
     int cpCpuNumer;   // For CPU
 };

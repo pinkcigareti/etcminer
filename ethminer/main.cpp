@@ -313,36 +313,6 @@ public:
         app.add_flag("--list-devices", m_shouldListDevices, "");
 #endif
 
-#if ETH_ETHASHCL
-
-        app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
-
-        app.add_option("--cl-global-work", m_CLSettings.globalWorkSizeMultiplier, "", true);
-
-        app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
-
-        app.add_flag("--cl-bin", m_CLSettings.binary, "");
-#endif
-
-#if ETH_ETHASHCUDA
-
-        app.add_option("--cuda-devices,--cu-devices", m_CUSettings.devices, "");
-
-        app.add_option("--cuda-grid-size,--cu-grid-size", m_CUSettings.gridSize, "", true)
-            ->check(CLI::Range(1, 131072));
-
-        app.add_set(
-            "--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256}, "", true);
-
-        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
-            ->check(CLI::Range(1, 99));
-#endif
-
-#if ETH_ETHASHCPU
-
-        app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
-#endif
-
         app.add_flag("--eval", m_FarmSettings.eval, "");
 
         bool cl_miner = false;
@@ -354,6 +324,8 @@ public:
         bool cpu_miner = false;
 
 #if ETH_ETHASHCPU
+
+        app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
 
         app.add_flag("--cpu", cpu_miner, "");
 #endif
@@ -603,64 +575,9 @@ public:
         // Subscribe devices with appropriate Miner Type
         // Use CUDA first when available then, as second, OpenCL
 
-        // Apply discrete subscriptions (if any)
-#if ETH_ETHASHCUDA
-        if (m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
-        {
-            for (auto index : m_CUSettings.devices)
-            {
-                if (index < m_DevicesCollection.size())
-                {
-                    auto it = m_DevicesCollection.begin();
-                    advance(it, index);
-                    if (!it->second.cuDetected)
-                        throw runtime_error("Can't CUDA subscribe a non-CUDA device.");
-                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
-                }
-            }
-        }
-#endif
-#if ETH_ETHASHCL
-        if (m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
-        {
-            for (auto index : m_CLSettings.devices)
-            {
-                if (index < m_DevicesCollection.size())
-                {
-                    auto it = m_DevicesCollection.begin();
-                    advance(it, index);
-                    if (!it->second.clDetected)
-                        throw runtime_error("Can't OpenCL subscribe a non-OpenCL device.");
-                    if (it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                        throw runtime_error(
-                            "Can't OpenCL subscribe a CUDA subscribed device.");
-                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
-                }
-            }
-        }
-#endif
-#if ETH_ETHASHCPU
-        if (m_CPSettings.devices.size() && (m_minerType == MinerType::CPU))
-        {
-            for (auto index : m_CPSettings.devices)
-            {
-                if (index < m_DevicesCollection.size())
-                {
-                    auto it = m_DevicesCollection.begin();
-                    advance(it, index);
-                    it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
-                }
-            }
-        }
-#endif
-
-
         // Subscribe all detected devices
 #if ETH_ETHASHCUDA
-        if (!m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
+        if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
@@ -672,8 +589,7 @@ public:
         }
 #endif
 #if ETH_ETHASHCL
-        if (!m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
+        if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
@@ -685,8 +601,7 @@ public:
         }
 #endif
 #if ETH_ETHASHCPU
-        if (!m_CPSettings.devices.size() &&
-            (m_minerType == MinerType::CPU))
+        if (m_minerType == MinerType::CPU)
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
@@ -717,7 +632,7 @@ public:
         signal(SIGTERM, MinerCLI::signalHandler);
 
         // Initialize Farm
-        new Farm(m_DevicesCollection, m_FarmSettings, m_CUSettings, m_CLSettings, m_CPSettings);
+        new Farm(m_DevicesCollection, m_FarmSettings);
 
         // Run Miner
         doMiner();
@@ -859,13 +774,6 @@ public:
                  << "                        eg --cl-devices 0 2 3" << endl
                  << "                        If not set all available CL devices will be used"
                  << endl
-                 << "    --cl-global-work    UINT Default 65536" << endl
-                 << "                        Set the global work size multiplier" << endl
-                 << "                        Value will be adjusted to nearest power of 2" << endl
-                 << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
-                 << "                        Set the local work size multiplier" << endl
-                 << "    --cl-bin            FLAG" << endl
-                 << "                        Try binary kernel." << endl
                  << endl;
         }
 
@@ -876,19 +784,11 @@ public:
                  << "    Use this extended CUDA arguments to fine tune the performance." << endl
                  << "    Be advised default values are best generic findings by developers" << endl
                  << endl
-                 << "    --cu-grid-size      INT [1 .. 131072] Default = 8192" << endl
-                 << "                        Set the grid size" << endl
-                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128" << endl
-                 << "                        Set the block size" << endl
                  << "    --cu-devices        UINT {} Default not set" << endl
                  << "                        Space separated list of device indexes to use" << endl
                  << "                        eg --cu-devices 0 2 3" << endl
                  << "                        If not set all available CUDA devices will be used"
                  << endl
-                 << "    --cu-parallel-hash  UINT {1,2,4,8} Default = 4" << endl
-                 << "                        Set the number of hashes per kernel" << endl
-                 << "    --cu-streams        INT [1 .. 99] Default = 2" << endl
-                 << "                        Set the number of streams per GPU" << endl
                  << endl;
         }
 
@@ -1190,9 +1090,6 @@ private:
 
     FarmSettings m_FarmSettings;  // Operating settings for Farm
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
-    CLSettings m_CLSettings;          // Operating settings for CL Miners
-    CUSettings m_CUSettings;          // Operating settings for CUDA Miners
-    CPSettings m_CPSettings;          // Operating settings for CPU Miners
 
     //// -- Pool manager related params
     //vector<shared_ptr<URI>> m_poolConns;
@@ -1235,9 +1132,21 @@ int main(int argc, char** argv)
 
     dev::setThreadName("miner");
 
+#if defined(_WIN32)
+    {
+        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        if (hOut != INVALID_HANDLE_VALUE)
+        {
+            DWORD dwMode;
+            if (GetConsoleMode(hOut, &dwMode))
+                SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+        }
+    }
+#endif
     // Always out release version
+    cnote << EthWhite "Miscellaneous Bits Edition (https://github.com/miscellaneousbits/ethminer)";
     auto* bi = ethminer_get_buildinfo();
-    cnote << "ethminer " << bi->project_version;
+    cnote << "ethminer " << bi->project_version << " (GPLv3)";
     cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
     cnote << SSLeay_version(SSLEAY_VERSION);
     cnote << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
@@ -1272,25 +1181,6 @@ int main(int argc, char** argv)
             if (g_logSyslog || (getenv("NO_COLOR")))
                 g_logNoColor = true;
 
-#if defined(_WIN32)
-            if (!g_logNoColor)
-            {
-                g_logNoColor = true;
-                // Set output mode to handle virtual terminal sequences
-                // Only works on Windows 10, but most users should use it anyway
-                HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-                if (hOut != INVALID_HANDLE_VALUE)
-                {
-                    DWORD dwMode = 0;
-                    if (GetConsoleMode(hOut, &dwMode))
-                    {
-                        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-                        if (SetConsoleMode(hOut, dwMode))
-                            g_logNoColor = false;
-                    }
-                }
-            }
-#endif
             cli.execute();
             cout << endl << endl;
             return 0;

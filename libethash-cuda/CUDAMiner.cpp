@@ -31,11 +31,12 @@ struct CUDAChannel : public LogChannel
 };
 #define cudalog clog(CUDAChannel)
 
-CUDAMiner::CUDAMiner(unsigned _index, CUSettings _settings, DeviceDescriptor& _device)
+static const unsigned cuPreferedBlockSize = 128;
+
+CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device)
   : Miner("cu-", _index),
-    m_settings(_settings),
-    m_batch_size(_settings.gridSize * _settings.blockSize),
-    m_streams_batch_size(_settings.gridSize * _settings.blockSize * _settings.streams)
+    m_batch_size(_device.cuGridSize * cuPreferedBlockSize),
+    m_streams_batch_size(_device.cuGridSize * cuPreferedBlockSize * 2)
 {
     m_deviceDescriptor = _device;
 }
@@ -136,7 +137,7 @@ bool CUDAMiner::initEpoch_internal()
             m_allocated_memory_dag = m_epochContext.dagSize;
 
             // create mining buffers
-            for (unsigned i = 0; i != m_settings.streams; ++i)
+            for (unsigned i = 0; i < 2; ++i)
             {
                 CUDA_SAFE_CALL(cudaMalloc(&m_search_buf[i], sizeof(Search_results)));
                 CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
@@ -156,8 +157,8 @@ bool CUDAMiner::initEpoch_internal()
         set_constants(dag, m_epochContext.dagNumItems, light,
             m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
 
-        ethash_generate_dag(
-            m_epochContext.dagSize, m_settings.gridSize, m_settings.blockSize, m_streams[0]);
+        ethash_generate_dag(m_epochContext.dagSize, m_deviceDescriptor.cuGridSize,
+            cuPreferedBlockSize, m_streams[0]);
 
         cudalog << "Generated DAG + Light in "
                 << chrono::duration_cast<chrono::milliseconds>(
@@ -188,8 +189,8 @@ void CUDAMiner::workLoop()
     WorkPackage current;
     current.header = h256();
 
-    m_search_buf.resize(m_settings.streams);
-    m_streams.resize(m_settings.streams);
+    m_search_buf.resize(2);
+    m_streams.resize(2);
 
     if (!initDevice())
         return;
@@ -312,6 +313,7 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;
             deviceDescriptor.cuComputeMinor = props.minor;
+            deviceDescriptor.cuGridSize = int(ceil(props.multiProcessorCount * 3276.8));
 
             _DevicesCollection[uniqueId] = deviceDescriptor;
         }
@@ -338,8 +340,7 @@ void CUDAMiner::search(
 
     // prime each stream, clear search result buffers and start the search
     uint32_t current_index;
-    for (current_index = 0; current_index < m_settings.streams;
-         current_index++, start_nonce += m_batch_size)
+    for (current_index = 0; current_index < 2; current_index++, start_nonce += m_batch_size)
     {
         cudaStream_t stream = m_streams[current_index];
         CUDA_SAFE_CALL(
@@ -347,7 +348,7 @@ void CUDAMiner::search(
                 zero2, sizeof(zero2), cudaMemcpyHostToDevice));
 
         // Run the batch for this stream
-        run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream,
+        run_ethash_search(m_deviceDescriptor.cuGridSize, cuPreferedBlockSize, stream,
             m_search_buf[current_index], m_abort, start_nonce);
     }
 
@@ -360,9 +361,10 @@ void CUDAMiner::search(
         if (!m_done)
             m_done = paused();
 
+        uint32_t batchCount = 0;
+
         // This inner loop will process each cuda stream individually
-        for (current_index = 0; current_index < m_settings.streams;
-             current_index++, start_nonce += m_batch_size)
+        for (current_index = 0; current_index < 2; current_index++, start_nonce += m_batch_size)
         {
             // Each pass of this loop will wait for a stream to exit,
             // save any found solutions, then restart the stream
@@ -379,7 +381,7 @@ void CUDAMiner::search(
             CUDA_SAFE_CALL(cudaMemcpy(buffer + offsetof(Search_results, hashCount), zero2,
                 sizeof(hashCount), cudaMemcpyHostToDevice));
 
-            updateHashRate(m_settings.blockSize, hashCount);
+            batchCount += hashCount;
 
             if (shouldStop())
                 m_done = true;
@@ -417,7 +419,7 @@ void CUDAMiner::search(
             // restart the stream on the next batch of nonces
             // unless we are done for this round.
             if (!m_done)
-                run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream,
+                run_ethash_search(m_deviceDescriptor.cuGridSize, cuPreferedBlockSize, stream,
                     (Search_results*)buffer, m_abort, start_nonce);
 
             if (found_count)
@@ -434,6 +436,7 @@ void CUDAMiner::search(
                 }
             }
         }
+        updateHashRate(cuPreferedBlockSize, batchCount);
 
         // Bail out if it's shutdown time
         if (shouldStop())
