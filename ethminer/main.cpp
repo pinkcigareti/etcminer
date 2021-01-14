@@ -53,7 +53,6 @@ using namespace std;
 using namespace dev;
 using namespace dev::eth;
 
-
 // Global vars
 bool g_running = false;
 bool g_exitOnError = false;  // Whether or not ethminer should exit on mining threads errors
@@ -1144,13 +1143,18 @@ int main(int argc, char** argv)
     }
 #endif
     // Always out release version
-    cnote << EthWhite "Miscellaneous Bits Edition (https://github.com/miscellaneousbits/ethminer)";
     auto* bi = ethminer_get_buildinfo();
-    cnote << "ethminer " << bi->project_version << " (GPLv3)";
+    cnote << EthWhite "ethminer (Misc. Bits edition) " << bi->project_version << " (GPLv3)";
+    cnote << "(https://github.com/miscellaneousbits/ethminer)";
     cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
-    cnote << SSLeay_version(SSLEAY_VERSION);
-    cnote << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
-          << BOOST_VERSION % 100;
+    stringstream ss;
+    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
+       << BOOST_VERSION % 100;
+    vector<string> sv;
+    string s(SSLeay_version(SSLEAY_VERSION));
+    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
+    ss << ", OpenSSL " << sv[1];
+    cnote << ss.str();
 
     if (argc < 2)
     {
