@@ -49,11 +49,10 @@ protected:
     void kick_miner() override;
 
 private:
-    atomic<bool> m_new_work = {false};
-
     void workLoop() override;
 
     std::vector<Search_results*> m_search_buf;
+    volatile uint32_t* m_abort = nullptr;
     std::vector<cudaStream_t> m_streams;
     uint64_t m_current_target = 0;
 
@@ -64,6 +63,8 @@ private:
 
     uint64_t m_allocated_memory_dag = 0; // dag_size is a uint64_t in EpochContext struct
     size_t m_allocated_memory_light_cache = 0;
+
+    bool m_done = false;
 };
 
 

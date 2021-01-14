@@ -306,13 +306,11 @@ public:
         app.add_option("--api-port", m_api_port, "", true)->check(CLI::Range(-65535, 65535));
 
         app.add_option("--api-password", m_api_password, "");
-
 #endif
 
 #if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
 
         app.add_flag("--list-devices", m_shouldListDevices, "");
-
 #endif
 
 #if ETH_ETHASHCL
@@ -324,9 +322,6 @@ public:
         app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
 
         app.add_flag("--cl-bin", m_CLSettings.binary, "");
-
-        app.add_flag("--cl-noexit", m_CLSettings.noExit, "");
-
 #endif
 
 #if ETH_ETHASHCUDA
@@ -341,13 +336,11 @@ public:
 
         app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
             ->check(CLI::Range(1, 99));
-
 #endif
 
 #if ETH_ETHASHCPU
 
         app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
-
 #endif
 
         app.add_flag("--eval", m_FarmSettings.eval, "");
@@ -359,14 +352,17 @@ public:
         app.add_flag("-U,--cuda", cuda_miner, "");
 
         bool cpu_miner = false;
+
 #if ETH_ETHASHCPU
+
         app.add_flag("--cpu", cpu_miner, "");
 #endif
+
         auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
-        app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
 
+        app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
 
         // Exception handling is held at higher level
         app.parse(argc, argv);
@@ -870,8 +866,7 @@ public:
                  << "                        Set the local work size multiplier" << endl
                  << "    --cl-bin            FLAG" << endl
                  << "                        Try binary kernel." << endl
-                 << "    --cl-noexit         FLAG" << endl
-                 << "                        Don't use fast exit algorithm" << endl;
+                 << endl;
         }
 
         if (ctx == "cu")

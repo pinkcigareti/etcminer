@@ -98,7 +98,7 @@ struct MinerSettings
 struct CUSettings : public MinerSettings
 {
     unsigned streams = 2;
-    unsigned gridSize = 8192;
+    unsigned gridSize = 32768;
     unsigned blockSize = 128;
 };
 
@@ -106,7 +106,6 @@ struct CUSettings : public MinerSettings
 struct CLSettings : public MinerSettings
 {
     bool binary = false;
-    bool noExit = false;
     unsigned globalWorkSize = 0;
     unsigned globalWorkSizeMultiplier = 65536 * 4;
     unsigned localWorkSize = 128;

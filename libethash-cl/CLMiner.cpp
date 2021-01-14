@@ -285,7 +285,7 @@ struct SearchResults
 void CLMiner::workLoop()
 {
     // Memory for zero-ing buffers. Cannot be static or const because crashes on macOS.
-    uint32_t zerox3[3] = {0, 0, 0};
+    static uint32_t zerox3[3] = {0, 0, 0};
 
     uint64_t startNonce = 0;
 
@@ -308,8 +308,8 @@ void CLMiner::workLoop()
             {
                 // no need to read the abort flag.
                 m_queue[0].enqueueReadBuffer(m_searchBuffer[0], CL_TRUE,
-                    offsetof(SearchResults, count),
-                    (m_settings.noExit ? 1 : 2) * sizeof(results.count), (void*)&results.count);
+                    offsetof(SearchResults, count), 2 * sizeof(results.count),
+                    (void*)&results.count);
                 if (results.count)
                 {
                     if (results.count > c_maxSearchResults) {
@@ -318,15 +318,10 @@ void CLMiner::workLoop()
 
                     m_queue[0].enqueueReadBuffer(m_searchBuffer[0], CL_TRUE, 0,
                         results.count * sizeof(results.rslt[0]), (void*)&results);
-                    // Reset search buffer if any solution found.
-                    if (m_settings.noExit)
-                        m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
-                            offsetof(SearchResults, count), sizeof(results.count), zerox3);
                 }
                 // clean the solution count, hash count, and abort flag
-                if (!m_settings.noExit)
-                    m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
-                        offsetof(SearchResults, count), sizeof(zerox3), zerox3);
+                m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
+                    offsetof(SearchResults, count), sizeof(zerox3), zerox3);
             }
             else
                 results.count = 0;
@@ -366,8 +361,7 @@ void CLMiner::workLoop()
                     m_header[0], CL_FALSE, 0, w.header.size, w.header.data());
                 // zero the result count
                 m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
-                    offsetof(SearchResults, count),
-                    m_settings.noExit ? sizeof(zerox3[0]) : sizeof(zerox3), zerox3);
+                    offsetof(SearchResults, count), sizeof(zerox3), zerox3);
 
                 m_searchKernel.setArg(0, m_searchBuffer[0]);  // Supply output buffer to kernel.
                 m_searchKernel.setArg(1, m_header[0]);        // Supply header buffer to kernel.
@@ -416,10 +410,7 @@ void CLMiner::workLoop()
             // Increase start nonce for following kernel execution.
             startNonce += m_settings.globalWorkSize;
             // Report hash count
-            if (m_settings.noExit)
-                updateHashRate(m_settings.globalWorkSize, 1);
-            else
-                updateHashRate(m_settings.localWorkSize, results.hashCount);
+            updateHashRate(m_settings.localWorkSize, results.hashCount);
         }
 
         if (m_queue.size())
@@ -435,15 +426,16 @@ void CLMiner::workLoop()
     }
 }
 
-static uint32_t one = 1;
 
 void CLMiner::kick_miner()
 {
     // Memory for abort Cannot be static because crashes on macOS.
-    if (!m_settings.noExit && !m_abortqueue.empty())
+    if (!m_abortqueue.empty())
+    {
+        static uint32_t one = 1;
         m_abortqueue[0].enqueueWriteBuffer(
             m_searchBuffer[0], CL_FALSE, offsetof(SearchResults, abort), sizeof(one), &one);
-
+    }
     m_new_work_signal.notify_one();
 }
 
@@ -639,18 +631,12 @@ bool CLMiner::initDevice()
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
         m_settings.binary = false;
-        m_settings.noExit = true;
     }
     else
     {
         // Don't know what to do with this
         cllog << "Unrecognized Platform";
         return false;
-    }
-    if (!m_settings.noExit && (m_hwmoninfo.deviceType != HwMonitorInfoType::AMD))
-    {
-        m_settings.noExit = true;
-        cllog << "no exit option enabled for non AMD opencl device";
     }
 
     if (m_deviceDescriptor.clPlatformVersionMajor == 1 &&
@@ -756,10 +742,6 @@ bool CLMiner::initEpoch_internal()
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
             addDefinition(code, "LEGACY", 1);
 
-        if (!m_settings.noExit)
-            addDefinition(code, "FAST_EXIT", 1);
-
-
         // create miner OpenCL program
         cl::Program::Sources sources{{code.data(), code.size()}};
         cl::Program program(m_context[0], sources), binaryProgram;
@@ -792,7 +774,7 @@ bool CLMiner::initEpoch_internal()
             std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
             fname_strm << boost::dll::program_location().parent_path().string()
                        << "/kernels/ethash_" << device_name << "_lws" << m_settings.localWorkSize
-                       << (m_settings.noExit ? "" : "_exit") << ".bin";
+                       << ".bin";
             cllog << "Loading binary kernel " << fname_strm.str();
             try
             {

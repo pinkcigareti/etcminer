@@ -16,11 +16,17 @@
 
 #include "dagger_shuffled.cuh"
 
-__global__ void ethash_search(Search_results* g_output, uint64_t start_nonce)
+__global__ void ethash_search(
+    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce)
 {
+    if (*g_abort)
+        return;
     uint32_t const gid = blockIdx.x * blockDim.x + threadIdx.x;
     uint2 mix[4];
-    if (compute_hash(start_nonce + gid, mix))
+    bool r = compute_hash(start_nonce + gid, mix);
+    if (threadIdx.x == 0)
+        atomicInc((uint32_t*)&g_output->hashCount, 0xffffffff);
+    if (r)
         return;
     uint32_t index = atomicInc((uint32_t*)&g_output->count, 0xffffffff);
     if (index >= MAX_SEARCH_RESULTS)
@@ -34,12 +40,13 @@ __global__ void ethash_search(Search_results* g_output, uint64_t start_nonce)
     g_output->result[index].mix[5] = mix[2].y;
     g_output->result[index].mix[6] = mix[3].x;
     g_output->result[index].mix[7] = mix[3].y;
+    *g_abort = 1;
 }
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    Search_results* g_output, uint64_t start_nonce)
+    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce)
 {
-    ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
+    ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, g_abort, start_nonce);
     CUDA_SAFE_CALL(cudaGetLastError());
 }
 
@@ -70,7 +77,8 @@ __global__ void ethash_calculate_dag_item(uint32_t start)
             uint4 p4 = d_light[shuffle_index].uint4s[thread_id];
             for (int w = 0; w < 4; w++)
             {
-                uint4 s4 = make_uint4(SHFL(p4.x, w, 4), SHFL(p4.y, w, 4), SHFL(p4.z, w, 4), SHFL(p4.w, w, 4));
+                uint4 s4 = make_uint4(
+                    SHFL(p4.x, w, 4), SHFL(p4.y, w, 4), SHFL(p4.z, w, 4), SHFL(p4.w, w, 4));
                 if (t == thread_id)
                 {
                     dag_node.uint4s[w] = fnv4(dag_node.uint4s[w], s4);

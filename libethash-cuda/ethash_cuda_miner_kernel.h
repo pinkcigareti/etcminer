@@ -24,7 +24,8 @@ struct Search_Result
 struct Search_results
 {
     Search_Result result[MAX_SEARCH_RESULTS];
-    volatile uint32_t count = 0;
+    uint32_t count;
+    volatile uint32_t hashCount;
 };
 
 #define ACCESSES 64
@@ -57,7 +58,7 @@ void set_header(hash32_t _header);
 void set_target(uint64_t _target);
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    Search_results* g_output, uint64_t start_nonce);
+    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce);
 
 void ethash_generate_dag(uint64_t dag_size, uint32_t blocks, uint32_t threads, cudaStream_t stream);
 
