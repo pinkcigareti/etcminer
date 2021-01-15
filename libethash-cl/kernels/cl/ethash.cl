@@ -21,11 +21,6 @@
 #define OPENCL_PLATFORM_NVIDIA 3
 #define OPENCL_PLATFORM_INTEL 4
 
-#if (defined(__Tahiti__) || defined(__Pitcairn__) || defined(__Capeverde__) || \
-     defined(__Oland__) || defined(__Hainan__))
-#define LEGACY
-#endif
-
 #ifdef cl_clang_storage_class_specifiers
 #pragma OPENCL EXTENSION cl_clang_storage_class_specifiers : enable
 #endif
@@ -94,10 +89,6 @@ static __constant uint2 const Keccak_f1600_RC[24] = {
 };
 
 #ifdef cl_amd_media_ops
-
-#ifdef LEGACY
-#define barrier(x) mem_fence(x)
-#endif
 
 #define ROTL64_1(x, y) amd_bitalign((x), (x).s10, 32 - (y))
 #define ROTL64_2(x, y) amd_bitalign((x).s10, (x), 32 - (y))
@@ -266,27 +257,6 @@ typedef union
     uint uints[16];
 } compute_hash_share;
 
-
-#ifdef LEGACY
-
-#define MIX(x)                                                                   \
-    do                                                                           \
-    {                                                                            \
-        if (get_local_id(0) == lane_idx)                                         \
-        {                                                                        \
-            buffer[hash_id] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size; \
-        }                                                                        \
-        barrier(CLK_LOCAL_MEM_FENCE);                                            \
-        uint idx = buffer[hash_id];                                              \
-        __global hash128_t const* g_dag;                                         \
-        g_dag = (__global hash128_t const*)_g_dag0;                              \
-        if (idx & 1)                                                             \
-            g_dag = (__global hash128_t const*)_g_dag1;                          \
-        mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]);                       \
-    } while (0)
-
-#else
-
 #define MIX(x)                                                                       \
     do                                                                               \
     {                                                                                \
@@ -299,7 +269,6 @@ typedef union
         mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]);                           \
         mem_fence(CLK_LOCAL_MEM_FENCE);                                              \
     } while (0)
-#endif
 
 // NOTE: This struct must match the one defined in CLMiner.cpp
 struct SearchResults
@@ -328,11 +297,7 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
     const uint gid = get_global_id(0);
 
     __local compute_hash_share sharebuf[WORKSIZE / 4];
-#ifdef LEGACY
-    __local uint buffer[WORKSIZE / 4];
-#else
     __local uint buffer[WORKSIZE];
-#endif
     __local compute_hash_share* const share = sharebuf + hash_id;
 
     // sha3_512(header .. nonce)
@@ -396,9 +361,7 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
 
             barrier(CLK_LOCAL_MEM_FENCE);
 
-#ifndef LEGACY
 #pragma unroll 1
-#endif
             for (uint a = 0; a < ACCESSES; a += 8)
             {
                 const uint lane_idx = 4 * hash_id + a / 8 % 4;

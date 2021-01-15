@@ -557,7 +557,8 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
                 std::stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
             deviceDescriptor.clPreferedGroupSize = 64;
-            deviceDescriptor.clPreferedGroupMultiple = 4096 * 4;
+            // deviceDescriptor.clPreferedGroupMultiple = 4096 * 4;
+            deviceDescriptor.clPreferedGroupMultiple = 312500;
 
             // Is it an NVIDIA card ?
             if (platformType == ClPlatformTypeEnum::Nvidia)
@@ -727,9 +728,6 @@ bool CLMiner::initEpoch_internal()
         addDefinition(code, "MAX_OUTPUTS", c_maxSearchResults);
         addDefinition(code, "PLATFORM", static_cast<unsigned>(m_deviceDescriptor.clPlatformType));
         addDefinition(code, "COMPUTE", computeCapability);
-
-        if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
-            addDefinition(code, "LEGACY", 1);
 
         // create miner OpenCL program
         cl::Program::Sources sources{{code.data(), code.size()}};

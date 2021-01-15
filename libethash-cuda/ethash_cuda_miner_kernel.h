@@ -25,7 +25,7 @@ struct Search_results
 {
     Search_Result result[MAX_SEARCH_RESULTS];
     uint32_t count;
-    volatile uint32_t hashCount;
+    uint32_t hashCount;
 };
 
 #define ACCESSES 64

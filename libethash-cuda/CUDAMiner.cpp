@@ -32,7 +32,7 @@ struct CUDAChannel : public LogChannel
 #define cudalog clog(CUDAChannel)
 
 static const unsigned PreferedBlockSize = 128;
-static const unsigned PreferedStreamSize = 2;
+static const unsigned PreferedStreamSize = 1;
 
 CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device)
   : Miner("cu-", _index),
@@ -312,7 +312,8 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;
             deviceDescriptor.cuComputeMinor = props.minor;
-            deviceDescriptor.cuGridSize = int(ceil(props.multiProcessorCount * 3276.8));
+            // deviceDescriptor.cuGridSize = int(ceil(props.multiProcessorCount * 3276.8));
+            deviceDescriptor.cuGridSize = 62500;
 
             _DevicesCollection[uniqueId] = deviceDescriptor;
         }

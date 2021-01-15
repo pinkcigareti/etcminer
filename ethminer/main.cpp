@@ -228,7 +228,8 @@ public:
         app.set_help_flag();
         app.add_flag("-h,--help", bhelp, "Show help");
 
-        app.add_set("-H,--help-ext", shelpExt,
+        app.add_set(
+            "-H,--help-ext", shelpExt,
             {
                 "con", "test",
 #if ETH_ETHASHCL
@@ -253,13 +254,15 @@ public:
 
         app.add_option("-v,--verbosity", g_logOptions, "", true)->check(CLI::Range(LOG_NEXT - 1));
 
-        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)->check(CLI::Range(1, 99999));
+        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)
+            ->check(CLI::Range(1, 99999));
 
-        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)->check(CLI::Range(0, 99999));
+        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)
+            ->check(CLI::Range(0, 99999));
 
         app.add_option("--retry-delay", m_PoolSettings.delayBeforeRetry, "", true)
             ->check(CLI::Range(1, 999));
-        
+
         app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)
             ->check(CLI::Range(180, 99999));
 
@@ -329,7 +332,8 @@ public:
         app.add_flag("--cpu", cpu_miner, "");
 #endif
 
-        auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
+        auto sim_opt = app.add_option(
+            "-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
 
@@ -381,8 +385,7 @@ public:
         if (!m_shouldListDevices && m_mode != OperationMode::Simulation)
         {
             if (!pools.size())
-                throw invalid_argument(
-                    "At least one pool definition required. See -P argument.");
+                throw invalid_argument("At least one pool definition required. See -P argument.");
 
             for (size_t i = 0; i < pools.size(); i++)
             {
@@ -786,8 +789,7 @@ public:
         {
             cout << "CPU Extended Options :" << endl
                  << endl
-                 << "    Use this extended CPU arguments"
-                 << endl
+                 << "    Use this extended CPU arguments" << endl
                  << endl
                  << "    --cp-devices        UINT {} Default not set" << endl
                  << "                        Space separated list of device indexes to use" << endl
@@ -1023,7 +1025,6 @@ public:
 private:
     void doMiner()
     {
-
         new PoolManager(m_PoolSettings);
         if (m_mode != OperationMode::Simulation)
             for (auto conn : m_PoolSettings.connections)
@@ -1065,7 +1066,7 @@ private:
     }
 
     // Global boost's io_service
-    thread m_io_thread;                        // The IO service thread
+    thread m_io_thread;                             // The IO service thread
     boost::asio::deadline_timer m_cliDisplayTimer;  // The timer which ticks display lines
     boost::asio::io_service::strand m_io_strand;    // A strand to serialize posts in
                                                     // multithreaded environment
@@ -1082,7 +1083,7 @@ private:
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
 
     //// -- Pool manager related params
-    //vector<shared_ptr<URI>> m_poolConns;
+    // vector<shared_ptr<URI>> m_poolConns;
 
 
     // -- CLI Interface related params
@@ -1094,10 +1095,10 @@ private:
 
 #if API_CORE
     // -- API and Http interfaces related params
-    string m_api_bind;                  // API interface binding address in form <address>:<port>
-    string m_api_address = "0.0.0.0";   // API interface binding address (Default any)
-    int m_api_port = 0;                 // API interface binding port
-    string m_api_password;              // API interface write protection password
+    string m_api_bind;                 // API interface binding address in form <address>:<port>
+    string m_api_address = "0.0.0.0";  // API interface binding address (Default any)
+    int m_api_port = 0;                // API interface binding port
+    string m_api_password;             // API interface write protection password
 #endif
 
 #if ETH_DBUS
@@ -1143,8 +1144,8 @@ int main(int argc, char** argv)
        << BOOST_VERSION % 100;
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
-    boost::split(sv, s, boost::is_any_of(" "));
-    ss << ", OpenSSL " << sv[3] << ", CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
+    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
+    ss << ", OpenSSL " << sv[1] << ", CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
     cnote << ss.str();
 
     if (argc < 2)
