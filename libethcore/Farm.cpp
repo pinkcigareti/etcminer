@@ -36,8 +36,8 @@ namespace eth
 {
 Farm* Farm::m_this = nullptr;
 
-Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings)
-  : m_Settings(std::move(_settings)),
+Farm::Farm(map<string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings)
+  : m_Settings(move(_settings)),
     m_io_strand(g_io_service),
     m_collectTimer(g_io_service),
     m_DevicesCollection(_DevicesCollection)
@@ -91,11 +91,10 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
             // Build Pci identification mapping as done in miners.
             for (int i = 0; i < sysfsh->sysfs_gpucount; i++)
             {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)sysfsh->sysfs_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
+                ostringstream oss;
+                string uniqueId;
+                oss << setfill('0') << setw(2) << hex << (unsigned int)sysfsh->sysfs_pci_bus_id[i]
+                    << ":" << setw(2) << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
                 uniqueId = oss.str();
                 map_amdsysfs_handle[uniqueId] = i;
             }
@@ -109,11 +108,11 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
             // Build Pci identification as done in miners.
             for (int i = 0; i < adlh->adl_gpucount; i++)
             {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
+                ostringstream oss;
+                string uniqueId;
+                oss << setfill('0') << setw(2) << hex
                     << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":"
-                    << std::setw(2)
+                    << setw(2)
                     << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber)
                     << ".0";
                 uniqueId = oss.str();
@@ -129,11 +128,10 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
             // Build Pci identification as done in miners.
             for (int i = 0; i < nvmlh->nvml_gpucount; i++)
             {
-                std::ostringstream oss;
-                std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)nvmlh->nvml_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
+                ostringstream oss;
+                string uniqueId;
+                oss << setfill('0') << setw(2) << hex << (unsigned int)nvmlh->nvml_pci_bus_id[i]
+                    << ":" << setw(2) << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
                 uniqueId = oss.str();
                 map_nvml_handle[uniqueId] = i;
             }
@@ -165,14 +163,14 @@ Farm::~Farm()
         wrap_nvml_destroy(nvmlh);
 
     // Stop mining (if needed)
-    if (m_isMining.load(std::memory_order_relaxed))
+    if (m_isMining.load(memory_order_relaxed))
         stop();
 }
 
 void Farm::setWork(WorkPackage const& _newWp)
 {
     // Set work to each miner giving it's own starting nonce
-    lock_guard<mutex> l(x_minerWork);
+    unique_lock<mutex> l(farmWorkMutex);
 
     // Retrieve appropriate EpochContext
     if (m_currentWp.epoch != _newWp.epoch)
@@ -210,10 +208,10 @@ void Farm::setWork(WorkPackage const& _newWp)
 bool Farm::start()
 {
     // Prevent recursion
-    if (m_isMining.load(std::memory_order_relaxed))
+    if (m_isMining.load(memory_order_relaxed))
         return true;
 
-    lock_guard<mutex> l(x_minerWork);
+    unique_lock<mutex> l(farmWorkMutex);
 
     // Start all subscribed miners if none yet
     if (!m_miners.size())
@@ -225,8 +223,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
             {
                 minerTelemetry.prefix = "cu";
-                m_miners.push_back(
-                    std::shared_ptr<Miner>(new CUDAMiner(m_miners.size(), it->second)));
+                m_miners.push_back(shared_ptr<Miner>(new CUDAMiner(m_miners.size(), it->second)));
             }
 #endif
 #if ETH_ETHASHCL
@@ -234,8 +231,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
                 minerTelemetry.prefix = "cl";
-                m_miners.push_back(
-                    std::shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
+                m_miners.push_back(shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
             }
 #endif
 #if ETH_ETHASHCPU
@@ -243,8 +239,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cpu)
             {
                 minerTelemetry.prefix = "cp";
-                m_miners.push_back(
-                    std::shared_ptr<Miner>(new CPUMiner(m_miners.size(), it->second)));
+                m_miners.push_back(shared_ptr<Miner>(new CPUMiner(m_miners.size(), it->second)));
             }
 #endif
             if (minerTelemetry.prefix.empty())
@@ -253,16 +248,16 @@ bool Farm::start()
             m_miners.back()->startWorking();
         }
 
-        m_isMining.store(true, std::memory_order_relaxed);
+        m_isMining.store(true, memory_order_relaxed);
     }
     else
     {
         for (auto const& miner : m_miners)
             miner->startWorking();
-        m_isMining.store(true, std::memory_order_relaxed);
+        m_isMining.store(true, memory_order_relaxed);
     }
 
-    return m_isMining.load(std::memory_order_relaxed);
+    return m_isMining.load(memory_order_relaxed);
 }
 
 /**
@@ -275,14 +270,14 @@ void Farm::stop()
     if (isMining())
     {
         {
-            lock_guard<mutex> l(x_minerWork);
+            unique_lock<mutex> l(farmWorkMutex);
             for (auto const& miner : m_miners)
             {
                 miner->triggerStopWorking();
                 miner->kick_miner();
             }
             m_miners.clear();
-            m_isMining.store(false, std::memory_order_relaxed);
+            m_isMining.store(false, memory_order_relaxed);
         }
     }
 }
@@ -293,8 +288,8 @@ void Farm::stop()
 void Farm::pause()
 {
     // Signal each miner to suspend mining
-    lock_guard<mutex> l(x_minerWork);
-    m_paused.store(true, std::memory_order_relaxed);
+    unique_lock<mutex> l(farmWorkMutex);
+    m_paused.store(true, memory_order_relaxed);
     for (auto const& m : m_miners)
         m->pause(MinerPauseEnum::PauseDueToFarmPaused);
 }
@@ -304,7 +299,7 @@ void Farm::pause()
  */
 bool Farm::paused()
 {
-    return m_paused.load(std::memory_order_relaxed);
+    return m_paused.load(memory_order_relaxed);
 }
 
 /**
@@ -314,8 +309,8 @@ void Farm::resume()
 {
     // Signal each miner to resume mining
     // Note ! Miners may stay suspended if other reasons
-    lock_guard<mutex> l(x_minerWork);
-    m_paused.store(false, std::memory_order_relaxed);
+    unique_lock<mutex> l(farmWorkMutex);
+    m_paused.store(false, memory_order_relaxed);
     for (auto const& m : m_miners)
         m->resume(MinerPauseEnum::PauseDueToFarmPaused);
 }
@@ -341,7 +336,7 @@ void Farm::restart_async()
  * @brief Spawn a reboot script (reboot.bat/reboot.sh)
  * @return false if no matching file was found
  */
-bool Farm::reboot(const std::vector<std::string>& args)
+bool Farm::reboot(const vector<string>& args)
 {
 #if defined(_WIN32)
     const char* filename = "reboot.bat";
@@ -360,33 +355,33 @@ void Farm::accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accountin
     if (_accounting == SolutionAccountingEnum::Accepted)
     {
         m_telemetry.farm.solutions.accepted++;
-        m_telemetry.farm.solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.accepted++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
         return;
     }
     if (_accounting == SolutionAccountingEnum::Wasted)
     {
         m_telemetry.farm.solutions.wasted++;
-        m_telemetry.farm.solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.wasted++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
         return;
     }
     if (_accounting == SolutionAccountingEnum::Rejected)
     {
         m_telemetry.farm.solutions.rejected++;
-        m_telemetry.farm.solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.rejected++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
         return;
     }
     if (_accounting == SolutionAccountingEnum::Failed)
     {
         m_telemetry.farm.solutions.failed++;
-        m_telemetry.farm.solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.failed++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = std::chrono::steady_clock::now();
+        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
         return;
     }
 }
@@ -409,7 +404,7 @@ SolutionAccountType Farm::getSolutions(unsigned _minerIdx)
     {
         return m_telemetry.miners.at(_minerIdx).solutions;
     }
-    catch (const std::exception&)
+    catch (const exception&)
     {
         return SolutionAccountType();
     }
@@ -446,8 +441,8 @@ void Farm::submitProofAsync(Solution const& _s)
 #ifdef DEV_BUILD
     if (g_logOptions & LOG_SUBMIT)
         cnote << "Submit time: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     std::chrono::steady_clock::now() - _s.tstamp)
+              << chrono::duration_cast<chrono::microseconds>(
+                     chrono::steady_clock::now() - _s.tstamp)
                      .count()
               << " us.";
 #endif
@@ -590,11 +585,11 @@ void Farm::collectData(const boost::system::error_code& ec)
         m_io_strand.wrap(boost::bind(&Farm::collectData, this, boost::asio::placeholders::error)));
 }
 
-bool Farm::spawn_file_in_bin_dir(const char* filename, const std::vector<std::string>& args)
+bool Farm::spawn_file_in_bin_dir(const char* filename, const vector<string>& args)
 {
-    std::string fn = boost::dll::program_location().parent_path().string() +
-                     "/" +  // boost::filesystem::path::preferred_separator
-                     filename;
+    string fn = boost::dll::program_location().parent_path().string() +
+                "/" +  // boost::filesystem::path::preferred_separator
+                filename;
     try
     {
         if (!boost::filesystem::exists(fn))

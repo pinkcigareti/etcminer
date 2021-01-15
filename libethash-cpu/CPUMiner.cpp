@@ -127,8 +127,7 @@ struct CPUChannel : public LogChannel
 #define cpulog clog(CPUChannel)
 
 
-CPUMiner::CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device)
-  : Miner("cpu-", _index), m_settings(_settings)
+CPUMiner::CPUMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cpu-", _index)
 {
     m_deviceDescriptor = _device;
 }
@@ -146,7 +145,7 @@ CPUMiner::~CPUMiner()
  */
 bool CPUMiner::initDevice()
 {
-    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.cuName
+    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.name
            << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
 #if defined(__linux__)
@@ -234,7 +233,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             auto sol = Solution{r.nonce, mix, w, std::chrono::steady_clock::now(), m_index};
 
             cpulog << EthWhite << "Job: " << w.header.abridged()
-                   << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
+                   << " Solution: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
             Farm::f().submitProof(sol);
         }
         nonce += blocksize;
@@ -262,10 +261,8 @@ void CPUMiner::workLoop()
         const WorkPackage w = work();
         if (!w)
         {
-            boost::system_time const timeout =
-                boost::get_system_time() + boost::posix_time::seconds(3);
-            boost::mutex::scoped_lock l(x_work);
-            m_new_work_signal.timed_wait(l, timeout);
+            unique_lock<mutex> l(miner_work_mutex);
+            m_new_work_signal.wait_for(l, chrono::seconds(3));
             continue;
         }
 

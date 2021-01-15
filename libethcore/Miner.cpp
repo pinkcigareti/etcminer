@@ -32,8 +32,7 @@ DeviceDescriptor Miner::getDescriptor()
 void Miner::setWork(WorkPackage const& _work)
 {
     {
-
-        boost::mutex::scoped_lock l(x_work);
+        lock_guard<mutex> l(miner_work_mutex);
 
         // Void work if this miner is paused
         if (paused())
@@ -51,7 +50,7 @@ void Miner::setWork(WorkPackage const& _work)
 
 void Miner::pause(MinerPauseEnum what) 
 {
-    boost::mutex::scoped_lock l(x_pause);
+    lock_guard<mutex> l(x_pause);
     m_pauseFlags.set(what);
     m_work.header = h256();
     kick_miner();
@@ -59,19 +58,19 @@ void Miner::pause(MinerPauseEnum what)
 
 bool Miner::paused()
 {
-    boost::mutex::scoped_lock l(x_pause);
+    lock_guard<mutex> l(x_pause);
     return m_pauseFlags.any();
 }
 
 bool Miner::pauseTest(MinerPauseEnum what)
 {
-    boost::mutex::scoped_lock l(x_pause);
+    lock_guard<mutex> l(x_pause);
     return m_pauseFlags.test(what);
 }
 
 std::string Miner::pausedString()
 {
-    boost::mutex::scoped_lock l(x_pause);
+    lock_guard<mutex> l(x_pause);
     std::string retVar;
     if (m_pauseFlags.any())
     {
@@ -101,7 +100,7 @@ std::string Miner::pausedString()
 
 void Miner::resume(MinerPauseEnum fromwhat) 
 {
-    boost::mutex::scoped_lock l(x_pause);
+    lock_guard<mutex> l(x_pause);
     m_pauseFlags.reset(fromwhat);
     //if (!m_pauseFlags.any())
     //{
@@ -136,7 +135,7 @@ bool Miner::initEpoch()
 
 WorkPackage Miner::work() const
 {
-    boost::mutex::scoped_lock l(x_work);
+    std::unique_lock<mutex> l(miner_work_mutex);
     return m_work;
 }
 

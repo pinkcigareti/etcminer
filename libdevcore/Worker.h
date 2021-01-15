@@ -22,8 +22,8 @@
 #pragma once
 
 #include <signal.h>
+
 #include <atomic>
-#include <cassert>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -68,7 +68,7 @@ private:
 
     std::string m_name;
 
-    std::mutex x_work;                    ///< Lock for the network existence.
+    mutable std::mutex workerWorkMutex;   ///< Lock for the network existence.
     std::unique_ptr<std::thread> m_work;  ///< The network thread.
     std::atomic<WorkerState> m_state = {WorkerState::Starting};
 };

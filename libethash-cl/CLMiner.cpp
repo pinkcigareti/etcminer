@@ -328,10 +328,8 @@ void CLMiner::workLoop()
             const WorkPackage w = work();
             if (!w)
             {
-                boost::system_time const timeout =
-                    boost::get_system_time() + boost::posix_time::seconds(3);
-                boost::mutex::scoped_lock l(x_work);
-                m_new_work_signal.timed_wait(l, timeout);
+                unique_lock<mutex> l(miner_work_mutex);
+                m_new_work_signal.wait_for(l, chrono::seconds(3));
                 continue;
             }
 
@@ -398,8 +396,8 @@ void CLMiner::workLoop()
 
                         Farm::f().submitProof(Solution{
                             nonce, mix, current, std::chrono::steady_clock::now(), m_index});
-                        cllog << EthWhite << "Job: " << current.header.abridged() << " Sol: 0x"
-                              << toHex(nonce) << EthReset;
+                        cllog << EthWhite << "Job: " << current.header.abridged()
+                              << " Solution: " << toHex(nonce, HexPrefix::Add) << EthReset;
                     }
                 }
             }
@@ -558,8 +556,6 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
             deviceDescriptor.clDeviceVersionMinor =
                 std::stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
-            deviceDescriptor.clMaxMemAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
-            deviceDescriptor.clMaxWorkGroup = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
             deviceDescriptor.clPreferedGroupSize = 64;
             deviceDescriptor.clPreferedGroupMultiple = 4096 * 4;
 
@@ -660,7 +656,6 @@ bool CLMiner::initDevice()
         s << " " << m_deviceDescriptor.clDeviceVersion;
 
     s << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
-    s << " (" << m_deviceDescriptor.totalMemory << " B)";
     cllog << s.str();
 
     return true;

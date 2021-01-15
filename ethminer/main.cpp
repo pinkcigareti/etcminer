@@ -43,6 +43,8 @@
 #include <regex>
 #endif
 
+#include <ethash/version.h>
+
 #if defined(__linux__)
 #include <execinfo.h>
 #elif defined(_WIN32)
@@ -324,8 +326,6 @@ public:
 
 #if ETH_ETHASHCPU
 
-        app.add_option("--cpu-devices,--cp-devices", m_CPSettings.devices, "");
-
         app.add_flag("--cpu", cpu_miner, "");
 #endif
 
@@ -555,15 +555,6 @@ public:
 #endif
                 cout << resetiosflags(ios::left) << setw(13)
                      << getFormattedMemory((double)it->second.totalMemory) << " ";
-#if ETH_ETHASHCL
-                if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-                {
-                    cout << resetiosflags(ios::left) << setw(13)
-                         << getFormattedMemory((double)it->second.clMaxMemAlloc) << " ";
-                    cout << resetiosflags(ios::left) << setw(13)
-                         << getFormattedMemory((double)it->second.clMaxWorkGroup) << " ";
-                }
-#endif
                 cout << resetiosflags(ios::left) << endl;
                 it++;
             }
@@ -1145,15 +1136,15 @@ int main(int argc, char** argv)
     // Always out release version
     auto* bi = ethminer_get_buildinfo();
     cnote << EthWhite "ethminer (Misc. Bits edition) " << bi->project_version << " (GPLv3)";
-    cnote << "(https://github.com/miscellaneousbits/ethminer)";
+    cnote << "https://github.com/miscellaneousbits/ethminer";
     cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
     stringstream ss;
-    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
+    ss << "3rd Party: Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
        << BOOST_VERSION % 100;
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
-    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
-    ss << ", OpenSSL " << sv[1];
+    boost::split(sv, s, boost::is_any_of(" "));
+    ss << ", OpenSSL " << sv[3] << ", CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
     cnote << ss.str();
 
     if (argc < 2)

@@ -30,7 +30,7 @@ namespace eth
 class CPUMiner : public Miner
 {
 public:
-    CPUMiner(unsigned _index, CPSettings _settings, DeviceDescriptor& _device);
+    CPUMiner(unsigned _index, DeviceDescriptor& _device);
     ~CPUMiner() override;
 
     static unsigned getNumDevices();
@@ -46,9 +46,7 @@ protected:
 private:
     atomic<bool> m_new_work = {false};
     void workLoop() override;
-    CPSettings m_settings;
 };
-
 
 }  // namespace eth
 }  // namespace dev

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <cstring>
 #include <string>
 #include <type_traits>
@@ -73,7 +72,6 @@ public:
     template <class _T2>
     explicit operator vector_ref<_T2>() const
     {
-        assert(m_count * sizeof(_T) / sizeof(_T2) * sizeof(_T2) / sizeof(_T) == m_count);
         return vector_ref<_T2>(reinterpret_cast<_T2*>(m_data), m_count * sizeof(_T) / sizeof(_T2));
     }
     operator vector_ref<_T const>() const { return vector_ref<_T const>(m_data, m_count); }
@@ -172,14 +170,10 @@ public:
 
     _T& operator[](size_t _i)
     {
-        assert(m_data);
-        assert(_i < m_count);
         return m_data[_i];
     }
     _T const& operator[](size_t _i) const
     {
-        assert(m_data);
-        assert(_i < m_count);
         return m_data[_i];
     }
 

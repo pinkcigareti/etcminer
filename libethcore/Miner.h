@@ -18,7 +18,9 @@
 #pragma once
 
 #include <bitset>
+#include <condition_variable>
 #include <list>
+#include <mutex>
 #include <numeric>
 #include <string>
 
@@ -28,10 +30,6 @@
 #include <libdevcore/Worker.h>
 
 #include <boost/format.hpp>
-#include <boost/thread.hpp>
-
-#define DAG_LOAD_MODE_PARALLEL 0
-#define DAG_LOAD_MODE_SEQUENTIAL 1
 
 using namespace std;
 
@@ -146,11 +144,18 @@ struct DeviceDescriptor
     size_t totalMemory;  // Total memory available by device
     string name;         // Device Name
 
+    int cpCpuNumer;  // For CPU
+
+    bool cuDetected;  // For CUDA detected devices
+    int cuGridSize;
+    string cuName;
+    unsigned int cuDeviceOrdinal;
+    unsigned int cuDeviceIndex;
+    string cuCompute;
+    unsigned int cuComputeMajor;
+    unsigned int cuComputeMinor;
+
     bool clDetected;  // For OpenCL detected devices
-    string clName;
-    unsigned int clPlatformId;
-    string clPlatformName;
-    ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
     string clPlatformVersion;
     unsigned int clPlatformVersionMajor;
     unsigned int clPlatformVersionMinor;
@@ -160,24 +165,15 @@ struct DeviceDescriptor
     unsigned int clDeviceVersionMajor;
     unsigned int clDeviceVersionMinor;
     string clBoardName;
-    size_t clMaxMemAlloc;
-    size_t clMaxWorkGroup;
     unsigned int clPreferedGroupSize;
     unsigned int clPreferedGroupMultiple;
     string clNvCompute;
     unsigned int clNvComputeMajor;
     unsigned int clNvComputeMinor;
-
-    bool cuDetected;  // For CUDA detected devices
-    string cuName;
-    unsigned int cuDeviceOrdinal;
-    unsigned int cuDeviceIndex;
-    string cuCompute;
-    unsigned int cuComputeMajor;
-    unsigned int cuComputeMinor;
-    int cuGridSize;
-
-    int cpCpuNumer;   // For CPU
+    string clName;
+    unsigned int clPlatformId;
+    string clPlatformName;
+    ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
 };
 
 struct HwMonitorInfo
@@ -239,13 +235,6 @@ struct TelemetryType
              << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str()
              << EthReset << " ";
 
-        /*
-        Github : @AndreaLanfranchi
-        I whish I could simply make use of getFormattedHashes but in this case
-        this would be misleading as total hashrate could be of a different order
-        of magnitude than the hashrate expressed by single devices.
-        Thus I need to set the vary same scaling index on the farm and on devices
-        */
         static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
         int magnitude = 0;
@@ -420,9 +409,9 @@ protected:
 #endif
 
     HwMonitorInfo m_hwmoninfo;
-    mutable boost::mutex x_work;
-    mutable boost::mutex x_pause;
-    boost::condition_variable m_new_work_signal;
+    mutable std::mutex miner_work_mutex;
+    mutable std::mutex x_pause;
+    std::condition_variable m_new_work_signal;
 
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;

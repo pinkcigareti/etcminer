@@ -3,8 +3,9 @@
 #include <iostream>
 #include <string>
 
-#include <boost/asio.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/lockfree/queue.hpp>
 

@@ -31,7 +31,7 @@ using namespace dev;
 void Worker::startWorking()
 {
     //	cnote << "startWorking for thread" << m_name;
-    lock_guard<mutex> l(x_work);
+    unique_lock<mutex> l(workerWorkMutex);
     if (m_work)
     {
         WorkerState ex = WorkerState::Stopped;
@@ -85,7 +85,7 @@ void Worker::startWorking()
 
 void Worker::triggerStopWorking()
 {
-    lock_guard<mutex> l(x_work);
+    unique_lock<mutex> l(workerWorkMutex);
     if (m_work)
     {
         WorkerState ex = WorkerState::Started;
@@ -95,7 +95,7 @@ void Worker::triggerStopWorking()
 
 void Worker::stopWorking()
 {
-    lock_guard<mutex> l(x_work);
+    unique_lock<mutex> l(workerWorkMutex);
     if (m_work)
     {
         WorkerState ex = WorkerState::Started;
@@ -108,7 +108,7 @@ void Worker::stopWorking()
 
 Worker::~Worker()
 {
-    lock_guard<mutex> l(x_work);
+    unique_lock<mutex> l(workerWorkMutex);
     if (m_work)
     {
         m_state.exchange(WorkerState::Killing);

@@ -25,7 +25,6 @@
 #include <string>
 
 #include <boost/exception/all.hpp>
-#include <boost/throw_exception.hpp>
 
 #include "CommonData.h"
 #include "FixedHash.h"
