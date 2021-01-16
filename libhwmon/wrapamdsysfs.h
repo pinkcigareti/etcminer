@@ -1,10 +1,3 @@
-/*
- * Wrapper for AMD SysFS on linux, using adapted code from amdcovc by matszpk
- *
- * By Philipp Andreas - github@smurfy.de
-   Reworked and simplified by Andrea Lanfranchi (github @AndreaLanfranchi)
- */
-
 #pragma once
 
 typedef struct

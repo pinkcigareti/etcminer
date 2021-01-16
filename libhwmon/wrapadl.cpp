@@ -1,8 +1,3 @@
-/*
- * Wrapper for ADL, inspired by wrapnvml from John E. Stone
- *
- * By Philipp Andreas - github@smurfy.de
- */
 
 #include <stdio.h>
 #include <stdlib.h>

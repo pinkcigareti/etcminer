@@ -1,6 +1,3 @@
-/*
- * Wrappers to emulate dlopen() on other systems like Windows
- */
 
 #include "wraphelper.h"
 

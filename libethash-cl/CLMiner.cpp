@@ -1,7 +1,3 @@
-/// OpenCL miner implementation.
-///
-/// @file
-/// @copyright GNU General Public License
 
 #include <boost/dll.hpp>
 

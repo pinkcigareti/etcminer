@@ -1,9 +1,3 @@
-/*
- * Wrapper for ADL, inspired by wrapnvml from John E. Stone
- *
- * By Philipp Andreas - github@smurfy.de
- * ADL power by Davesmacer
- */
 #pragma once
 
 #if defined(__cplusplus)

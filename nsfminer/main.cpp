@@ -1,23 +1,7 @@
-/*
-    This file is part of ethminer.
-
-    ethminer is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    ethminer is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
 #include <CLI/CLI.hpp>
 
-#include <ethminer/buildinfo.h>
+#include <nsfminer/buildinfo.h>
 #include <condition_variable>
 
 #include <openssl/crypto.h>
@@ -57,7 +41,7 @@ using namespace dev::eth;
 
 // Global vars
 bool g_running = false;
-bool g_exitOnError = false;  // Whether or not ethminer should exit on mining threads errors
+bool g_exitOnError = false;  // Whether or not miner should exit on mining threads errors
 
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service;  // The IO service itself
@@ -71,7 +55,7 @@ struct MiningChannel : public LogChannel
 #define minelog clog(MiningChannel)
 
 #if ETH_DBUS
-#include <ethminer/DBusInt.h>
+#include <nsfminer/DBusInt.h>
 #endif
 
 class MinerCLI
@@ -634,11 +618,11 @@ public:
     void help()
     {
         cout << "Ethminer - GPU ethash miner" << endl
-             << "minimal usage : ethminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
+             << "minimal usage : nsgminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
              << endl
-             << "    By default ethminer will try to use all devices types" << endl
+             << "    By default the miner will try to use all devices types" << endl
              << "    it can detect. Optionally you can limit this behavior" << endl
              << "    setting either of the following options" << endl
 #if ETH_ETHASHCL
@@ -659,7 +643,7 @@ public:
              << endl
              << "                        For an explication and some samples about" << endl
              << "                        how to fill in this value please use" << endl
-             << "                        ethminer --help-ext con" << endl
+             << "                        nsfminer --help-ext con" << endl
              << endl
 
              << "Common Options :" << endl
@@ -818,7 +802,7 @@ public:
                  << "    --retry-delay       INT[1 .. 999] Default = 0" << endl
                  << "                        Delay in seconds before reconnection retry" << endl
                  << "    --failover-timeout  INT[0 .. ] Default not set" << endl
-                 << "                        Sets the number of minutes ethminer can stay" << endl
+                 << "                        Sets the number of minutes miner can stay" << endl
                  << "                        connected to a fail-over pool before trying to" << endl
                  << "                        reconnect to the primary (the first) connection."
                  << endl
@@ -837,7 +821,7 @@ public:
                  << "                        0 No monitoring" << endl
                  << "                        1 Monitor temperature and fan percentage" << endl
                  << "                        2 As 1 plus monitor power drain" << endl
-                 << "    --exit              FLAG Stop ethminer whenever an error is encountered"
+                 << "    --exit              FLAG Stop miner whenever an error is encountered"
                  << endl
                  << "    --nocolor           FLAG Monochrome display log lines" << endl
                  << "    --syslog            FLAG Use syslog appropriate output (drop timestamp "
@@ -984,16 +968,16 @@ public:
                  << "    You can add as many -P arguments as you want. Every -P specification"
                  << endl
                  << "    after the first one behaves as fail-over connection. When also the" << endl
-                 << "    the fail-over disconnects ethminer passes to the next connection" << endl
+                 << "    the fail-over disconnects miner passes to the next connection" << endl
                  << "    available and so on till the list is exhausted. At that moment" << endl
-                 << "    ethminer restarts the connection cycle from the first one." << endl
+                 << "    miner restarts the connection cycle from the first one." << endl
                  << "    An exception to this behavior is ruled by the --failover-timeout" << endl
-                 << "    command line argument. See 'ethminer -H misc' for details." << endl
+                 << "    command line argument. See 'nsfminer -H misc' for details." << endl
                  << endl
                  << "    The special notation '-P exit' stops the failover loop." << endl
-                 << "    When ethminer reaches this kind of connection it simply quits." << endl
+                 << "    When miner reaches this kind of connection it simply quits." << endl
                  << endl
-                 << "    When using stratum mode ethminer tries to auto-detect the correct" << endl
+                 << "    When using stratum mode miner tries to auto-detect the correct" << endl
                  << "    flavour provided by the pool. Should be fine in 99% of the cases." << endl
                  << "    Nevertheless you might want to fine tune the stratum flavour by" << endl
                  << "    any of of the following valid schemes :" << endl
@@ -1135,9 +1119,9 @@ int main(int argc, char** argv)
     }
 #endif
     // Always out release version
-    auto* bi = ethminer_get_buildinfo();
-    cnote << EthWhite "ethminer (Misc. Bits edition) " << bi->project_version << " (GPLv3)";
-    cnote << EthWhite "https://github.com/miscellaneousbits/ethminer";
+    auto* bi = nsfminer_get_buildinfo();
+    cnote << EthWhite "nsfminer (No stinkin' fees edition) " << bi->project_version << " (GPLv3)";
+    cnote << EthWhite "https://github.com/miscellaneousbits/nsfminer";
     cnote << EthWhite "Build: " << bi->system_name << "/" << bi->build_type << "/"
           << bi->compiler_id;
     stringstream ss;
@@ -1152,7 +1136,7 @@ int main(int argc, char** argv)
     if (argc < 2)
     {
         cwarn << "No arguments specified.";
-        cwarn << "Try 'ethminer --help' to get a list of arguments.";
+        cwarn << "Try 'nsfminer --help' to get a list of arguments.";
         return 1;
     }
 
@@ -1185,7 +1169,7 @@ int main(int argc, char** argv)
         catch (invalid_argument& ex1)
         {
             cwarn << "Error: " << ex1.what();
-            cwarn << "Try ethminer --help to get an explained list of arguments.";
+            cwarn << "Try nsfminer --help to get an explained list of arguments.";
             return 1;
         }
         catch (runtime_error& ex2)

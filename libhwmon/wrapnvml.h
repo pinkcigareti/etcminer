@@ -1,19 +1,3 @@
-/*
- * A trivial little dlopen()-based wrapper library for the
- * NVIDIA NVML library, to allow runtime discovery of NVML on an
- * arbitrary system.  This is all very hackish and simple-minded, but
- * it serves my immediate needs in the short term until NVIDIA provides
- * a static NVML wrapper library themselves, hopefully in
- * CUDA 6.5 or maybe sometime shortly after.
- *
- * This trivial code is made available under the "new" 3-clause BSD license,
- * and/or any of the GPL licenses you prefer.
- * Feel free to use the code and modify as you see fit.
- *
- * John E. Stone - john.stone@gmail.com
- *
- */
-
 #pragma once
 
 #include "wraphelper.h"

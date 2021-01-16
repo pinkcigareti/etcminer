@@ -19,8 +19,8 @@ HunterGate(
     LOCAL
 )
 
-project(ethminer)
-set(PROJECT_VERSION 0.20.3) # Update version
+project(nsfminer)
+set(PROJECT_VERSION 1.0.0) # Update version
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 
@@ -110,7 +110,7 @@ if (APICORE)
     add_subdirectory(libapicore)
 endif()
 
-add_subdirectory(ethminer)
+add_subdirectory(nsfminer)
 
 
 if(WIN32)

@@ -1,8 +1,4 @@
-/*
- * Wrapper for AMD SysFS on linux, using adapted code from amdcovc by matszpk
- *
- * By Philipp Andreas - github@smurfy.de
- */
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

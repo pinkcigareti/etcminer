@@ -1,7 +1,3 @@
-/*
- * Wrappers to emulate dlopen() on other systems like Windows
- */
-
 #pragma once
 
 #include <libdevcore/Log.h>
