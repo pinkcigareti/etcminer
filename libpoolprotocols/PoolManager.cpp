@@ -9,7 +9,7 @@ using namespace eth;
 PoolManager* PoolManager::m_this = nullptr;
 
 PoolManager::PoolManager(PoolSettings _settings)
-  : m_Settings(std::move(_settings)),
+  : m_Settings(move(_settings)),
     m_io_strand(g_io_service),
     m_failovertimer(g_io_service),
     m_submithrtimer(g_io_service),
@@ -98,7 +98,7 @@ void PoolManager::setClientHandlers()
         }
 
         // Signal async operations have completed
-        m_async_pending.store(false, std::memory_order_relaxed);
+        m_async_pending.store(false, memory_order_relaxed);
 
     });
 
@@ -113,19 +113,19 @@ void PoolManager::setClientHandlers()
         m_failovertimer.cancel();
         m_submithrtimer.cancel();
 
-        if (m_stopping.load(std::memory_order_relaxed))
+        if (m_stopping.load(memory_order_relaxed))
         {
             if (Farm::f().isMining())
             {
                 cnote << "Shutting down miners...";
                 Farm::f().stop();
             }
-            m_running.store(false, std::memory_order_relaxed);
+            m_running.store(false, memory_order_relaxed);
         }
         else
         {
             // Signal we will reconnect async
-            m_async_pending.store(true, std::memory_order_relaxed);
+            m_async_pending.store(true, memory_order_relaxed);
 
             // Suspend mining and submit new connection request
             cnote << "No connection. Suspend mining ...";
@@ -158,7 +158,7 @@ void PoolManager::setClientHandlers()
 
         if (newEpoch)
         {
-            m_epochChanges.fetch_add(1, std::memory_order_relaxed);
+            m_epochChanges.fetch_add(1, memory_order_relaxed);
 
             // If epoch is valued in workpackage take it
             if (wp.epoch == -1)
@@ -188,19 +188,17 @@ void PoolManager::setClientHandlers()
     });
 
     p_client->onSolutionAccepted(
-        [&](std::chrono::milliseconds const& _responseDelay, unsigned const& _minerIdx, bool _asStale) {
-            std::stringstream ss;
-            ss << std::setw(4) << std::setfill(' ') << _responseDelay.count() << " ms. "
-               << m_selectedHost;
+        [&](chrono::milliseconds const& _responseDelay, unsigned const& _minerIdx, bool _asStale) {
+            stringstream ss;
+            ss << setw(4) << setfill(' ') << _responseDelay.count() << " ms. " << m_selectedHost;
             cnote << EthLime "**Accepted" << (_asStale ? " stale": "") << EthReset << ss.str();
             Farm::f().accountSolution(_minerIdx, SolutionAccountingEnum::Accepted);
         });
 
     p_client->onSolutionRejected(
-        [&](std::chrono::milliseconds const& _responseDelay, unsigned const& _minerIdx) {
-            std::stringstream ss;
-            ss << std::setw(4) << std::setfill(' ') << _responseDelay.count() << " ms. "
-               << m_selectedHost;
+        [&](chrono::milliseconds const& _responseDelay, unsigned const& _minerIdx) {
+            stringstream ss;
+            ss << setw(4) << setfill(' ') << _responseDelay.count() << " ms. " << m_selectedHost;
             cwarn << EthRed "**Rejected" EthReset << ss.str();
             Farm::f().accountSolution(_minerIdx, SolutionAccountingEnum::Rejected);
         });
@@ -208,16 +206,16 @@ void PoolManager::setClientHandlers()
 
 void PoolManager::stop()
 {
-    if (m_running.load(std::memory_order_relaxed))
+    if (m_running.load(memory_order_relaxed))
     {
-        m_async_pending.store(true, std::memory_order_relaxed);
-        m_stopping.store(true, std::memory_order_relaxed);
+        m_async_pending.store(true, memory_order_relaxed);
+        m_stopping.store(true, memory_order_relaxed);
 
         if (p_client && p_client->isConnected())
         {
             p_client->disconnect();
             // Wait for async operations to complete
-            while (m_running.load(std::memory_order_relaxed))
+            while (m_running.load(memory_order_relaxed))
                 this_thread::sleep_for(chrono::milliseconds(500));
 
             p_client = nullptr;
@@ -238,12 +236,12 @@ void PoolManager::stop()
     }
 }
 
-void PoolManager::addConnection(std::string _connstring)
+void PoolManager::addConnection(string _connstring)
 {
-    m_Settings.connections.push_back(std::shared_ptr<URI>(new URI(_connstring)));
+    m_Settings.connections.push_back(shared_ptr<URI>(new URI(_connstring)));
 }
 
-void PoolManager::addConnection(std::shared_ptr<URI> _uri)
+void PoolManager::addConnection(shared_ptr<URI> _uri)
 {
     m_Settings.connections.push_back(_uri);
 }
@@ -257,16 +255,16 @@ void PoolManager::addConnection(std::shared_ptr<URI> _uri)
 void PoolManager::removeConnection(unsigned int idx)
 {
     // Are there any outstanding operations ?
-    if (m_async_pending.load(std::memory_order_relaxed))
-        throw std::runtime_error("Outstanding operations. Retry ...");
+    if (m_async_pending.load(memory_order_relaxed))
+        throw runtime_error("Outstanding operations. Retry ...");
 
     // Check bounds
     if (idx >= m_Settings.connections.size())
-        throw std::runtime_error("Index out-of bounds.");
+        throw runtime_error("Index out-of bounds.");
 
     // Can't delete active connection
     if (idx == m_activeConnectionIdx)
-        throw std::runtime_error("Can't remove active connection");
+        throw runtime_error("Can't remove active connection");
 
     // Remove the selected connection
     m_Settings.connections.erase(m_Settings.connections.begin() + idx);
@@ -281,11 +279,11 @@ void PoolManager::setActiveConnectionCommon(unsigned int idx)
     // Are there any outstanding operations ?
     bool ex = false;
     if (!m_async_pending.compare_exchange_strong(ex, true))
-        throw std::runtime_error("Outstanding operations. Retry ...");
+        throw runtime_error("Outstanding operations. Retry ...");
 
     if (idx != m_activeConnectionIdx)
     {
-        m_connectionSwitches.fetch_add(1, std::memory_order_relaxed);
+        m_connectionSwitches.fetch_add(1, memory_order_relaxed);
         m_activeConnectionIdx = idx;
         m_connectionAttempt = 0;
         p_client->disconnect();
@@ -293,7 +291,7 @@ void PoolManager::setActiveConnectionCommon(unsigned int idx)
     else
     {
         // Release the flag immediately
-        m_async_pending.store(false, std::memory_order_relaxed);
+        m_async_pending.store(false, memory_order_relaxed);
     }
 
 }
@@ -306,12 +304,12 @@ void PoolManager::setActiveConnection(unsigned int idx)
 {
     // Sets the active connection to the requested index
     if (idx >= m_Settings.connections.size())
-        throw std::runtime_error("Index out-of bounds.");
+        throw runtime_error("Index out-of bounds.");
 
     setActiveConnectionCommon(idx);
 }
 
-void PoolManager::setActiveConnection(std::string& _connstring)
+void PoolManager::setActiveConnection(string& _connstring)
 {
     for (size_t idx = 0; idx < m_Settings.connections.size(); idx++)
         if (boost::iequals(m_Settings.connections[idx]->str(), _connstring))
@@ -319,16 +317,16 @@ void PoolManager::setActiveConnection(std::string& _connstring)
             setActiveConnectionCommon(idx);
             return;
         }
-    throw std::runtime_error("Not found.");
+    throw runtime_error("Not found.");
 }
 
-std::shared_ptr<URI> PoolManager::getActiveConnection()
+shared_ptr<URI> PoolManager::getActiveConnection()
 {
     try
     {
         return m_Settings.connections.at(m_activeConnectionIdx);
     }
-    catch (const std::exception&)
+    catch (const exception&)
     {
         return nullptr;
     }
@@ -351,9 +349,9 @@ Json::Value PoolManager::getConnectionsJson()
 
 void PoolManager::start()
 {
-    m_running.store(true, std::memory_order_relaxed);
-    m_async_pending.store(true, std::memory_order_relaxed);
-    m_connectionSwitches.fetch_add(1, std::memory_order_relaxed);
+    m_running.store(true, memory_order_relaxed);
+    m_async_pending.store(true, memory_order_relaxed);
+    m_connectionSwitches.fetch_add(1, memory_order_relaxed);
     g_io_service.post(m_io_strand.wrap(boost::bind(&PoolManager::rotateConnect, this)));
 }
 
@@ -373,7 +371,7 @@ void PoolManager::rotateConnect()
         m_connectionAttempt = 0;
         if (m_activeConnectionIdx >= m_Settings.connections.size())
             m_activeConnectionIdx = 0;
-        m_connectionSwitches.fetch_add(1, std::memory_order_relaxed);
+        m_connectionSwitches.fetch_add(1, memory_order_relaxed);
     }
     else if (m_connectionAttempt >= m_Settings.connectionMaxRetries)
     {
@@ -390,7 +388,7 @@ void PoolManager::rotateConnect()
             m_activeConnectionIdx++;
             if (m_activeConnectionIdx >= m_Settings.connections.size())
                 m_activeConnectionIdx = 0;
-            m_connectionSwitches.fetch_add(1, std::memory_order_relaxed);
+            m_connectionSwitches.fetch_add(1, memory_order_relaxed);
         }
     }
 
@@ -400,13 +398,13 @@ void PoolManager::rotateConnect()
             p_client = nullptr;
 
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::GETWORK)
-            p_client =
-                std::unique_ptr<PoolClient>(new EthGetworkClient(m_Settings.noWorkTimeout, m_Settings.getWorkPollInterval));
+            p_client = unique_ptr<PoolClient>(
+                new EthGetworkClient(m_Settings.noWorkTimeout, m_Settings.getWorkPollInterval));
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::STRATUM)
-            p_client = std::unique_ptr<PoolClient>(
+            p_client = unique_ptr<PoolClient>(
                 new EthStratumClient(m_Settings.noWorkTimeout, m_Settings.noResponseTimeout));
         if (m_Settings.connections.at(m_activeConnectionIdx)->Family() == ProtocolFamily::SIMULATION)
-            p_client = std::unique_ptr<PoolClient>(new SimulateClient(m_Settings.benchmarkBlock));
+            p_client = unique_ptr<PoolClient>(new SimulateClient(m_Settings.benchmarkBlock));
 
         if (p_client)
             setClientHandlers();
@@ -448,7 +446,7 @@ void PoolManager::rotateConnect()
             Farm::f().stop();
         }
 
-        m_running.store(false, std::memory_order_relaxed);
+        m_running.store(false, memory_order_relaxed);
         raise(SIGTERM);
     }
 }
@@ -468,13 +466,13 @@ void PoolManager::failovertimer_elapsed(const boost::system::error_code& ec)
 {
     if (!ec)
     {
-        if (m_running.load(std::memory_order_relaxed))
+        if (m_running.load(memory_order_relaxed))
         {
             if (m_activeConnectionIdx != 0)
             {
                 m_activeConnectionIdx = 0;
                 m_connectionAttempt = 0;
-                m_connectionSwitches.fetch_add(1, std::memory_order_relaxed);
+                m_connectionSwitches.fetch_add(1, memory_order_relaxed);
                 cnote << "Failover timeout reached, retrying connection to primary pool";
                 p_client->disconnect();
             }
@@ -486,7 +484,7 @@ void PoolManager::submithrtimer_elapsed(const boost::system::error_code& ec)
 {
     if (!ec)
     {
-        if (m_running.load(std::memory_order_relaxed))
+        if (m_running.load(memory_order_relaxed))
         {
 
             if (p_client && p_client->isConnected())
@@ -505,7 +503,7 @@ void PoolManager::reconnecttimer_elapsed(const boost::system::error_code& ec)
     if (ec)
         return;
 
-    if (m_running.load(std::memory_order_relaxed))
+    if (m_running.load(memory_order_relaxed))
     {
         if (p_client && !p_client->isConnected())
         {
@@ -529,10 +527,10 @@ double PoolManager::getCurrentDifficulty()
 
 unsigned PoolManager::getConnectionSwitches()
 {
-    return m_connectionSwitches.load(std::memory_order_relaxed);
+    return m_connectionSwitches.load(memory_order_relaxed);
 }
 
 unsigned PoolManager::getEpochChanges()
 {
-    return m_epochChanges.load(std::memory_order_relaxed);
+    return m_epochChanges.load(memory_order_relaxed);
 }

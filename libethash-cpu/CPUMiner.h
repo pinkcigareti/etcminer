@@ -40,7 +40,7 @@ public:
 
 protected:
     bool initDevice() override;
-    bool initEpoch_internal() override;
+    void initEpoch() override;
     void kick_miner() override;
 
 private:

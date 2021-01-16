@@ -27,12 +27,14 @@
 #include "wrapamdsysfs.h"
 #include "wraphelper.h"
 
+using namespace std;
+
 static bool getFileContentValue(const char* filename, unsigned int& value)
 {
     value = 0;
-    std::ifstream ifs(filename, std::ios::binary);
-    std::string line;
-    std::getline(ifs, line);
+    ifstream ifs(filename, ios::binary);
+    string line;
+    getline(ifs, line);
     char* p = (char*)line.c_str();
     char* p2;
     errno = 0;
@@ -48,7 +50,7 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
 
 #if defined(__linux)
     namespace fs = boost::filesystem;
-    std::vector<pciInfo> devices;  // Used to collect devices
+    vector<pciInfo> devices;  // Used to collect devices
 
     char dbuf[120];
     // Check directory exist
@@ -57,19 +59,19 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
         return nullptr;
 
     // Regex patterns to identify directory elements
-    std::regex cardPattern("^card[0-9]{1,}$");
-    std::regex hwmonPattern("^hwmon[0-9]{1,}$");
+    regex cardPattern("^card[0-9]{1,}$");
+    regex hwmonPattern("^hwmon[0-9]{1,}$");
 
     // Loop directory contents
     for (fs::directory_iterator dirEnt(drm_dir); dirEnt != fs::directory_iterator(); ++dirEnt)
     {
         // Skip non relevant entries
         if (!fs::is_directory(dirEnt->path()) ||
-            !std::regex_match(dirEnt->path().filename().string(), cardPattern))
+            !regex_match(dirEnt->path().filename().string(), cardPattern))
             continue;
 
-        std::string devName = dirEnt->path().filename().string();
-        unsigned int devIndex = std::stoi(devName.substr(4), nullptr, 10);
+        string devName = dirEnt->path().filename().string();
+        unsigned int devIndex = stoi(devName.substr(4), nullptr, 10);
         unsigned int vendorId = 0;
         unsigned int hwmonIndex = UINT_MAX;
 
@@ -91,11 +93,11 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
         {
             // Skip non relevant entries
             if (!fs::is_directory(hwmonEnt->path()) ||
-                !std::regex_match(hwmonEnt->path().filename().string(), hwmonPattern))
+                !regex_match(hwmonEnt->path().filename().string(), hwmonPattern))
                 continue;
 
-            unsigned int v = std::stoi(hwmonEnt->path().filename().string().substr(5), nullptr, 10);
-            hwmonIndex = std::min(hwmonIndex, v);
+            unsigned int v = stoi(hwmonEnt->path().filename().string().substr(5), nullptr, 10);
+            hwmonIndex = min(hwmonIndex, v);
         }
         if (hwmonIndex == UINT_MAX)
             continue;
@@ -106,25 +108,25 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
             continue;
 
         snprintf(dbuf, 120, "/sys/class/drm/card%d/device/uevent", devIndex);
-        std::ifstream ifs(dbuf, std::ios::binary);
-        std::string line;
+        ifstream ifs(dbuf, ios::binary);
+        string line;
         int PciDomain = -1, PciBus = -1, PciDevice = -1, PciFunction = -1;
-        while (std::getline(ifs, line))
+        while (getline(ifs, line))
         {
             if (line.length() > 24 && line.substr(0, 13) == "PCI_SLOT_NAME")
             {
-                std::string pciId = line.substr(14);
-                std::vector<std::string> pciIdParts;
+                string pciId = line.substr(14);
+                vector<string> pciIdParts;
                 boost::split(pciIdParts, pciId, [](char c) { return (c == ':' || c == '.'); });
 
                 try
                 {
-                    PciDomain = std::stoi(pciIdParts.at(0), nullptr, 16);
-                    PciBus = std::stoi(pciIdParts.at(1), nullptr, 16);
-                    PciDevice = std::stoi(pciIdParts.at(2), nullptr, 16);
-                    PciFunction = std::stoi(pciIdParts.at(3), nullptr, 16);
+                    PciDomain = stoi(pciIdParts.at(0), nullptr, 16);
+                    PciBus = stoi(pciIdParts.at(1), nullptr, 16);
+                    PciDevice = stoi(pciIdParts.at(2), nullptr, 16);
+                    PciFunction = stoi(pciIdParts.at(3), nullptr, 16);
                 }
-                catch (const std::exception&)
+                catch (const exception&)
                 {
                     PciDomain = PciBus = PciDevice = PciFunction = -1;
                 }
@@ -261,14 +263,14 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
         char dbuf[120];
         snprintf(dbuf, 120, "/sys/kernel/debug/dri/%d/amdgpu_pm_info", gpuindex);
 
-        std::ifstream ifs(dbuf, std::ios::binary);
-        std::string line;
+        ifstream ifs(dbuf, ios::binary);
+        string line;
 
-        while (std::getline(ifs, line))
+        while (getline(ifs, line))
         {
-            std::smatch sm;
-            std::regex regex(R"(([\d|\.]+) W \(average GPU\))");
-            if (std::regex_search(line, sm, regex))
+            smatch sm;
+            regex regex(R"(([\d|\.]+) W \(average GPU\))");
+            if (regex_search(line, sm, regex))
             {
                 if (sm.size() == 2)
                 {
@@ -279,7 +281,7 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
             }
         }
     }
-    catch (const std::exception& ex)
+    catch (const exception& ex)
     {
         cwarn << "Error in amdsysfs_get_power_usage: " << ex.what();
     }

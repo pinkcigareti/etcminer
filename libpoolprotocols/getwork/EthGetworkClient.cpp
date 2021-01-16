@@ -27,7 +27,7 @@ EthGetworkClient::EthGetworkClient(int worktimeout, unsigned farmRecheckPeriod)
     jGetWork["jsonrpc"] = "2.0";
     jGetWork["method"] = "eth_getWork";
     jGetWork["params"] = Json::Value(Json::arrayValue);
-    m_jsonGetWork = std::string(Json::writeString(m_jSwBuilder, jGetWork));
+    m_jsonGetWork = string(Json::writeString(m_jSwBuilder, jGetWork));
 }
 
 EthGetworkClient::~EthGetworkClient()
@@ -47,7 +47,7 @@ void EthGetworkClient::connect()
     m_getwork_timer.cancel();
     
     // Initialize a new queue of end points
-    m_endpoints = std::queue<boost::asio::ip::basic_endpoint<boost::asio::ip::tcp>>();
+    m_endpoints = queue<boost::asio::ip::basic_endpoint<boost::asio::ip::tcp>>();
     m_endpoint = boost::asio::ip::basic_endpoint<boost::asio::ip::tcp>();
 
     if (m_conn->HostNameType() == dev::UriHostNameType::Dns ||
@@ -83,11 +83,11 @@ void EthGetworkClient::disconnect()
     }
     m_session = nullptr;
 
-    m_connecting.store(false, std::memory_order_relaxed);
-    m_txPending.store(false, std::memory_order_relaxed);
+    m_connecting.store(false, memory_order_relaxed);
+    m_txPending.store(false, memory_order_relaxed);
     m_getwork_timer.cancel();
 
-    m_txQueue.consume_all([](std::string* l) { delete l; });
+    m_txQueue.consume_all([](string* l) { delete l; });
     m_request.consume(m_request.capacity());
     m_response.consume(m_response.capacity());
 
@@ -119,27 +119,27 @@ void EthGetworkClient::handle_connect(const boost::system::error_code& ec)
     {
 
         // If in "connecting" phase raise the proper event
-        if (m_connecting.load(std::memory_order_relaxed))
+        if (m_connecting.load(memory_order_relaxed))
         {
             // Initialize new session
             m_connected.store(true, memory_order_relaxed);
             m_session = unique_ptr<Session>(new Session);
             m_session->subscribed.store(true, memory_order_relaxed);
             m_session->authorized.store(true, memory_order_relaxed);
-            
-            m_connecting.store(false, std::memory_order_relaxed);
+
+            m_connecting.store(false, memory_order_relaxed);
 
             if (m_onConnected)
                 m_onConnected();
-            m_current_tstamp = std::chrono::steady_clock::now();
+            m_current_tstamp = chrono::steady_clock::now();
         }
 
         // Retrieve 1st line waiting in the queue and submit
         // if other lines waiting they will be processed 
         // at the end of the processed request
         Json::Reader jRdr;
-        std::string* line;
-        std::ostream os(&m_request);
+        string* line;
+        ostream os(&m_request);
         if (!m_txQueue.empty())
         {
             while (m_txQueue.pop(line))
@@ -148,7 +148,7 @@ void EthGetworkClient::handle_connect(const boost::system::error_code& ec)
                 {
 
                     jRdr.parse(*line, m_pendingJReq);
-                    m_pending_tstamp = std::chrono::steady_clock::now();
+                    m_pending_tstamp = chrono::steady_clock::now();
 
                     // Make sure path begins with "/"
                     string _path = (m_conn->Path().empty() ? "/" : m_conn->Path());
@@ -179,7 +179,7 @@ void EthGetworkClient::handle_connect(const boost::system::error_code& ec)
         }
         else
         {
-            m_txPending.store(false, std::memory_order_relaxed);
+            m_txPending.store(false, memory_order_relaxed);
         }
 
     }
@@ -219,8 +219,7 @@ void EthGetworkClient::handle_write(const boost::system::error_code& ec)
     }
 }
 
-void EthGetworkClient::handle_read(
-    const boost::system::error_code& ec, std::size_t bytes_transferred)
+void EthGetworkClient::handle_read(const boost::system::error_code& ec, size_t bytes_transferred)
 {
     if (!ec || ec == boost::asio::error::eof)
     {
@@ -229,7 +228,7 @@ void EthGetworkClient::handle_read(
             m_socket.close();
 
         // Get the whole message
-        std::string rx_message(
+        string rx_message(
             boost::asio::buffer_cast<const char*>(m_response.data()), bytes_transferred);
         m_response.consume(bytes_transferred);
 
@@ -246,13 +245,13 @@ void EthGetworkClient::handle_read(
         // Other lines are headers
         // A double "\r\n" identifies begin of body
         // The rest is body
-        std::string line;
-        std::string linedelimiter = "\r\n";
-        std::size_t delimiteroffset = rx_message.find(linedelimiter);
+        string line;
+        string linedelimiter = "\r\n";
+        size_t delimiteroffset = rx_message.find(linedelimiter);
 
         unsigned int linenum = 0;
         bool isHeader = true;
-        while (rx_message.length() && delimiteroffset != std::string::npos)
+        while (rx_message.length() && delimiteroffset != string::npos)
         {
             linenum++;
             line = rx_message.substr(0, delimiteroffset);
@@ -263,7 +262,7 @@ void EthGetworkClient::handle_read(
             {
                 isHeader = false;
                 delimiteroffset = rx_message.find(linedelimiter);
-                if (delimiteroffset != std::string::npos)
+                if (delimiteroffset != string::npos)
                     continue;
                 boost::replace_all(rx_message, "\n", "");
                 line = rx_message;
@@ -279,15 +278,15 @@ void EthGetworkClient::handle_read(
                     disconnect();
                     return;
                 }
-                std::size_t spaceoffset = line.find(' ');
-                if (spaceoffset == std::string::npos)
+                size_t spaceoffset = line.find(' ');
+                if (spaceoffset == string::npos)
                 {
                     cwarn << "Invalid response from " << m_conn->Host() << ":"
                           << toString(m_conn->Port());
                     disconnect();
                     return;
                 }
-                std::string status = line.substr(spaceoffset + 1);
+                string status = line.substr(spaceoffset + 1);
                 if (status.substr(0, 3) != "200")
                 {
                     cwarn << m_conn->Host() << ":" << toString(m_conn->Port())
@@ -332,7 +331,7 @@ void EthGetworkClient::handle_read(
         else
         {
             // Signal end of async send/receive operations
-            m_txPending.store(false, std::memory_order_relaxed);
+            m_txPending.store(false, memory_order_relaxed);
         }
 
     }
@@ -430,7 +429,7 @@ void EthGetworkClient::processResponse(Json::Value& JRes)
                 if (m_current.header != newWp.header)
                 {
                     m_current = newWp;
-                    m_current_tstamp = std::chrono::steady_clock::now();
+                    m_current_tstamp = chrono::steady_clock::now();
 
                     if (m_onWorkReceived)
                         m_onWorkReceived(m_current);
@@ -453,8 +452,8 @@ void EthGetworkClient::processResponse(Json::Value& JRes)
         if (_isSuccess && JRes["result"].isConvertibleTo(Json::ValueType::booleanValue))
             _isSuccess = JRes["result"].asBool();
 
-        std::chrono::milliseconds _delay = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - m_pending_tstamp);
+        chrono::milliseconds _delay = chrono::duration_cast<chrono::milliseconds>(
+            chrono::steady_clock::now() - m_pending_tstamp);
 
         const unsigned miner_index = _id - 40;
         if (_isSuccess)
@@ -471,9 +470,9 @@ void EthGetworkClient::processResponse(Json::Value& JRes)
 
 }
 
-std::string EthGetworkClient::processError(Json::Value& JRes)
+string EthGetworkClient::processError(Json::Value& JRes)
 {
-    std::string retVar;
+    string retVar;
 
     if (JRes.isMember("error") &&
         !JRes.get("error", Json::Value::null).isNull())
@@ -495,7 +494,7 @@ std::string EthGetworkClient::processError(Json::Value& JRes)
             {
                 Json::Value k = i.key();
                 Json::Value v = (*i);
-                retVar += (std::string)i.name() + ":" + v.asString() + " ";
+                retVar += (string)i.name() + ":" + v.asString() + " ";
             }
         }
     }
@@ -509,16 +508,16 @@ std::string EthGetworkClient::processError(Json::Value& JRes)
 
 void EthGetworkClient::send(Json::Value const& jReq)
 {
-    send(std::string(Json::writeString(m_jSwBuilder, jReq)));
+    send(string(Json::writeString(m_jSwBuilder, jReq)));
 }
 
-void EthGetworkClient::send(std::string const& sReq) 
+void EthGetworkClient::send(string const& sReq)
 {
-    std::string* line = new std::string(sReq);
+    string* line = new string(sReq);
     m_txQueue.push(line);
 
     bool ex = false;
-    if (m_txPending.compare_exchange_strong(ex, true, std::memory_order_relaxed))
+    if (m_txPending.compare_exchange_strong(ex, true, memory_order_relaxed))
         begin_connect();
 }
 
@@ -567,8 +566,8 @@ void EthGetworkClient::getwork_timer_elapsed(const boost::system::error_code& ec
     if (!ec)
     {
         // Check if last work is older than timeout
-        std::chrono::seconds _delay = std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::steady_clock::now() - m_current_tstamp);
+        chrono::seconds _delay =
+            chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - m_current_tstamp);
         if (_delay.count() > m_worktimeout)
         {
             cwarn << "No new work received in " << m_worktimeout << " seconds.";

@@ -41,7 +41,7 @@ void Miner::setWork(WorkPackage const& _work)
             m_work = _work;
 
 #ifdef DEV_BUILD
-        m_workSwitchStart = std::chrono::steady_clock::now();
+        m_workSwitchStart = chrono::steady_clock::now();
 #endif
     }
 
@@ -68,10 +68,10 @@ bool Miner::pauseTest(MinerPauseEnum what)
     return m_pauseFlags.test(what);
 }
 
-std::string Miner::pausedString()
+string Miner::pausedString()
 {
     lock_guard<mutex> l(x_pause);
-    std::string retVar;
+    string retVar;
     if (m_pauseFlags.any())
     {
         for (int i = 0; i < MinerPauseEnum::Pause_MAX; i++)
@@ -112,7 +112,7 @@ void Miner::resume(MinerPauseEnum fromwhat)
 
 float Miner::RetrieveHashRate() noexcept
 {
-    return m_hashRate.load(std::memory_order_relaxed);
+    return m_hashRate.load(memory_order_relaxed);
 }
 
 void Miner::TriggerHashRateUpdate() noexcept
@@ -126,16 +126,9 @@ void Miner::TriggerHashRateUpdate() noexcept
     m_hashRate = 0.0;
 }
 
-bool Miner::initEpoch()
-{
-    // Run the internal initialization
-    // specific for miner
-    return initEpoch_internal();
-}
-
 WorkPackage Miner::work() const
 {
-    std::unique_lock<mutex> l(miner_work_mutex);
+    unique_lock<mutex> l(miner_work_mutex);
     return m_work;
 }
 
@@ -145,12 +138,12 @@ void Miner::updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept
     bool b = true;
     if (!m_hashRateUpdate.compare_exchange_weak(b, false))
         return;
-    using namespace std::chrono;
+    using namespace chrono;
     auto t = steady_clock::now();
     auto us = duration_cast<microseconds>(t - m_hashTime).count();
     m_hashTime = t;
 
-    m_hashRate.store(us ? (float(m_groupCount) * 1.0e6f) / us : 0.0f, std::memory_order_relaxed);
+    m_hashRate.store(us ? (float(m_groupCount) * 1.0e6f) / us : 0.0f, memory_order_relaxed);
     m_groupCount = 0;
 }
 

@@ -23,7 +23,4 @@
 
 #include "FixedHash.h"
 
-using namespace std;
-using namespace dev;
-
 std::random_device dev::s_fixedHashEngine;

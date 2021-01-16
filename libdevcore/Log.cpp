@@ -44,18 +44,18 @@ bool NoteChannel::name()
 
 LogOutputStreamBase::LogOutputStreamBase(bool error)
 {
-    static std::locale logLocl = std::locale("");
-        m_sstr.imbue(logLocl);
-        if (g_logSyslog)
-            m_sstr << std::left << std::setw(8) << getThreadName() << " " EthReset;
-        else
-        {
-            time_t rawTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            char buf[24];
-            if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
-                buf[0] = '\0';  // empty if case strftime fails
-            m_sstr << (error ? EthRed : EthCoalBold) << buf << " " EthWhite << std::left
-                   << std::setw(5) << getThreadName() << " " EthReset;
+    static locale logLocl = locale("");
+    m_sstr.imbue(logLocl);
+    if (g_logSyslog)
+        m_sstr << left << setw(8) << getThreadName() << " " EthReset;
+    else
+    {
+        time_t rawTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        char buf[24];
+        if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
+            buf[0] = '\0';  // empty if case strftime fails
+        m_sstr << (error ? EthRed : EthCoalBold) << buf << " " EthWhite << left << setw(5)
+               << getThreadName() << " " EthReset;
         }
 }
 
@@ -91,11 +91,11 @@ void dev::setThreadName(char const* _n)
 #endif
 }
 
-void dev::simpleDebugOut(std::string const& _s)
+void dev::simpleDebugOut(string const& _s)
 {
     try
     {
-        std::ostream& os = g_logStdout ? std::cout : std::clog;
+        ostream& os = g_logStdout ? cout : clog;
         if (!g_logNoColor)
         {
             os << _s + '\n';
@@ -103,7 +103,7 @@ void dev::simpleDebugOut(std::string const& _s)
             return;
         }
         bool skip = false;
-        std::stringstream ss;
+        stringstream ss;
         for (auto it : _s)
         {
             if (!skip && it == '\x1b')

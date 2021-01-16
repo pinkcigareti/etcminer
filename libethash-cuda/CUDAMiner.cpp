@@ -31,13 +31,13 @@ struct CUDAChannel : public LogChannel
 };
 #define cudalog clog(CUDAChannel)
 
-static const unsigned PreferedBlockSize = 128;
-static const unsigned PreferedStreamSize = 1;
-
 CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device)
   : Miner("cu-", _index),
-    m_batch_size(_device.cuGridSize * PreferedBlockSize),
-    m_streams_batch_size(_device.cuGridSize * PreferedBlockSize * PreferedStreamSize)
+    m_batch_size(_device.cuGridSize * _device.cuBlockSize),
+    m_streams_batch_size(_device.cuGridSize * _device.cuBlockSize * _device.cuStreamSize),
+    m_blockSize(_device.cuBlockSize),
+    m_gridSize(_device.cuGridSize),
+    m_streamSize(_device.cuStreamSize)
 {
     m_deviceDescriptor = _device;
 }
@@ -47,6 +47,12 @@ CUDAMiner::~CUDAMiner()
     stopWorking();
     kick_miner();
 }
+
+#define HostToDevice(dst, src, siz) \
+    CUDA_SAFE_CALL(cudaMemcpy(dst, src, siz, cudaMemcpyHostToDevice))
+
+#define DeviceToHost(dst, src, siz) \
+    CUDA_SAFE_CALL(cudaMemcpy(dst, src, siz, cudaMemcpyDeviceToHost))
 
 bool CUDAMiner::initDevice()
 {
@@ -74,11 +80,11 @@ bool CUDAMiner::initDevice()
     return true;
 }
 
-bool CUDAMiner::initEpoch_internal()
+void CUDAMiner::initEpoch()
 {
+    m_initialized = false;
     // If we get here it means epoch has changed so it's not necessary
     // to check again dag sizes. They're changed for sure
-    bool retVar = false;
     m_current_target = 0;
     auto startInit = chrono::steady_clock::now();
     size_t RequiredTotalMemory = (m_epochContext.dagSize + m_epochContext.lightSize);
@@ -114,8 +120,8 @@ bool CUDAMiner::initEpoch_internal()
                             << dev::getFormattedMemory((double)RequiredDagMemory) << " memory.";
                     cudalog << "This device hasn't enough memory available. Mining suspended ...";
                     pause(MinerPauseEnum::PauseDueToInsufficientMemory);
-                    return true;  // This will prevent to exit the thread and
-                                  // Eventually resume mining when changing coin or epoch (NiceHash)
+                    return;  // This will prevent to exit the thread and
+                             // Eventually resume mining when changing coin or epoch (NiceHash)
                 }
                 else
                     lightOnHost = true;
@@ -138,7 +144,7 @@ bool CUDAMiner::initEpoch_internal()
             m_allocated_memory_dag = m_epochContext.dagSize;
 
             // create mining buffers
-            for (unsigned i = 0; i < PreferedStreamSize; ++i)
+            for (unsigned i = 0; i < m_streamSize; ++i)
             {
                 CUDA_SAFE_CALL(cudaMalloc(&m_search_buf[i], sizeof(Search_results)));
                 CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
@@ -152,14 +158,12 @@ bool CUDAMiner::initEpoch_internal()
             get_constants(&dag, NULL, &light, NULL);
         }
 
-        CUDA_SAFE_CALL(cudaMemcpy(
-            light, m_epochContext.lightCache, m_epochContext.lightSize, cudaMemcpyHostToDevice));
+        HostToDevice(light, m_epochContext.lightCache, m_epochContext.lightSize);
 
         set_constants(dag, m_epochContext.dagNumItems, light,
             m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
 
-        ethash_generate_dag(
-            m_epochContext.dagSize, m_deviceDescriptor.cuGridSize, PreferedBlockSize, m_streams[0]);
+        ethash_generate_dag(m_epochContext.dagSize, m_gridSize, m_blockSize, m_streams[0]);
 
         cudalog << "Generated DAG + Light in "
                 << chrono::duration_cast<chrono::milliseconds>(
@@ -170,8 +174,6 @@ bool CUDAMiner::initEpoch_internal()
                        lightOnHost ? (double)(m_deviceDescriptor.totalMemory - RequiredDagMemory) :
                                      (double)(m_deviceDescriptor.totalMemory - RequiredTotalMemory))
                 << " left.";
-
-        retVar = true;
     }
     catch (const cuda_runtime_error& ec)
     {
@@ -179,19 +181,15 @@ bool CUDAMiner::initEpoch_internal()
                 << m_deviceDescriptor.uniqueId;
         cudalog << "Mining suspended ...";
         pause(MinerPauseEnum::PauseDueToInitEpochError);
-        retVar = true;
     }
 
-    return retVar;
+    m_initialized = true;
 }
 
 void CUDAMiner::workLoop()
 {
     WorkPackage current;
     current.header = h256();
-
-    m_search_buf.resize(PreferedStreamSize);
-    m_streams.resize(PreferedStreamSize);
 
     if (!initDevice())
         return;
@@ -212,8 +210,7 @@ void CUDAMiner::workLoop()
             // Epoch change ?
             if (current.epoch != w.epoch)
             {
-                if (!initEpoch())
-                    break;  // This will simply exit the thread
+                initEpoch();
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one
@@ -248,7 +245,7 @@ void CUDAMiner::kick_miner()
     m_done = true;
     if (m_abort)
     {
-        static uint32_t one = 1;
+        static const uint32_t one = 1;
         CUDA_SAFE_CALL(cudaMemcpyAsync((void*)m_abort, &one, sizeof(one), cudaMemcpyHostToDevice));
     }
 }
@@ -314,6 +311,9 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             deviceDescriptor.cuComputeMinor = props.minor;
             // deviceDescriptor.cuGridSize = int(ceil(props.multiProcessorCount * 3276.8));
             deviceDescriptor.cuGridSize = 62500;
+            deviceDescriptor.cuBlockSize = 128;
+            deviceDescriptor.cuStreamSize = 1;
+
 
             _DevicesCollection[uniqueId] = deviceDescriptor;
         }
@@ -324,7 +324,7 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
     }
 }
 
-static uint32_t zero2[2] = {0, 0};  // zero the result count
+static const uint32_t zero2[2] = {0, 0};  // zero the result count
 
 void CUDAMiner::search(
     uint8_t const* header, uint64_t target, uint64_t start_nonce, const dev::eth::WorkPackage& w)
@@ -336,21 +336,19 @@ void CUDAMiner::search(
         m_current_target = target;
     }
 
-    CUDA_SAFE_CALL(cudaMemcpy((void*)m_abort, zero2, sizeof(zero2[0]), cudaMemcpyHostToDevice));
+    HostToDevice((void*)m_abort, zero2, sizeof(zero2[0]));
 
     // prime each stream, clear search result buffers and start the search
-    uint32_t current_index;
-    for (current_index = 0; current_index < PreferedStreamSize;
-         current_index++, start_nonce += m_batch_size)
+    uint32_t streamIdx;
+    for (streamIdx = 0; streamIdx < m_streamSize; streamIdx++, start_nonce += m_batch_size)
     {
-        cudaStream_t stream = m_streams[current_index];
-        CUDA_SAFE_CALL(
-            cudaMemcpy((uint8_t*)m_search_buf[current_index] + offsetof(Search_results, count),
-                zero2, sizeof(zero2), cudaMemcpyHostToDevice));
+        cudaStream_t stream = m_streams[streamIdx];
+        HostToDevice((uint8_t*)m_search_buf[streamIdx] + offsetof(Search_results, count), zero2,
+            sizeof(zero2));
 
         // Run the batch for this stream
-        run_ethash_search(m_deviceDescriptor.cuGridSize, PreferedBlockSize, stream,
-            m_search_buf[current_index], m_abort, start_nonce);
+        run_ethash_search(m_deviceDescriptor.cuGridSize, m_blockSize, stream,
+            m_search_buf[streamIdx], m_abort, start_nonce);
     }
 
     // process stream batches until we get new work.
@@ -366,73 +364,73 @@ void CUDAMiner::search(
         uint32_t abort;
 
         // This inner loop will process each cuda stream individually
-        for (current_index = 0; current_index < PreferedStreamSize;
-             current_index++, start_nonce += m_batch_size)
+        for (streamIdx = 0; streamIdx < m_streamSize; streamIdx++, start_nonce += m_batch_size)
         {
             // Each pass of this loop will wait for a stream to exit,
             // save any found solutions, then restart the stream
             // on the next group of nonces.
-            cudaStream_t stream = m_streams[current_index];
-            uint8_t* buffer = (uint8_t*)m_search_buf[current_index];
+            cudaStream_t stream = m_streams[streamIdx];
+            uint8_t* buffer = (uint8_t*)m_search_buf[streamIdx];
 
             // Wait for the stream complete
             CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
 
-            uint32_t hashCount;
-            CUDA_SAFE_CALL(cudaMemcpy(&hashCount, buffer + offsetof(Search_results, hashCount),
-                sizeof(hashCount), cudaMemcpyDeviceToHost));
-            CUDA_SAFE_CALL(cudaMemcpy(buffer + offsetof(Search_results, hashCount), zero2,
-                sizeof(hashCount), cudaMemcpyHostToDevice));
-
-            batchCount += hashCount;
-
             if (shouldStop())
                 m_done = true;
 
+            uint32_t hashCount;
+            DeviceToHost(
+                &hashCount, buffer + offsetof(Search_results, hashCount), sizeof(hashCount));
+
             // Detect solutions in current stream's solution buffer
             uint32_t found_count;
-            CUDA_SAFE_CALL(cudaMemcpy(&found_count, buffer + offsetof(Search_results, count),
-                sizeof(found_count), cudaMemcpyDeviceToHost));
+            DeviceToHost(
+                &found_count, buffer + offsetof(Search_results, count), sizeof(found_count));
+            HostToDevice(buffer + offsetof(Search_results, count), zero2, sizeof(zero2));
+
             found_count = min(found_count, MAX_SEARCH_RESULTS);
+            batchCount += hashCount;
 
             uint32_t gids[MAX_SEARCH_RESULTS];
             h256 mixes[MAX_SEARCH_RESULTS];
 
             if (found_count)
             {
-                CUDA_SAFE_CALL(cudaMemcpy(buffer + offsetof(Search_results, count), zero2,
-                    sizeof(zero2[0]), cudaMemcpyHostToDevice));
-
                 // Extract solution and pass to higer level
                 // using io_service as dispatcher
 
                 for (uint32_t i = 0; i < found_count; i++)
                 {
-                    CUDA_SAFE_CALL(cudaMemcpy(gids + i,
+                    DeviceToHost(&gids[i],
                         buffer + offsetof(Search_results, result) + i * sizeof(Search_Result) +
                             offsetof(Search_Result, gid),
-                        sizeof(gids[0]), cudaMemcpyDeviceToHost));
-                    CUDA_SAFE_CALL(cudaMemcpy(mixes[i].data(),
+                        sizeof(gids[0]));
+                    DeviceToHost(mixes[i].data(),
                         buffer + offsetof(Search_results, result) + i * sizeof(Search_Result) +
                             offsetof(Search_Result, mix),
-                        sizeof(Search_Result::mix), cudaMemcpyDeviceToHost));
+                        sizeof(Search_Result::mix));
                 }
             }
 
-            CUDA_SAFE_CALL(
-                cudaMemcpy(&abort, (void*)m_abort, sizeof(abort), cudaMemcpyDeviceToHost));
-            if (!abort & !m_done)
+            DeviceToHost(&abort, m_abort, sizeof(abort));
+            if (abort)
+            {
+                for (unsigned idx = 0; idx < m_streamSize; idx++)
+                    CUDA_SAFE_CALL(cudaStreamSynchronize(m_streams[idx]));
+                HostToDevice(m_abort, zero2, sizeof(abort));
+            }
+
+            if (!m_done)
             {
                 // restart the stream on the next batch of nonces
                 // unless we are done for this round.
-                if (!m_done)
-                    run_ethash_search(m_deviceDescriptor.cuGridSize, PreferedBlockSize, stream,
-                        (Search_results*)buffer, m_abort, start_nonce);
+                run_ethash_search(m_deviceDescriptor.cuGridSize, m_blockSize, stream,
+                    (Search_results*)buffer, m_abort, start_nonce);
             }
 
             if (found_count)
             {
-                uint64_t nonce_base = start_nonce - m_streams_batch_size;
+                uint64_t nonce_base = start_nonce - m_batch_size;
                 for (uint32_t i = 0; i < found_count; i++)
                 {
                     uint64_t nonce = nonce_base + gids[i];
@@ -444,28 +442,7 @@ void CUDAMiner::search(
                 }
             }
         }
-        updateHashRate(PreferedBlockSize, batchCount);
-
-        if (abort && !m_done)
-        {
-            CUDA_SAFE_CALL(
-                cudaMemcpy((void*)m_abort, zero2, sizeof(zero2[0]), cudaMemcpyHostToDevice));
-
-            // prime each stream, clear search result buffers and start the search
-            uint32_t current_index;
-            for (current_index = 0; current_index < PreferedStreamSize;
-                 current_index++, start_nonce += m_batch_size)
-            {
-                cudaStream_t stream = m_streams[current_index];
-                CUDA_SAFE_CALL(cudaMemcpy(
-                    (uint8_t*)m_search_buf[current_index] + offsetof(Search_results, count), zero2,
-                    sizeof(zero2), cudaMemcpyHostToDevice));
-
-                // Run the batch for this stream
-                run_ethash_search(m_deviceDescriptor.cuGridSize, PreferedBlockSize, stream,
-                    m_search_buf[current_index], m_abort, start_nonce);
-            }
-        }
+        updateHashRate(m_blockSize, batchCount);
     }
 
 #ifdef DEV_BUILD

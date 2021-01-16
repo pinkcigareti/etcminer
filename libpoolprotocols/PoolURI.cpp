@@ -25,6 +25,7 @@
 #include <libpoolprotocols/PoolURI.h>
 
 using namespace dev;
+using namespace std;
 
 struct SchemeAttributes
 {
@@ -33,7 +34,7 @@ struct SchemeAttributes
     unsigned version;
 };
 
-static std::map<std::string, SchemeAttributes> s_schemes = {
+static map<string, SchemeAttributes> s_schemes = {
     /*
     This schemes are kept for backwards compatibility.
     Ethminer do perform stratum autodetection
@@ -72,22 +73,21 @@ static std::map<std::string, SchemeAttributes> s_schemes = {
     It's not meant to be used with -P arguments
     */
 
-    {"simulation", {ProtocolFamily::SIMULATION, SecureLevel::NONE, 999}}
-};
+    {"simulation", {ProtocolFamily::SIMULATION, SecureLevel::NONE, 999}}};
 
-static bool url_decode(const std::string& in, std::string& out)
+static bool url_decode(const string& in, string& out)
 {
     out.clear();
     out.reserve(in.size());
-    for (std::size_t i = 0; i < in.size(); ++i)
+    for (size_t i = 0; i < in.size(); ++i)
     {
         if (in[i] == '%')
         {
             if (i + 3 <= in.size())
             {
                 int value = 0;
-                std::istringstream is(in.substr(i + 1, 2));
-                if (is >> std::hex >> value)
+                istringstream is(in.substr(i + 1, 2));
+                if (is >> hex >> value)
                 {
                     out += static_cast<char>(value);
                     i += 2;
@@ -119,12 +119,11 @@ static bool url_decode(const std::string& in, std::string& out)
   refer to https://cpp-netlib.org/0.10.1/in_depth/uri.html
 */
 
-URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
+URI::URI(string uri, bool _sim) : m_uri{move(uri)}
 {
-
-    std::regex sch_auth("^([a-zA-Z0-9\\+]{1,})\\:\\/\\/(.*)$");
-    std::smatch matches;
-    if (!std::regex_search(m_uri, matches, sch_auth, std::regex_constants::match_default))
+    regex sch_auth("^([a-zA-Z0-9\\+]{1,})\\:\\/\\/(.*)$");
+    smatch matches;
+    if (!regex_search(m_uri, matches, sch_auth, regex_constants::match_default))
         return;
 
     // Split scheme and authoority
@@ -135,20 +134,20 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
 
     // Missing authority is not possible
     if (m_authority.empty())
-        throw std::runtime_error("Invalid authority");
+        throw runtime_error("Invalid authority");
 
     // Simulation scheme is only allowed if specifically set
     if (!_sim && m_scheme == "simulation")
-        throw std::runtime_error("Invalid scheme");
+        throw runtime_error("Invalid scheme");
 
     // Check scheme is allowed
     if ((s_schemes.find(m_scheme) == s_schemes.end()))
-        throw std::runtime_error("Invalid scheme");
+        throw runtime_error("Invalid scheme");
 
-    
+
     // Now let's see if authority part can be split into userinfo and "the rest"
-    std::regex usr_url("^(.*)\\@(.*)$");
-    if (std::regex_search(m_authority, matches, usr_url, std::regex_constants::match_default))
+    regex usr_url("^(.*)\\@(.*)$");
+    if (regex_search(m_authority, matches, usr_url, regex_constants::match_default))
     {
         m_userinfo = matches[1].str();
         m_urlinfo = matches[2].str();
@@ -174,34 +173,33 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
 
         // Save all parts enclosed in backticks into a dictionary
         // and replace them with tokens in the authority
-        std::regex btick("`((?:[^`])*)`");
-        std::map<std::string, std::string> btick_blocks;
-        auto btick_blocks_begin =
-            std::sregex_iterator(m_authority.begin(), m_authority.end(), btick);
-        auto btick_blocks_end = std::sregex_iterator();
+        regex btick("`((?:[^`])*)`");
+        map<string, string> btick_blocks;
+        auto btick_blocks_begin = sregex_iterator(m_authority.begin(), m_authority.end(), btick);
+        auto btick_blocks_end = sregex_iterator();
         int i = 0;
-        for (std::sregex_iterator it = btick_blocks_begin; it != btick_blocks_end; ++it)
+        for (sregex_iterator it = btick_blocks_begin; it != btick_blocks_end; ++it)
         {
-            std::smatch match = *it;
-            std::string match_str = match[1].str();
-            btick_blocks["_" + std::to_string(i++)] = match[1].str();
+            smatch match = *it;
+            string match_str = match[1].str();
+            btick_blocks["_" + to_string(i++)] = match[1].str();
         }
         if (btick_blocks.size())
         {
-            std::map<std::string, std::string>::iterator it;
+            map<string, string>::iterator it;
             for (it = btick_blocks.begin(); it != btick_blocks.end(); it++)
                 boost::replace_all(m_userinfo, "`" + it->second + "`", "`" + it->first + "`");
         }
 
-        std::vector<std::regex> usr_patterns;
-        usr_patterns.push_back(std::regex("^(.*)\\.(.*)\\:(.*)$"));
-        usr_patterns.push_back(std::regex("^(.*)\\:(.*)$"));
-        usr_patterns.push_back(std::regex("^(.*)\\.(.*)$"));
+        vector<regex> usr_patterns;
+        usr_patterns.push_back(regex("^(.*)\\.(.*)\\:(.*)$"));
+        usr_patterns.push_back(regex("^(.*)\\:(.*)$"));
+        usr_patterns.push_back(regex("^(.*)\\.(.*)$"));
         bool usrMatchFound = false;
         for (size_t i = 0; i < usr_patterns.size() && !usrMatchFound; i++)
         {
-            if (std::regex_search(
-                    m_userinfo, matches, usr_patterns.at(i), std::regex_constants::match_default))
+            if (regex_search(
+                    m_userinfo, matches, usr_patterns.at(i), regex_constants::match_default))
             {
                 usrMatchFound = true;
                 switch (i)
@@ -232,7 +230,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         // Replace all tokens with their respective values
         if (btick_blocks.size())
         {
-            std::map<std::string, std::string>::iterator it;
+            map<string, string>::iterator it;
             for (it = btick_blocks.begin(); it != btick_blocks.end(); it++)
             {
                 boost::replace_all(m_userinfo, "`" + it->first + "`", it->second);
@@ -256,7 +254,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
       - host:port/path
     */
     size_t offset = m_urlinfo.find('/');
-    if (offset != std::string::npos)
+    if (offset != string::npos)
     {
         m_hostinfo = m_urlinfo.substr(0, offset);
         m_pathinfo = m_urlinfo.substr(offset);
@@ -266,8 +264,8 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         m_hostinfo = m_urlinfo;
     }
     boost::algorithm::to_lower(m_hostinfo);  // needed to ensure we properly hit "exit" as host
-    std::regex host_pattern("^(.*)\\:([0-9]{1,5})$");
-    if (std::regex_search(m_hostinfo, matches, host_pattern, std::regex_constants::match_default))
+    regex host_pattern("^(.*)\\:([0-9]{1,5})$");
+    if (regex_search(m_hostinfo, matches, host_pattern, regex_constants::match_default))
     {
         m_host = matches[1].str();
         m_port = boost::lexical_cast<uint16_t>(matches[2].str());
@@ -279,7 +277,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
 
     // Host info must be present and valued
     if (m_host.empty())
-        throw std::runtime_error("Missing host");
+        throw runtime_error("Missing host");
 
     /*
       Eventually split path info into path query fragment
@@ -288,15 +286,15 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
     {
         // Url Decode Path
 
-        std::vector<std::regex> path_patterns;
-        path_patterns.push_back(std::regex("(\\/.*)\\?(.*)\\#(.*)$"));
-        path_patterns.push_back(std::regex("(\\/.*)\\#(.*)$"));
-        path_patterns.push_back(std::regex("(\\/.*)\\?(.*)$"));
+        vector<regex> path_patterns;
+        path_patterns.push_back(regex("(\\/.*)\\?(.*)\\#(.*)$"));
+        path_patterns.push_back(regex("(\\/.*)\\#(.*)$"));
+        path_patterns.push_back(regex("(\\/.*)\\?(.*)$"));
         bool pathMatchFound = false;
         for (size_t i = 0; i < path_patterns.size() && !pathMatchFound; i++)
         {
-            if (std::regex_search(
-                    m_pathinfo, matches, path_patterns.at(i), std::regex_constants::match_default))
+            if (regex_search(
+                    m_pathinfo, matches, path_patterns.at(i), regex_constants::match_default))
             {
                 pathMatchFound = true;
                 switch (i)
@@ -342,10 +340,10 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
     else
     {
         // Check if valid DNS hostname
-        std::regex hostNamePattern(
+        regex hostNamePattern(
             "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-"
             "Za-z0-9\\-]*[A-Za-z0-9])$");
-        if (std::regex_match(m_host, hostNamePattern))
+        if (regex_match(m_host, hostNamePattern))
             m_hostType = UriHostNameType::Dns;
         else
             m_hostType = UriHostNameType::Basic;
@@ -359,7 +357,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         boost::replace_all(m_worker, "`", "");
 
     // Eventually decode every encoded char
-    std::string tmpStr;
+    string tmpStr;
     if (url_decode(m_userinfo, tmpStr))
         m_userinfo = tmpStr;
     if (url_decode(m_urlinfo, tmpStr))
@@ -393,9 +391,9 @@ unsigned URI::Version() const
     return s_schemes[m_scheme].version;
 }
 
-std::string URI::UserDotWorker() const
+string URI::UserDotWorker() const
 {
-    std::string _ret = m_user;
+    string _ret = m_user;
     if (!m_worker.empty())
         _ret.append("." + m_worker);
     return _ret;
@@ -416,9 +414,9 @@ bool URI::IsLoopBack() const
     return m_isLoopBack;
 }
 
-std::string URI::KnownSchemes(ProtocolFamily family)
+string URI::KnownSchemes(ProtocolFamily family)
 {
-    std::string schemes;
+    string schemes;
     for (const auto& s : s_schemes)
     {
         if ((s.second.family == family) && (s.second.version != 999))

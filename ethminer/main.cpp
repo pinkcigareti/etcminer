@@ -1137,11 +1137,12 @@ int main(int argc, char** argv)
     // Always out release version
     auto* bi = ethminer_get_buildinfo();
     cnote << EthWhite "ethminer (Misc. Bits edition) " << bi->project_version << " (GPLv3)";
-    cnote << "https://github.com/miscellaneousbits/ethminer";
-    cnote << "Build: " << bi->system_name << "/" << bi->build_type << "/" << bi->compiler_id;
+    cnote << EthWhite "https://github.com/miscellaneousbits/ethminer";
+    cnote << EthWhite "Build: " << bi->system_name << "/" << bi->build_type << "/"
+          << bi->compiler_id;
     stringstream ss;
-    ss << "3rd Party: Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
-       << BOOST_VERSION % 100;
+    ss << EthWhite "3rd Party: Boost " << BOOST_VERSION / 100000 << '.'
+       << BOOST_VERSION / 100 % 1000 << '.' << BOOST_VERSION % 100;
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);

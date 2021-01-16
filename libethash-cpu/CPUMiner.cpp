@@ -185,9 +185,9 @@ bool CPUMiner::initDevice()
  * to check again dag sizes. They're changed for sure
  * We've all related infos in m_epochContext (.dagSize, .dagNumItems, .lightSize, .lightNumItems)
  */
-bool CPUMiner::initEpoch_internal()
+void CPUMiner::initEpoch()
 {
-    return true;
+    m_initialized = true;
 }
 
 
@@ -200,7 +200,7 @@ bool CPUMiner::initEpoch_internal()
 */
 void CPUMiner::kick_miner()
 {
-    m_new_work.store(true, std::memory_order_relaxed);
+    m_new_work.store(true, memory_order_relaxed);
     m_new_work_signal.notify_one();
 }
 
@@ -216,9 +216,9 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
 
     while (true)
     {
-        if (m_new_work.load(std::memory_order_relaxed))  // new work arrived ?
+        if (m_new_work.load(memory_order_relaxed))  // new work arrived ?
         {
-            m_new_work.store(false, std::memory_order_relaxed);
+            m_new_work.store(false, memory_order_relaxed);
             break;
         }
 
@@ -230,7 +230,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         if (r.solution_found)
         {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
-            auto sol = Solution{r.nonce, mix, w, std::chrono::steady_clock::now(), m_index};
+            auto sol = Solution{r.nonce, mix, w, chrono::steady_clock::now(), m_index};
 
             cpulog << EthWhite << "Job: " << w.header.abridged()
                    << " Solution: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
@@ -271,8 +271,7 @@ void CPUMiner::workLoop()
             // Epoch change ?
             if (current.epoch != w.epoch)
             {
-                if (!initEpoch())
-                    break;  // This will simply exit the thread
+                initEpoch();
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one
@@ -290,13 +289,13 @@ void CPUMiner::workLoop()
         }
         else
         {
-            throw std::runtime_error("Algo : " + w.algo + " not yet implemented");
+            throw runtime_error("Algo : " + w.algo + " not yet implemented");
         }
     }
 }
 
 
-void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
+void CPUMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
 {
     unsigned numDevices = getNumDevices();
 

@@ -44,25 +44,29 @@ public:
 protected:
     bool initDevice() override;
 
-    bool initEpoch_internal() override;
+    void initEpoch() override;
 
     void kick_miner() override;
 
 private:
     void workLoop() override;
 
-    std::vector<Search_results*> m_search_buf;
-    volatile uint32_t* m_abort = nullptr;
-    std::vector<cudaStream_t> m_streams;
+    Search_results* m_search_buf[4];
+    uint32_t* m_abort = nullptr;
+    cudaStream_t m_streams[4];
     uint64_t m_current_target = 0;
 
-    const uint32_t m_batch_size;
-    const uint32_t m_streams_batch_size;
+    uint32_t m_batch_size = 0;
+    uint32_t m_streams_batch_size = 0;
 
     uint64_t m_allocated_memory_dag = 0; // dag_size is a uint64_t in EpochContext struct
     size_t m_allocated_memory_light_cache = 0;
 
     bool m_done = false;
+
+    uint32_t m_blockSize = 0;
+    uint32_t m_gridSize = 0;
+    uint32_t m_streamSize = 0;
 };
 
 

@@ -147,13 +147,15 @@ struct DeviceDescriptor
     int cpCpuNumer;  // For CPU
 
     bool cuDetected;  // For CUDA detected devices
-    int cuGridSize;
     string cuName;
     unsigned int cuDeviceOrdinal;
     unsigned int cuDeviceIndex;
     string cuCompute;
     unsigned int cuComputeMajor;
     unsigned int cuComputeMinor;
+    unsigned int cuGridSize;
+    unsigned int cuBlockSize;
+    unsigned int cuStreamSize;
 
     bool clDetected;  // For OpenCL detected devices
     string clPlatformVersion;
@@ -165,8 +167,6 @@ struct DeviceDescriptor
     unsigned int clDeviceVersionMajor;
     unsigned int clDeviceVersionMinor;
     string clBoardName;
-    unsigned int clPreferedGroupSize;
-    unsigned int clPreferedGroupMultiple;
     string clNvCompute;
     unsigned int clNvComputeMajor;
     unsigned int clNvComputeMinor;
@@ -174,6 +174,8 @@ struct DeviceDescriptor
     unsigned int clPlatformId;
     string clPlatformName;
     ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
+    unsigned clGroupSize;
+    unsigned clGroupMultiple;
 };
 
 struct HwMonitorInfo
@@ -383,14 +385,9 @@ protected:
     virtual bool initDevice() = 0;
 
     /**
-     * @brief Initializes miner to current (or changed) epoch.
-     */
-    bool initEpoch();
-
-    /**
      * @brief Miner's specific initialization to current (or changed) epoch.
      */
-    virtual bool initEpoch_internal() = 0;
+    virtual void initEpoch() = 0;
 
     /**
      * @brief Returns current workpackage this miner is working on
@@ -412,6 +409,8 @@ protected:
     mutable std::mutex miner_work_mutex;
     mutable std::mutex x_pause;
     std::condition_variable m_new_work_signal;
+
+    bool m_initialized = false;
 
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;

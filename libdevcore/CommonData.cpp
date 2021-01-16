@@ -37,10 +37,10 @@ int dev::fromHex(char _i, WhenError _throw)
         return -1;
 }
 
-bytes dev::fromHex(std::string const& _s, WhenError _throw)
+bytes dev::fromHex(string const& _s, WhenError _throw)
 {
     unsigned s = (_s[0] == '0' && _s[1] == 'x') ? 2 : 0;
-    std::vector<uint8_t> ret;
+    vector<uint8_t> ret;
     ret.reserve((_s.size() - s + 1) / 2);
 
     if (_s.size() % 2)
@@ -70,7 +70,7 @@ bytes dev::fromHex(std::string const& _s, WhenError _throw)
 bool dev::setenv(const char name[], const char value[], bool override)
 {
 #if _WIN32
-    if (!override && std::getenv(name) != nullptr)
+    if (!override && getenv(name) != nullptr)
         return true;
 
     return ::_putenv_s(name, value) == 0;
@@ -79,7 +79,7 @@ bool dev::setenv(const char name[], const char value[], bool override)
 #endif
 }
 
-std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
+string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
 {
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
@@ -98,11 +98,11 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
         BigInteger idiff(diff);
         product = base * idiff;
 
-        std::string sdiff = boost::lexical_cast<std::string>(diff);
+        string sdiff = boost::lexical_cast<string>(diff);
         size_t ldiff = sdiff.length();
         size_t offset = sdiff.find(".");
 
-        if (offset != std::string::npos)
+        if (offset != string::npos)
         {
             // Number of decimal places
             size_t precision = (ldiff - 1) - offset;
@@ -137,8 +137,7 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
 
     // Normalize to 64 chars hex with "0x" prefix
     stringstream ss;
-    ss << (_prefix == HexPrefix::Add ? "0x" : "") << setw(64) << setfill('0') << std::hex
-       << product;
+    ss << (_prefix == HexPrefix::Add ? "0x" : "") << setw(64) << setfill('0') << hex << product;
 
     string target = ss.str();
     boost::algorithm::to_lower(target);
@@ -156,7 +155,7 @@ double dev::getHashesToTarget(string _target)
     return double(dividend / divisor);
 }
 
-std::string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[],
+string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[],
     size_t _numsizes, ScaleSuffix _suffix)
 {
     double _newvalue = _value;
@@ -167,33 +166,33 @@ std::string dev::getScaledSize(double _value, double _divisor, int _precision, s
         i++;
     }
 
-    std::stringstream _ret;
+    stringstream _ret;
     _ret << fixed << setprecision(_precision) << _newvalue;
     if (_suffix == ScaleSuffix::Add)
         _ret << " " << _sizes[i];
     return _ret.str();
 }
 
-std::string dev::getFormattedHashes(double _hr, ScaleSuffix _suffix, int _precision)
+string dev::getFormattedHashes(double _hr, ScaleSuffix _suffix, int _precision)
 {
     static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
     return dev::getScaledSize(_hr, 1000.0, _precision, suffixes, 4, _suffix);
 }
 
-std::string dev::getFormattedMemory(double _mem, ScaleSuffix _suffix, int _precision)
+string dev::getFormattedMemory(double _mem, ScaleSuffix _suffix, int _precision)
 {
     static string suffixes[] = {"B", "KB", "MB", "GB"};
     return dev::getScaledSize(_mem, 1024.0, _precision, suffixes, 4, _suffix);
 }
 
-std::string dev::padLeft(std::string _value, size_t _length, char _fillChar) 
+string dev::padLeft(string _value, size_t _length, char _fillChar)
 {
     if (_length > _value.size())
         _value.insert(0, (_length - _value.size()), _fillChar);
     return _value;
 }
 
-std::string dev::padRight(std::string _value, size_t _length, char _fillChar)
+string dev::padRight(string _value, size_t _length, char _fillChar)
 {
     if (_length > _value.size())
         _value.resize(_length, _fillChar);

@@ -51,7 +51,7 @@ public:
 protected:
     bool initDevice() override;
 
-    bool initEpoch_internal() override;
+    void initEpoch() override;
 
     void kick_miner() override;
 
@@ -83,6 +83,9 @@ private:
 
     unsigned m_dagItems = 0;
     uint64_t m_lastNonce = 0;
+
+    uint32_t m_groupSize = 0;
+    uint32_t m_groupMultiple = 0;
 };
 
 }  // namespace eth

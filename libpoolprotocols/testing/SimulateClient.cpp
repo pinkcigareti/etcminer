@@ -4,7 +4,7 @@
 #include "SimulateClient.h"
 
 using namespace std;
-using namespace std::chrono;
+using namespace chrono;
 using namespace dev;
 using namespace eth;
 
@@ -54,13 +54,12 @@ void SimulateClient::submitHashrate(uint64_t const& rate, string const& id)
 void SimulateClient::submitSolution(const Solution& solution)
 {
     // This is a fake submission only evaluated locally
-    std::chrono::steady_clock::time_point submit_start = std::chrono::steady_clock::now();
+    chrono::steady_clock::time_point submit_start = chrono::steady_clock::now();
     bool accepted =
         EthashAux::eval(solution.work.epoch, solution.work.header, solution.nonce).value <=
         solution.work.boundary;
-    std::chrono::milliseconds response_delay_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - submit_start);
+    chrono::milliseconds response_delay_ms =
+        chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - submit_start);
 
     if (accepted)
     {
@@ -77,7 +76,7 @@ void SimulateClient::submitSolution(const Solution& solution)
 // Handles all logic here
 void SimulateClient::workLoop()
 {
-    m_start_time = std::chrono::steady_clock::now();
+    m_start_time = chrono::steady_clock::now();
 
     // apply exponential sliding average
     // ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
@@ -94,7 +93,7 @@ void SimulateClient::workLoop()
     while (m_session)
     {
         float hr = Farm::f().HashRate();
-        hr_max = std::max(hr_max, hr);
+        hr_max = max(hr_max, hr);
         hr_mean = hr_alpha * hr_mean + (1.0f - hr_alpha) * hr;
 
         this_thread::sleep_for(chrono::milliseconds(200));
