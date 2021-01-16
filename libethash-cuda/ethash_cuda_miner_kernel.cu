@@ -16,10 +16,9 @@
 
 #include "dagger_shuffled.cuh"
 
-__global__ void ethash_search(
-    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce)
+__global__ void ethash_search(Search_results* g_output, uint64_t start_nonce)
 {
-    if (*g_abort)
+    if (g_output->done)
         return;
     uint32_t const gid = blockIdx.x * blockDim.x + threadIdx.x;
     uint2 mix[4];
@@ -40,14 +39,14 @@ __global__ void ethash_search(
     g_output->result[index].mix[5] = mix[2].y;
     g_output->result[index].mix[6] = mix[3].x;
     g_output->result[index].mix[7] = mix[3].y;
-    *g_abort = 1;
+    g_output->done = 1;
 }
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce)
+    Search_results* g_output, uint64_t start_nonce)
 {
-    ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, g_abort, start_nonce);
-    CUDA_SAFE_CALL(cudaGetLastError());
+    ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
+    CUDA_CALL(cudaGetLastError());
 }
 
 #define ETHASH_DATASET_PARENTS 256
@@ -101,24 +100,24 @@ void ethash_generate_dag(
     for (base = 0; base <= work - run; base += run)
     {
         ethash_calculate_dag_item<<<gridSize, blockSize, 0, stream>>>(base);
-        CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        CUDA_CALL(cudaDeviceSynchronize());
     }
     if (base < work)
     {
         uint32_t lastGrid = work - base;
         lastGrid = (lastGrid + blockSize - 1) / blockSize;
         ethash_calculate_dag_item<<<lastGrid, blockSize, 0, stream>>>(base);
-        CUDA_SAFE_CALL(cudaDeviceSynchronize());
+        CUDA_CALL(cudaDeviceSynchronize());
     }
-    CUDA_SAFE_CALL(cudaGetLastError());
+    CUDA_CALL(cudaGetLastError());
 }
 
 void set_constants(hash128_t* _dag, uint32_t _dag_size, hash64_t* _light, uint32_t _light_size)
 {
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_dag, &_dag, sizeof(hash128_t*)));
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_dag_size, &_dag_size, sizeof(uint32_t)));
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_light, &_light, sizeof(hash64_t*)));
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_light_size, &_light_size, sizeof(uint32_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_dag, &_dag, sizeof(hash128_t*)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_dag_size, &_dag_size, sizeof(uint32_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_light, &_light, sizeof(hash64_t*)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_light_size, &_light_size, sizeof(uint32_t)));
 }
 
 void get_constants(hash128_t** _dag, uint32_t* _dag_size, hash64_t** _light, uint32_t* _light_size)
@@ -130,35 +129,35 @@ void get_constants(hash128_t** _dag, uint32_t* _dag_size, hash64_t** _light, uin
     if (_dag)
     {
         hash128_t* _d;
-        CUDA_SAFE_CALL(cudaMemcpyFromSymbol(&_d, d_dag, sizeof(hash128_t*)));
+        CUDA_CALL(cudaMemcpyFromSymbol(&_d, d_dag, sizeof(hash128_t*)));
         *_dag = _d;
     }
     if (_dag_size)
     {
         uint32_t _ds;
-        CUDA_SAFE_CALL(cudaMemcpyFromSymbol(&_ds, d_dag_size, sizeof(uint32_t)));
+        CUDA_CALL(cudaMemcpyFromSymbol(&_ds, d_dag_size, sizeof(uint32_t)));
         *_dag_size = _ds;
     }
     if (_light)
     {
         hash64_t* _l;
-        CUDA_SAFE_CALL(cudaMemcpyFromSymbol(&_l, d_light, sizeof(hash64_t*)));
+        CUDA_CALL(cudaMemcpyFromSymbol(&_l, d_light, sizeof(hash64_t*)));
         *_light = _l;
     }
     if (_light_size)
     {
         uint32_t _ls;
-        CUDA_SAFE_CALL(cudaMemcpyFromSymbol(&_ls, d_light_size, sizeof(uint32_t)));
+        CUDA_CALL(cudaMemcpyFromSymbol(&_ls, d_light_size, sizeof(uint32_t)));
         *_light_size = _ls;
     }
 }
 
 void set_header(hash32_t _header)
 {
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_header, &_header, sizeof(hash32_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_header, &_header, sizeof(hash32_t)));
 }
 
 void set_target(uint64_t _target)
 {
-    CUDA_SAFE_CALL(cudaMemcpyToSymbol(d_target, &_target, sizeof(uint64_t)));
+    CUDA_CALL(cudaMemcpyToSymbol(d_target, &_target, sizeof(uint64_t)));
 }

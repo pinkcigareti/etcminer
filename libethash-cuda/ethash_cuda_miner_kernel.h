@@ -24,8 +24,8 @@ struct Search_Result
 struct Search_results
 {
     Search_Result result[MAX_SEARCH_RESULTS];
-    uint32_t count;
-    uint32_t hashCount;
+    uint32_t count, hashCount;
+    volatile uint32_t done;
 };
 
 #define ACCESSES 64
@@ -58,7 +58,7 @@ void set_header(hash32_t _header);
 void set_target(uint64_t _target);
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    Search_results* g_output, volatile uint32_t* g_abort, uint64_t start_nonce);
+    Search_results* g_output, uint64_t start_nonce);
 
 void ethash_generate_dag(uint64_t dag_size, uint32_t blocks, uint32_t threads, cudaStream_t stream);
 
@@ -67,7 +67,7 @@ struct cuda_runtime_error : public virtual std::runtime_error
     cuda_runtime_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 
-#define CUDA_SAFE_CALL(call)                                                              \
+#define CUDA_CALL(call)                                                                   \
     do                                                                                    \
     {                                                                                     \
         cudaError_t err = call;                                                           \

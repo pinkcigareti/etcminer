@@ -645,14 +645,14 @@ bool CLMiner::initDevice()
     }
 
     ostringstream s;
-    s << "Using Device : " << m_deviceDescriptor.uniqueId << " " << m_deviceDescriptor.clName;
+    s << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.clName;
 
     if (!m_deviceDescriptor.clNvCompute.empty())
         s << " (Compute " + m_deviceDescriptor.clNvCompute + ")";
     else
-        s << " " << m_deviceDescriptor.clDeviceVersion;
+        s << " (" << m_deviceDescriptor.clDeviceVersion;
 
-    s << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
+    s << ") Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
     cllog << s.str();
 
     return true;

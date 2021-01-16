@@ -52,7 +52,6 @@ private:
     void workLoop() override;
 
     Search_results* m_search_buf[4];
-    uint32_t* m_abort = nullptr;
     cudaStream_t m_streams[4];
     uint64_t m_current_target = 0;
 
@@ -62,7 +61,7 @@ private:
     uint64_t m_allocated_memory_dag = 0; // dag_size is a uint64_t in EpochContext struct
     size_t m_allocated_memory_light_cache = 0;
 
-    bool m_done = false;
+    volatile bool m_done = true;
 
     uint32_t m_blockSize = 0;
     uint32_t m_gridSize = 0;
