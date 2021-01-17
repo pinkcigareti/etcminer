@@ -1125,13 +1125,20 @@ int main(int argc, char** argv)
     cnote << EthWhite "Build: " << bi->system_name << "/" << bi->build_type << "/"
           << bi->compiler_id;
     stringstream ss;
-    ss << EthWhite "3rd Party: Boost " << BOOST_VERSION / 100000 << '.'
-       << BOOST_VERSION / 100 % 1000 << '.' << BOOST_VERSION % 100;
+    ss << EthWhite "3rd Party: ";
+#if ETH_ETHASHCUDA
+    int v;
+    if (cudaRuntimeGetVersion(&v) == cudaSuccess)
+        ss << "CUDA " << v / 1000 << '.' << (v % 100) / 10 << ", ";
+
+#endif
+    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
+       << BOOST_VERSION % 100;
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
     ss << ", OpenSSL " << sv[1] << ", CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
-    cnote << ss.str();
+    cnote << ss.str() << EthReset;
 
     if (argc < 2)
     {
