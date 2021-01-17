@@ -90,7 +90,7 @@ void CUDAMiner::initEpoch()
             // We need to reset the device and (re)create the dag
             // cudaDeviceReset() frees all previous allocated memory
             CUDA_CALL(cudaDeviceReset());
-            CUDA_CALL(cudaSetDeviceFlags(cudaDeviceScheduleYield));
+            CUDA_CALL(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
             CUDA_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
             // Check whether the current device has sufficient memory every time we recreate the dag
