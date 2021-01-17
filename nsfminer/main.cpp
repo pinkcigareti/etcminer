@@ -618,7 +618,7 @@ public:
     void help()
     {
         cout << "Ethminer - GPU ethash miner" << endl
-             << "minimal usage : nsgminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
+             << "minimal usage : nsfminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
              << endl
              << "Devices type options :" << endl
              << endl
