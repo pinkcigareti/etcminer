@@ -371,6 +371,9 @@ void CLMiner::workLoop()
 #endif
             }
 
+            float hr = RetrieveHashRate();
+            if (hr > 1e7)
+                m_groupMultiple = uint32_t(hr * TARGET_BATCH_TIME / m_groupSize);
             // Run the kernel.
             m_searchKernel.setArg(5, startNonce);
             m_queue[0].enqueueNDRangeKernel(

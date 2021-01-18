@@ -14,6 +14,8 @@
 
 #include <boost/format.hpp>
 
+#define TARGET_BATCH_TIME 0.3F  // seconds
+
 using namespace std;
 
 namespace dev

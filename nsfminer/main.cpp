@@ -1120,7 +1120,9 @@ int main(int argc, char** argv)
 #endif
     // Always out release version
     auto* bi = nsfminer_get_buildinfo();
-    cnote << EthWhite "nsfminer (No stinkin' fees edition) " << bi->project_version << " (GPLv3)";
+    cnote << EthYellow "nsfminer " << bi->project_version << " (No stinkin' fees edition)";
+    cnote << EthWhite "Copyright 2021 Jean M. Cyr, Licensed under the terms";
+    cnote << EthWhite " of the GNU General Public License Version 3";
     cnote << EthWhite "https://github.com/miscellaneousbits/nsfminer";
     cnote << EthWhite "Build: " << bi->system_name << "/" << bi->build_type << "/"
           << bi->compiler_id;

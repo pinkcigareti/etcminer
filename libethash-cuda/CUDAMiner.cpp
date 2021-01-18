@@ -205,6 +205,13 @@ void CUDAMiner::workLoop()
             current = w;
             uint64_t upper64OfBoundary = (uint64_t)(u64)((u256)current.boundary >> 192);
 
+            // adjust work multiplier
+            float hr = RetrieveHashRate();
+            if (hr >= 1e7)
+            {
+                m_batch_size = uint32_t((hr * TARGET_BATCH_TIME) / (m_blockSize * m_streamSize));
+                m_streams_batch_size = m_batch_size * m_streamSize;
+            }
             // Eventually start searching
             search(current.header.data(), upper64OfBoundary, current.startNonce, w);
         }
@@ -390,8 +397,6 @@ void CUDAMiner::search(
                             offsetof(Search_Result, mix),
                         sizeof(Search_Result::mix));
                 }
-                for (uint32_t i = 0; i < m_streamSize; i++)
-                    CUDA_CALL(cudaStreamSynchronize(m_streams[i]));
             }
 
             if (!m_done)
@@ -417,6 +422,8 @@ void CUDAMiner::search(
         }
         updateHashRate(m_blockSize, batchCount);
     }
+    for (uint32_t i = 0; i < m_streamSize; i++)
+        CUDA_CALL(cudaStreamSynchronize(m_streams[i]));
 
 #ifdef DEV_BUILD
     // Optionally log job switch time
