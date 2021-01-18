@@ -8,6 +8,8 @@
 
 #include <functional>
 
+#define MAX_STREAMS 4
+
 namespace dev
 {
 namespace eth
@@ -34,12 +36,9 @@ protected:
 private:
     void workLoop() override;
 
-    Search_results* m_search_buf[4];
-    cudaStream_t m_streams[4];
+    Search_results* m_search_buf[MAX_STREAMS];
+    cudaStream_t m_streams[MAX_STREAMS];
     uint64_t m_current_target = 0;
-
-    uint32_t m_batch_size = 0;
-    uint32_t m_streams_batch_size = 0;
 
     uint64_t m_allocated_memory_dag = 0; // dag_size is a uint64_t in EpochContext struct
     size_t m_allocated_memory_light_cache = 0;

@@ -7,6 +7,10 @@
 
 **nsfminer** is an Ethash GPU mining application: with nsfminer you can mine every coin which relies on an Ethash Proof of Work.
 
+This is a direct descendent of the Ethminer project at https://github.com/ethereum-mining/ethminer. Since that project
+is largely abandoned and unmanaged this personal version is published with the hope that it may continue to be useful. In the spirit
+of open source problem reports and pull requests are welcome.
+
 ## Features
 
 * OpenCL mining

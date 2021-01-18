@@ -25,21 +25,21 @@ __global__ void ethash_search(Search_results* g_output, uint64_t start_nonce)
     uint2 mix[4];
     bool r = compute_hash(start_nonce + gid, mix);
     if (threadIdx.x == 0)
-        atomicInc((uint32_t*)&g_output->hashCount, 0xffffffff);
+        atomicInc((uint32_t*)&g_output->counts.hashCount, 0xffffffff);
     if (r)
         return;
-    uint32_t index = atomicInc((uint32_t*)&g_output->count, 0xffffffff);
+    uint32_t index = atomicInc((uint32_t*)&g_output->counts.solCount, 0xffffffff);
     if (index >= MAX_SEARCH_RESULTS)
         return;
-    g_output->result[index].gid = gid;
-    g_output->result[index].mix[0] = mix[0].x;
-    g_output->result[index].mix[1] = mix[0].y;
-    g_output->result[index].mix[2] = mix[1].x;
-    g_output->result[index].mix[3] = mix[1].y;
-    g_output->result[index].mix[4] = mix[2].x;
-    g_output->result[index].mix[5] = mix[2].y;
-    g_output->result[index].mix[6] = mix[3].x;
-    g_output->result[index].mix[7] = mix[3].y;
+    g_output->results[index].gid = gid;
+    g_output->results[index].mix[0] = mix[0].x;
+    g_output->results[index].mix[1] = mix[0].y;
+    g_output->results[index].mix[2] = mix[1].x;
+    g_output->results[index].mix[3] = mix[1].y;
+    g_output->results[index].mix[4] = mix[2].x;
+    g_output->results[index].mix[5] = mix[2].y;
+    g_output->results[index].mix[6] = mix[3].x;
+    g_output->results[index].mix[7] = mix[3].y;
     g_output->done = 1;
 }
 

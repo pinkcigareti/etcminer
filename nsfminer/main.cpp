@@ -1124,10 +1124,17 @@ int main(int argc, char** argv)
     cnote << EthWhite "Copyright 2021 Jean M. Cyr, Licensed under the terms";
     cnote << EthWhite " of the GNU General Public License Version 3";
     cnote << EthWhite "https://github.com/miscellaneousbits/nsfminer";
-    cnote << EthWhite "Build: " << bi->system_name << "/" << bi->build_type << "/"
+    cnote << EthWhite "Build: " << bi->system_name << '/' << bi->build_type << '/'
           << bi->compiler_id;
+    ;
     stringstream ss;
     ss << EthWhite "3rd Party: ";
+#if defined(__GNUC__)
+    ss << "GCC " << bi->compiler_version << ", ";
+#else
+    ss << "MSVC " << bi->compiler_version << ", ";
+#endif
+
 #if ETH_ETHASHCUDA
     int v;
     if (cudaRuntimeGetVersion(&v) == cudaSuccess)
@@ -1139,7 +1146,10 @@ int main(int argc, char** argv)
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
-    ss << ", OpenSSL " << sv[1] << ", CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
+    ss << ", OpenSSL " << sv[1];
+    cnote << ss.str() << EthReset;
+    ss.str("");
+    ss << EthWhite "3rd Party: CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
     cnote << ss.str() << EthReset;
 
     if (argc < 2)

@@ -21,11 +21,16 @@ struct Search_Result
     uint32_t pad[7];  // pad to size power of 2
 };
 
+struct count_pair
+{
+    uint32_t solCount, hashCount;
+};
+
 struct Search_results
 {
-    Search_Result result[MAX_SEARCH_RESULTS];
-    uint32_t count, hashCount;
     volatile uint32_t done;
+    struct count_pair counts;
+    Search_Result results[MAX_SEARCH_RESULTS];
 };
 
 #define ACCESSES 64
