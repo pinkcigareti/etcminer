@@ -243,7 +243,7 @@ struct TelemetryType
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
-            _ret << (miner.paused ? EthRed : "") << miner.prefix << i << " " << EthTeal
+            _ret << (miner.paused ? EthRed : (hr < 1 ? EthYellow : "")) << miner.prefix << i << " " << EthTeal
                  << std::fixed << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
