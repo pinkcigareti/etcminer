@@ -31,13 +31,24 @@ commands:
           destination: nsfminer
 
 executors:
- docker-executor:
+ docker-executor-u20n11:
    docker:
      - image: nvidia/cuda:11.0-devel-ubuntu20.04
 
+ docker-executor-u18n10:
+   docker:
+     - image: nvidia/cuda:10.2-devel-ubuntu18.04
+
 jobs:
-  build-with-docker:
-    executor: docker-executor
+  build-with-docker-u20n11:
+    executor: docker-executor-u20n11
+    steps:
+      - build
+    environment:
+        TZ: "America/New_York"
+
+  build-with-docker-u18n10:
+    executor: docker-executor-u18n10
     steps:
       - build
     environment:
@@ -46,5 +57,5 @@ jobs:
 workflows:
   build-with-docker:
     jobs:
-      - build-with-docker
+      - build-with-docker-u20n11
 
