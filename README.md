@@ -25,6 +25,7 @@ of open source problem reports and pull requests are welcome.
 * [Usage](#usage)
     * [Examples connecting to pools](#examples-connecting-to-pools)
 * [Build](#build)
+    * [Master branch build status](#master-branchr-buildr-status)
     * [Building from source](#building-from-source)
 * [Contribute](#contribute)
 
@@ -45,9 +46,10 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 ## Build
 
-### Building from source
+### Master branch build status
 
-See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
+[![CircleCI](https://circleci.com/gh/no-fee-ethereum-mining/nsfminer.svg?style=svg)](https://circleci.com/gh/no-fee-ethereum-mining/fminer)
+
 
 ## Contribute
 
