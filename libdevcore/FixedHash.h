@@ -18,12 +18,6 @@ template <unsigned N>
 class FixedHash
 {
 public:
-#if defined(_WIN32)
-    const char* k_ellipsis = "...";
-#else
-    const char* k_ellipsis = "\342\200\246";
-#endif
-
     /// The corresponding arithmetic type.
     using Arith = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<N * 8, N * 8,
         boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>>;
@@ -187,7 +181,15 @@ public:
 
     /// @returns an abridged version of the hash as a user-readable hex string.
 
-    std::string abridged() const { return toHex(ref().cropped(0, 4)) + k_ellipsis; }
+    std::string abridged() const {
+#if defined(_WIN32)
+        const char* ellipsis = "...";
+#else
+        const char* ellipsis = "\342\200\246";
+#endif
+
+        return toHex(ref().cropped(0, 4)) + ellipsis;
+    }
 
     /// @returns the hash as a user-readable hex string.
     std::string hex(HexPrefix _prefix = HexPrefix::DontAdd) const { return toHex(ref(), 2, _prefix); }
