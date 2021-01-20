@@ -42,7 +42,6 @@ jobs:
       - build
     environment:
         TZ: "America/New_York"
-    parallelism: 4
 
 workflows:
   build-with-docker:
