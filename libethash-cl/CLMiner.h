@@ -31,6 +31,8 @@
 #define CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV 0x4001
 #endif
 
+#define CL_TARGET_BATCH_TIME 0.3F  // seconds
+
 namespace dev
 {
 namespace eth
@@ -78,9 +80,6 @@ private:
 
     unsigned m_dagItems = 0;
     uint64_t m_lastNonce = 0;
-
-    uint32_t m_groupSize = 0;
-    uint32_t m_groupMultiple = 0;
 };
 
 }  // namespace eth

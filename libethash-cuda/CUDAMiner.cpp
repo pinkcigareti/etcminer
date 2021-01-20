@@ -15,13 +15,10 @@ struct CUDAChannel : public LogChannel
 };
 #define cudalog clog(CUDAChannel)
 
-CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device)
-  : Miner("cu-", _index),
-    m_blockSize(_device.cuBlockSize),
-    m_gridSize(_device.cuGridSize),
-    m_streamSize(_device.cuStreamSize)
+CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cu-", _index)
 {
     m_deviceDescriptor = _device;
+    m_block_multiple = 1000;
 }
 
 CUDAMiner::~CUDAMiner()
@@ -124,7 +121,7 @@ void CUDAMiner::initEpoch()
             m_allocated_memory_dag = m_epochContext.dagSize;
 
             // create mining buffers
-            for (unsigned i = 0; i < m_streamSize; ++i)
+            for (unsigned i = 0; i < m_deviceDescriptor.cuStreamSize; ++i)
             {
                 CUDA_CALL(cudaMalloc(&m_search_buf[i], sizeof(Search_results)));
                 CUDA_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
@@ -142,7 +139,8 @@ void CUDAMiner::initEpoch()
         set_constants(dag, m_epochContext.dagNumItems, light,
             m_epochContext.lightNumItems);  // in ethash_cuda_miner_kernel.cu
 
-        ethash_generate_dag(m_epochContext.dagSize, m_gridSize, m_blockSize, m_streams[0]);
+        ethash_generate_dag(
+            m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
         cudalog << "Generated DAG + Light in "
                 << chrono::duration_cast<chrono::milliseconds>(
@@ -206,7 +204,9 @@ void CUDAMiner::workLoop()
             // adjust work multiplier
             float hr = RetrieveHashRate();
             if (hr >= 1e7)
-                m_gridSize = uint32_t((hr * TARGET_BATCH_TIME) / m_streamSize);
+                m_block_multiple =
+                    uint32_t((hr * CU_TARGET_BATCH_TIME) /
+                             (m_deviceDescriptor.cuStreamSize * m_deviceDescriptor.cuBlockSize));
 
             // Eventually start searching
             search(current.header.data(), upper64OfBoundary, current.startNonce, w);
@@ -229,7 +229,7 @@ void CUDAMiner::kick_miner()
     if (!m_done)
     {
         m_done = true;
-        for (unsigned i = 0; i < m_streamSize; i++)
+        for (unsigned i = 0; i < m_deviceDescriptor.cuStreamSize; i++)
             CUDA_CALL(cudaMemcpyAsync((uint8_t*)m_search_buf[i] + offsetof(Search_results, done),
                 &one, sizeof(one), cudaMemcpyHostToDevice));
     }
@@ -294,10 +294,8 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;
             deviceDescriptor.cuComputeMinor = props.minor;
-            // deviceDescriptor.cuGridSize = int(ceil(props.multiProcessorCount * 3276.8));
-            deviceDescriptor.cuGridSize = 15625;
             deviceDescriptor.cuBlockSize = 128;
-            deviceDescriptor.cuStreamSize = 4;
+            deviceDescriptor.cuStreamSize = 2;
 
 
             _DevicesCollection[uniqueId] = deviceDescriptor;
@@ -320,20 +318,21 @@ void CUDAMiner::search(
         set_target(target);
         m_current_target = target;
     }
-    uint32_t batch_blocks(m_gridSize * m_blockSize);
-    uint32_t stream_blocks(batch_blocks * m_streamSize);
+    uint32_t batch_blocks(m_block_multiple * m_deviceDescriptor.cuBlockSize);
+    uint32_t stream_blocks(batch_blocks * m_deviceDescriptor.cuStreamSize);
 
     // prime each stream, clear search result buffers and start the search
-    for (uint32_t streamIdx = 0; streamIdx < m_streamSize; streamIdx++, start_nonce += batch_blocks)
+    for (uint32_t streamIdx = 0; streamIdx < m_deviceDescriptor.cuStreamSize;
+         streamIdx++, start_nonce += batch_blocks)
     {
         HostToDevice((uint8_t*)m_search_buf[streamIdx] + offsetof(Search_results, done), zero3,
             sizeof(zero3));
-        run_ethash_search(
-            m_gridSize, m_blockSize, m_streams[streamIdx], m_search_buf[streamIdx], start_nonce);
+        run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[streamIdx],
+            m_search_buf[streamIdx], start_nonce);
     }
 
     m_done = false;
-    uint32_t streams_bsy((1 << m_streamSize) - 1);
+    uint32_t streams_bsy((1 << m_deviceDescriptor.cuStreamSize) - 1);
 
     // process stream batches until we get new work.
 
@@ -345,7 +344,7 @@ void CUDAMiner::search(
         uint32_t batchCount(0);
 
         // This inner loop will process each cuda stream individually
-        for (uint32_t streamIdx = 0; streamIdx < m_streamSize;
+        for (uint32_t streamIdx = 0; streamIdx < m_deviceDescriptor.cuStreamSize;
              streamIdx++, start_nonce += batch_blocks)
         {
             uint32_t stream_mask(1 << streamIdx);
@@ -375,8 +374,8 @@ void CUDAMiner::search(
             if (m_done)
                 streams_bsy &= ~stream_mask;
             else
-                run_ethash_search(
-                    m_gridSize, m_blockSize, stream, (Search_results*)buffer, start_nonce);
+                run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, stream,
+                    (Search_results*)buffer, start_nonce);
 
             if (r.counts.solCount)
                 for (uint32_t i = 0; i < r.counts.solCount; i++)
@@ -391,7 +390,7 @@ void CUDAMiner::search(
             if (shouldStop())
                 m_done = true;
         }
-        updateHashRate(m_blockSize, batchCount);
+        updateHashRate(m_deviceDescriptor.cuBlockSize, batchCount);
     }
 
 #ifdef DEV_BUILD

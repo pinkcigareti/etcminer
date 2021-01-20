@@ -247,10 +247,10 @@ vector<cl::Device> getDevices(vector<cl::Platform> const& _platforms, unsigned _
 }  // namespace eth
 }  // namespace dev
 
-CLMiner::CLMiner(unsigned _index, DeviceDescriptor& _device)
-  : Miner("cl-", _index), m_groupSize(_device.clGroupSize), m_groupMultiple(_device.clGroupMultiple)
+CLMiner::CLMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cl-", _index)
 {
     m_deviceDescriptor = _device;
+    m_block_multiple = 200000;
 }
 
 CLMiner::~CLMiner()
@@ -373,11 +373,12 @@ void CLMiner::workLoop()
 
             float hr = RetrieveHashRate();
             if (hr > 1e7)
-                m_groupMultiple = uint32_t(hr * TARGET_BATCH_TIME / m_groupSize);
+                m_block_multiple =
+                    uint32_t(hr * CL_TARGET_BATCH_TIME / m_deviceDescriptor.clGroupSize);
             // Run the kernel.
             m_searchKernel.setArg(5, startNonce);
-            m_queue[0].enqueueNDRangeKernel(
-                m_searchKernel, cl::NullRange, m_groupSize * m_groupMultiple, m_groupSize);
+            m_queue[0].enqueueNDRangeKernel(m_searchKernel, cl::NullRange,
+                m_deviceDescriptor.clGroupSize * m_block_multiple, m_deviceDescriptor.clGroupSize);
 
             if (results.count)
             {
@@ -388,11 +389,9 @@ void CLMiner::workLoop()
                     if (nonce != m_lastNonce)
                     {
                         m_lastNonce = nonce;
-                        h256 mix;
-                        memcpy(mix.data(), (char*)results.rslt[i].mix, sizeof(results.rslt[i].mix));
-
+                        h256* mix = (h256*)&results.rslt[i].mix;
                         Farm::f().submitProof(
-                            Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
+                            Solution{nonce, *mix, current, chrono::steady_clock::now(), m_index});
                         cllog << EthWhite << "Job: " << current.header.abridged()
                               << " Solution: " << toHex(nonce, HexPrefix::Add) << EthReset;
                     }
@@ -402,9 +401,9 @@ void CLMiner::workLoop()
             current = w;  // kernel now processing newest work
             current.startNonce = startNonce;
             // Increase start nonce for following kernel execution.
-            startNonce += m_groupSize * m_groupMultiple;
+            startNonce += m_deviceDescriptor.clGroupSize * m_block_multiple;
             // Report hash count
-            updateHashRate(m_groupSize, results.hashCount);
+            updateHashRate(m_deviceDescriptor.clGroupSize, results.hashCount);
         }
 
         if (m_queue.size())
@@ -553,7 +552,6 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
             deviceDescriptor.clGroupSize = 64;
-            deviceDescriptor.clGroupMultiple = 312500;
 
             // Is it an NVIDIA card ?
             if (platformType == ClPlatformTypeEnum::Nvidia)
@@ -719,7 +717,7 @@ void CLMiner::initEpoch()
         cllog << "OpenCL kernel";
         code = string(ethash_cl, ethash_cl + sizeof(ethash_cl));
 
-        addDefinition(code, "WORKSIZE", m_groupSize);
+        addDefinition(code, "WORKSIZE", m_deviceDescriptor.clGroupSize);
         addDefinition(code, "ACCESSES", 64);
         addDefinition(code, "MAX_OUTPUTS", c_maxSearchResults);
         addDefinition(code, "PLATFORM", static_cast<unsigned>(m_deviceDescriptor.clPlatformType));
@@ -756,7 +754,8 @@ void CLMiner::initEpoch()
             /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
             transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
             fname_strm << boost::dll::program_location().parent_path().string()
-                       << "/kernels/ethash_" << device_name << "_lws" << m_groupSize << ".bin";
+                       << "/kernels/ethash_" << device_name << "_lws"
+                       << m_deviceDescriptor.clGroupSize << ".bin";
             cllog << "Loading binary kernel " << fname_strm.str();
             try
             {
@@ -880,20 +879,22 @@ void CLMiner::initEpoch()
         const uint32_t workItems = m_dagItems * 2;  // GPU computes partial 512-bit DAG items.
 
         uint32_t start;
-        const uint32_t chunk = m_groupSize * m_groupMultiple;
+        const uint32_t chunk = m_deviceDescriptor.clGroupSize * m_block_multiple;
         for (start = 0; start <= workItems - chunk; start += chunk)
         {
             m_dagKernel.setArg(0, start);
-            m_queue[0].enqueueNDRangeKernel(m_dagKernel, cl::NullRange, chunk, m_groupSize);
+            m_queue[0].enqueueNDRangeKernel(
+                m_dagKernel, cl::NullRange, chunk, m_deviceDescriptor.clGroupSize);
             m_queue[0].finish();
         }
         if (start < workItems)
         {
             uint32_t groupsLeft = workItems - start;
-            groupsLeft = (groupsLeft + m_groupSize - 1) / m_groupSize;
+            groupsLeft =
+                (groupsLeft + m_deviceDescriptor.clGroupSize - 1) / m_deviceDescriptor.clGroupSize;
             m_dagKernel.setArg(0, start);
-            m_queue[0].enqueueNDRangeKernel(
-                m_dagKernel, cl::NullRange, groupsLeft * m_groupSize, m_groupSize);
+            m_queue[0].enqueueNDRangeKernel(m_dagKernel, cl::NullRange,
+                groupsLeft * m_deviceDescriptor.clGroupSize, m_deviceDescriptor.clGroupSize);
             m_queue[0].finish();
         }
 

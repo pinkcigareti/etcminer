@@ -9,6 +9,7 @@
 #include <functional>
 
 #define MAX_STREAMS 4
+#define CU_TARGET_BATCH_TIME 0.9F  // seconds
 
 namespace dev
 {
@@ -44,10 +45,6 @@ private:
     size_t m_allocated_memory_light_cache = 0;
 
     volatile bool m_done = true;
-
-    uint32_t m_blockSize = 0;
-    uint32_t m_gridSize = 0;
-    uint32_t m_streamSize = 0;
 };
 
 

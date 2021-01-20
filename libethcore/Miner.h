@@ -14,8 +14,6 @@
 
 #include <boost/format.hpp>
 
-#define TARGET_BATCH_TIME 0.3F  // seconds
-
 using namespace std;
 
 namespace dev
@@ -138,7 +136,6 @@ struct DeviceDescriptor
     string cuCompute;
     unsigned int cuComputeMajor;
     unsigned int cuComputeMinor;
-    unsigned int cuGridSize;
     unsigned int cuBlockSize;
     unsigned int cuStreamSize;
 
@@ -160,7 +157,6 @@ struct DeviceDescriptor
     string clPlatformName;
     ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
     unsigned clGroupSize;
-    unsigned clGroupMultiple;
 };
 
 struct HwMonitorInfo
@@ -396,6 +392,8 @@ protected:
     std::condition_variable m_new_work_signal;
 
     bool m_initialized = false;
+
+    uint32_t m_block_multiple;
 
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;

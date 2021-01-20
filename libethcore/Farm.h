@@ -39,6 +39,9 @@ struct FarmSettings
     unsigned hwMon = 0;        // 0 - No monitor; 1 - Temp and Fan; 2 - Temp Fan Power
     unsigned tempStart = 40;   // Temperature threshold to restart mining (if paused)
     unsigned tempStop = 0;     // Temperature threshold to pause mining (overheating)
+    unsigned cuBlockSize = 0;
+    unsigned cuStreams = 0;
+    unsigned clGroupSize = 0;
 };
 
 /**

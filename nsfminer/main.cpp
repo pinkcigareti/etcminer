@@ -316,6 +316,18 @@ public:
         app.add_flag("--cpu", cpu_miner, "");
 #endif
 
+#if ETH_ETHASHCUDA
+        app.add_set("--cu-block-size", m_FarmSettings.cuBlockSize, {32, 64, 128, 256}, "", true);
+
+        app.add_option("--cu-streams", m_FarmSettings.cuStreams, "", true)->check(CLI::Range(1, 4));
+
+#endif
+
+#if ETH_ETHASHCL
+        app.add_set("--cl-local-work", m_FarmSettings.clGroupSize, {64, 128, 256}, "", true);
+
+#endif
+
         auto sim_opt = app.add_option(
             "-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
 
@@ -746,11 +758,8 @@ public:
                  << "    Use this extended OpenCL arguments to fine tune the performance." << endl
                  << "    Be advised default values are best generic findings by developers" << endl
                  << endl
-                 << "    --cl-devices        UINT {} Default not set" << endl
-                 << "                        Space separated list of device indexes to use" << endl
-                 << "                        eg --cl-devices 0 2 3" << endl
-                 << "                        If not set all available CL devices will be used"
-                 << endl
+                 << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
+                 << "                        Set the local work size multiplier" << endl
                  << endl;
         }
 
@@ -761,11 +770,11 @@ public:
                  << "    Use this extended CUDA arguments to fine tune the performance." << endl
                  << "    Be advised default values are best generic findings by developers" << endl
                  << endl
-                 << "    --cu-devices        UINT {} Default not set" << endl
-                 << "                        Space separated list of device indexes to use" << endl
-                 << "                        eg --cu-devices 0 2 3" << endl
-                 << "                        If not set all available CUDA devices will be used"
+                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128" << endl
+                 << "                        Set the block size" << endl
                  << endl
+                 << "    --cu-streams        INT [1 .. 4] Default = 2" << endl
+                 << "                        Set the number of streams per GPU" << endl
                  << endl;
         }
 
@@ -1123,7 +1132,7 @@ int main(int argc, char** argv)
     cnote << EthYellow "nsfminer " << bi->project_version << " (No stinkin' fees edition)";
     cnote << EthWhite "Copyright 2021 Jean M. Cyr, Licensed under the terms";
     cnote << EthWhite " of the GNU General Public License Version 3";
-    cnote << EthWhite "https://github.com/miscellaneousbits/nsfminer";
+    cnote << EthWhite "https://github.com/no-fee-ethereum-mining/nsfminer";
     cnote << EthWhite "Build: " << bi->system_name << '/' << bi->build_type << '/'
           << bi->compiler_id;
     ;

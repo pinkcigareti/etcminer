@@ -206,6 +206,10 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
             {
                 minerTelemetry.prefix = "cu";
+                if (m_Settings.cuBlockSize)
+                    it->second.cuBlockSize = m_Settings.cuBlockSize;
+                if (m_Settings.cuStreams)
+                    it->second.cuStreamSize = m_Settings.cuStreams;
                 m_miners.push_back(shared_ptr<Miner>(new CUDAMiner(m_miners.size(), it->second)));
             }
 #endif
@@ -213,6 +217,8 @@ bool Farm::start()
 
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
+                if (m_Settings.clGroupSize)
+                    it->second.clGroupSize = m_Settings.clGroupSize;
                 minerTelemetry.prefix = "cl";
                 m_miners.push_back(shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
             }
