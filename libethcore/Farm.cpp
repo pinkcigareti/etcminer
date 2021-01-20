@@ -18,6 +18,7 @@ namespace dev
 namespace eth
 {
 Farm* Farm::m_this = nullptr;
+const int Farm::m_collectInterval;
 
 Farm::Farm(map<string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings)
   : m_Settings(move(_settings)),
