@@ -1,0 +1,51 @@
+version: 2.1
+
+commands:
+  restore_cache_cmd:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "nsfminer.xml" }}
+            - v1-dependencies-
+  save_cache_cmd:
+    steps:
+      - save_cache:
+          paths:
+            - ~/.hunter
+          key: v1-dependencies-{{ checksum "nsfminer.xml" }}
+  build:
+    steps:
+      - checkout
+      - restore_cache_cmd
+      - run: ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+      - run: echo $TZ > /etc/timezone
+      - run: apt update
+      - run: apt install -y git cmake mesa-common-dev libidn11-dev python3-requests python3-git
+      - checkout
+      - run: git submodule update --init --recursive
+      - run: cmake -DHUNTER_JOBS_NUMBER=4 -DETHASHCL=ON -DETHASHCUDA=ON -DAPICORE=ON -H. -Bbuild
+      - save_cache_cmd
+      - run: cmake --build build -- -j4
+      - store_artifacts:
+          path: build/nsfminer/nsfminer
+          destination: nsfminer
+
+executors:
+ docker-executor:
+   docker:
+     - image: nvidia/cuda:11.0-devel-ubuntu20.04
+
+jobs:
+  build-with-docker:
+    executor: docker-executor
+    steps:
+      - build
+    environment:
+        TZ: "America/New_York"
+    parallelism: 4
+
+workflows:
+  build-with-docker:
+    jobs:
+      - build-with-docker
+
