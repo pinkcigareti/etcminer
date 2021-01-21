@@ -11,7 +11,6 @@ using namespace dev;
 unsigned g_logOptions = 0;
 bool g_logNoColor = false;
 bool g_logSyslog = false;
-bool g_logStdout = false;
 
 bool LogChannel::name()
 {
@@ -79,11 +78,10 @@ void dev::simpleDebugOut(string const& _s)
 {
     try
     {
-        ostream& os = g_logStdout ? cout : clog;
         if (!g_logNoColor)
         {
-            os << _s + '\n';
-            os.flush();
+            cout << _s + '\n';
+            cout.flush();
             return;
         }
         bool skip = false;
@@ -98,8 +96,8 @@ void dev::simpleDebugOut(string const& _s)
                 ss << it;
         }
         ss << '\n';
-        os << ss.str();
-        os.flush();
+        cout << ss.str();
+        cout.flush();
     }
     catch (...)
     {

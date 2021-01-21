@@ -58,6 +58,60 @@ struct MiningChannel : public LogChannel
 #include <nsfminer/DBusInt.h>
 #endif
 
+static void headers(vector<string>& h, bool color)
+{
+    const string yellow(color ? EthYellow : "");
+    const string white(color ? EthWhite : "");
+    const string reset(color ? EthReset : "");
+
+    auto* bi = nsfminer_get_buildinfo();
+    stringstream ss;
+    ss << yellow << "nsfminer " << bi->project_version << " (No stinkin' fees edition)";
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << "Copyright 2021 Jean M. Cyr, Licensed under the terms";
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << " of the GNU General Public License Version 3";
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << "https://github.com/no-fee-ethereum-mining/nsfminer";
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << "Build: " << bi->system_name << '/' << bi->build_type << '/' << bi->compiler_id;
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << "3rd Party: ";
+#if defined(__GNUC__)
+    ss << "GCC " << bi->compiler_version << ", ";
+#else
+    ss << "MSVC " << bi->compiler_version << ", ";
+#endif
+
+#if ETH_ETHASHCUDA
+    int v;
+    if (cudaRuntimeGetVersion(&v) == cudaSuccess)
+        ss << "CUDA " << v / 1000 << '.' << (v % 100) / 10 << ", ";
+
+#endif
+    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
+       << BOOST_VERSION % 100;
+    vector<string> sv;
+    string s(SSLeay_version(SSLEAY_VERSION));
+    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
+    ss << ", OpenSSL " << sv[1];
+    h.push_back(ss.str());
+
+    ss.str("");
+    ss << white << "3rd Party: CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
+    h.push_back(ss.str());
+}
+
 class MinerCLI
 {
 public:
@@ -204,7 +258,7 @@ public:
     {
         queue<string> warnings;
 
-        CLI::App app("Ethminer - GPU Ethash miner");
+        CLI::App app("\nnsfminer - GPU Ethash miner");
 
         bool bhelp = false;
         string shelpExt;
@@ -271,8 +325,6 @@ public:
         app.add_flag("--nocolor", g_logNoColor, "");
 
         app.add_flag("--syslog", g_logSyslog, "");
-
-        app.add_flag("--stdout", g_logStdout, "");
 
 #if API_CORE
 
@@ -349,6 +401,12 @@ public:
         }
         else if (version)
         {
+            vector<string> vs;
+            headers(vs, false);
+            cout << endl;
+            for (auto& v : vs)
+                cout << v << endl;
+            cout << endl;
             return false;
         }
 
@@ -629,38 +687,30 @@ public:
 
     void help()
     {
-        cout << "Ethminer - GPU ethash miner" << endl
-             << "minimal usage : nsfminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]" << endl
-             << endl
-             << "Devices type options :" << endl
-             << endl
-             << "    By default the miner will try to use all devices types" << endl
-             << "    it can detect. Optionally you can limit this behavior" << endl
-             << "    setting either of the following options" << endl
+        cout << "\nnsfminer - GPU ethash miner\n\n"
+             << "minimal usage : nsfminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]\n\n"
+             << "Devices type options :\n\n"
+             << "    By default the miner will try to use all devices types\n"
+             << "    it can detect. Optionally you can limit this behavior\n"
+             << "    setting either of the following options\n\n"
 #if ETH_ETHASHCL
-             << "    -G,--opencl         Mine/Benchmark using OpenCL only" << endl
+             << "    -G,--opencl         Mine/Benchmark using OpenCL only\n"
 #endif
 #if ETH_ETHASHCUDA
-             << "    -U,--cuda           Mine/Benchmark using CUDA only" << endl
+             << "    -U,--cuda           Mine/Benchmark using CUDA only\n"
 #endif
 #if ETH_ETHASHCPU
-             << "    --cpu               Development ONLY ! (NO MINING)" << endl
+             << "    --cpu               Development ONLY ! (NO MINING)\n"
 #endif
-             << endl
-             << "Connection options :" << endl
-             << endl
-             << "    -P,--pool           Stratum pool or http (getWork) connection as URL" << endl
+             << "\nConnection options :\n\n"
+             << "    -P,--pool           Stratum pool or http (getWork) connection as URL\n"
              << "                        "
-                "scheme://[user[.workername][:password]@]hostname:port[/...]"
-             << endl
-             << "                        For an explication and some samples about" << endl
-             << "                        how to fill in this value please use" << endl
-             << "                        nsfminer --help-ext con" << endl
-             << endl
-
-             << "Common Options :" << endl
-             << endl
-             << "    -h,--help           Displays this help text and exits" << endl
+                "scheme://[user[.workername][:password]@]hostname:port[/...]\n"
+             << "                        For an explication and some samples about\n"
+             << "                        how to fill in this value please use\n"
+             << "                        nsfminer --help-ext con\n\n"
+             << "Common Options :\n\n"
+             << "    -h,--help           Displays this help text and exits\n"
              << "    -H,--help-ext       TEXT {'con','test',"
 #if ETH_ETHASHCL
              << "cl,"
@@ -674,26 +724,24 @@ public:
 #if API_CORE
              << "api,"
 #endif
-             << "'misc','env'}" << endl
-             << "                        Display help text about one of these contexts:" << endl
-             << "                        'con'  Connections and their definitions" << endl
-             << "                        'test' Benchmark/Simulation options" << endl
+             << "'misc'}\n"
+             << "                        Display help text about one of these contexts:\n"
+             << "                        'con'  Connections and their definitions\n"
+             << "                        'test' Benchmark/Simulation options\n"
 #if ETH_ETHASHCL
-             << "                        'cl'   Extended OpenCL options" << endl
+             << "                        'cl'   Extended OpenCL options\n"
 #endif
 #if ETH_ETHASHCUDA
-             << "                        'cu'   Extended CUDA options" << endl
+             << "                        'cu'   Extended CUDA options\n"
 #endif
 #if ETH_ETHASHCPU
-             << "                        'cp'   Extended CPU options" << endl
+             << "                        'cp'   Extended CPU options\n"
 #endif
 #if API_CORE
-             << "                        'api'  API and Http monitoring interface" << endl
+             << "                        'api'  API and Http monitoring interface\n"
 #endif
-             << "                        'misc' Other miscellaneous options" << endl
-             << "                        'env'  Using environment variables" << endl
-             << "    -V,--version        Show program version and exits" << endl
-             << endl;
+             << "                        'misc' Other miscellaneous options\n"
+             << "    -V,--version        Show program version and exits\n\n";
     }
 
     void helpExt(string ctx)
@@ -701,317 +749,228 @@ public:
         // Help text for benchmarking options
         if (ctx == "test")
         {
-            cout << "Benchmarking / Simulation options :" << endl
-                 << endl
+            cout << "\nBenchmarking / Simulation options :\n\n"
                  << "    When playing with benchmark or simulation no connection specification "
-                    "is"
-                 << endl
-                 << "    needed ie. you can omit any -P argument." << endl
-                 << endl
-                 << "    -M,--benchmark      UINT [0 ..] Default not set" << endl
-                 << "                        Mining test. Used to test hashing speed." << endl
-                 << "                        Specify the block number to test on." << endl
-                 << endl
-                 << "    -Z,--simulation     UINT [0 ..] Default not set" << endl
-                 << "                        Mining test. Used to test hashing speed." << endl
-                 << "                        Specify the block number to test on." << endl
-                 << endl;
+                    "is\n"
+                 << "    needed ie. you can omit any -P argument.\n\n"
+                 << "    -M,--benchmark      UINT [0 ..] Default not set\n"
+                 << "                        Mining test. Used to test hashing speed.\n"
+                 << "                        Specify the block number to test on.\n\n"
+                 << "    -Z,--simulation     UINT [0 ..] Default not set\n"
+                 << "                        Mining test. Used to test hashing speed.\n"
+                 << "                        Specify the block number to test on.\n\n";
         }
 
         // Help text for API interfaces options
         if (ctx == "api")
         {
-            cout << "API Interface Options :" << endl
-                 << endl
-                 << "    Ethminer provide an interface for monitor and or control" << endl
-                 << "    Please note that information delivered by API interface" << endl
-                 << "    may depend on value of --HWMON" << endl
-                 << "    A single endpoint is used to accept both HTTP or plain tcp" << endl
-                 << "    requests." << endl
-                 << endl
-                 << "    --api-bind          TEXT Default not set" << endl
+            cout << "\nAPI Interface Options :\n\n"
+                 << "    Ethminer provide an interface for monitor and or control\n"
+                 << "    Please note that information delivered by API interface\n"
+                 << "    may depend on value of --HWMON\n"
+                 << "    A single endpoint is used to accept both HTTP or plain tcp\n"
+                 << "    requests.\n\n"
+                 << "    --api-bind          TEXT Default not set\n"
                  << "                        Set the API address:port the miner should listen "
-                    "on. "
-                 << endl
-                 << "                        Use negative port number for readonly mode" << endl
-                 << "    --api-port          INT [1 .. 65535] Default not set" << endl
+                    "on. \n"
+                 << "                        Use negative port number for readonly mode\n"
+                 << "    --api-port          INT [1 .. 65535] Default not set\n"
                  << "                        Set the API port, the miner should listen on all "
-                    "bound"
-                 << endl
-                 << "                        addresses. Use negative numbers for readonly mode"
-                 << endl
-                 << "    --api-password      TEXT Default not set" << endl
+                    "bound\n"
+                 << "                        addresses. Use negative numbers for readonly mode\n"
+                 << "    --api-password      TEXT Default not set\n"
                  << "                        Set the password to protect interaction with API "
-                    "server. "
-                 << endl
-                 << "                        If not set, any connection is granted access. " << endl
+                    "server. \n"
+                 << "                        If not set, any connection is granted access.\n"
                  << "                        Be advised passwords are sent unencrypted over "
-                    "plain "
-                    "TCP!!"
-                 << endl;
+                 << "plain TCP!!\n\n";
         }
 
         if (ctx == "cl")
         {
-            cout << "OpenCL Extended Options :" << endl
-                 << endl
-                 << "    Use this extended OpenCL arguments to fine tune the performance." << endl
-                 << "    Be advised default values are best generic findings by developers" << endl
-                 << endl
-                 << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
-                 << "                        Set the local work size multiplier" << endl
-                 << endl;
+            cout << "\nOpenCL Extended Options :\n\n"
+                 << "    Use this extended OpenCL arguments to fine tune the performance.\n"
+                 << "    Be advised default values are best generic findings by developers\n\n"
+                 << "    --cl-local-work     UINT {64,128,256} Default = 128\n"
+                 << "                        Set the local work size multiplier\n\n";
         }
 
         if (ctx == "cu")
         {
-            cout << "CUDA Extended Options :" << endl
-                 << endl
-                 << "    Use this extended CUDA arguments to fine tune the performance." << endl
-                 << "    Be advised default values are best generic findings by developers" << endl
-                 << endl
-                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128" << endl
-                 << "                        Set the block size" << endl
-                 << endl
-                 << "    --cu-streams        INT [1 .. 4] Default = 2" << endl
-                 << "                        Set the number of streams per GPU" << endl
-                 << endl;
+            cout << "\nCUDA Extended Options :\n\n"
+                 << "    Use this extended CUDA arguments to fine tune the performance.\n"
+                 << "    Be advised default values are best generic findings by developers\n\n"
+                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128\n"
+                 << "                        Set the block size\n\n"
+                 << "    --cu-streams        INT [1 .. 4] Default = 2\n"
+                 << "                        Set the number of streams per GPU\n\n";
         }
 
         if (ctx == "cp")
         {
-            cout << "CPU Extended Options :" << endl
-                 << endl
-                 << "    Use this extended CPU arguments" << endl
-                 << endl
-                 << "    --cp-devices        UINT {} Default not set" << endl
-                 << "                        Space separated list of device indexes to use" << endl
-                 << "                        eg --cp-devices 0 2 3" << endl
-                 << "                        If not set all available CPUs will be used" << endl
-                 << endl;
+            cout << "\nCPU Extended Options :\n\n"
+                 << "    Use this extended CPU arguments\n\n"
+                 << "    --cp-devices        UINT {} Default not set\n"
+                 << "                        Space separated list of device indexes to use\n"
+                 << "                        eg --cp-devices 0 2 3\n"
+                 << "                        If not set all available CPUs will be used\n\n";
         }
 
         if (ctx == "misc")
         {
-            cout << "Miscellaneous Options :" << endl
-                 << endl
-                 << "    This set of options is valid for mining mode independently from" << endl
-                 << "    OpenCL or CUDA or Mixed mining mode." << endl
-                 << endl
-                 << "    --display-interval  INT[1 .. 1800] Default = 5" << endl
-                 << "                        Statistic display interval in seconds" << endl
-                 << "    --farm-recheck      INT[1 .. 99999] Default = 500" << endl
-                 << "                        Set polling interval for new work in getWork mode"
-                 << endl
-                 << "                        Value expressed in milliseconds" << endl
-                 << "                        It has no meaning in stratum mode" << endl
-                 << "    --farm-retries      INT[1 .. 99999] Default = 3" << endl
-                 << "                        Set number of reconnection retries to same pool"
-                 << endl
-                 << "    --retry-delay       INT[1 .. 999] Default = 0" << endl
-                 << "                        Delay in seconds before reconnection retry" << endl
-                 << "    --failover-timeout  INT[0 .. ] Default not set" << endl
-                 << "                        Sets the number of minutes miner can stay" << endl
-                 << "                        connected to a fail-over pool before trying to" << endl
-                 << "                        reconnect to the primary (the first) connection."
-                 << endl
-                 << "                        before switching to a fail-over connection" << endl
-                 << "    --work-timeout      INT[180 .. 99999] Default = 180" << endl
-                 << "                        If no new work received from pool after this" << endl
-                 << "                        amount of time the connection is dropped" << endl
-                 << "                        Value expressed in seconds." << endl
-                 << "    --response-timeout  INT[2 .. 999] Default = 2" << endl
-                 << "                        If no response from pool to a stratum message " << endl
-                 << "                        after this amount of time the connection is dropped"
-                 << endl
-                 << "    -R,--report-hr      FLAG Notify pool of effective hashing rate" << endl
-                 << "    --HWMON             INT[0 .. 2] Default = 0" << endl
-                 << "                        GPU hardware monitoring level. Can be one of:" << endl
-                 << "                        0 No monitoring" << endl
-                 << "                        1 Monitor temperature and fan percentage" << endl
-                 << "                        2 As 1 plus monitor power drain" << endl
-                 << "    --exit              FLAG Stop miner whenever an error is encountered"
-                 << endl
-                 << "    --nocolor           FLAG Monochrome display log lines" << endl
+            cout << "\nMiscellaneous Options :\n\n"
+                 << "    This set of options is valid for mining mode independently from\n"
+                 << "    OpenCL or CUDA or Mixed mining mode.\n\n"
+                 << "    --display-interval  INT[1 .. 1800] Default = 5\n"
+                 << "                        Statistic display interval in seconds\n"
+                 << "    --farm-recheck      INT[1 .. 99999] Default = 500\n"
+                 << "                        Set polling interval for new work in getWork mode\n"
+                 << "                        Value expressed in milliseconds\n"
+                 << "                        It has no meaning in stratum mode\n"
+                 << "    --farm-retries      INT[1 .. 99999] Default = 3\n"
+                 << "                        Set number of reconnection retries to same pool\n"
+                 << "    --retry-delay       INT[1 .. 999] Default = 0\n"
+                 << "                        Delay in seconds before reconnection retry\n"
+                 << "    --failover-timeout  INT[0 .. ] Default not set\n"
+                 << "                        Sets the number of minutes miner can stay\n"
+                 << "                        connected to a fail-over pool before trying to\n"
+                 << "                        reconnect to the primary (the first) connection.\n"
+                 << "                        before switching to a fail-over connection\n"
+                 << "    --work-timeout      INT[180 .. 99999] Default = 180\n"
+                 << "                        If no new work received from pool after this\n"
+                 << "                        amount of time the connection is dropped\n"
+                 << "                        Value expressed in seconds.\n"
+                 << "    --response-timeout  INT[2 .. 999] Default = 2\n"
+                 << "                        If no response from pool to a stratum message \n"
+                 << "                        after this amount of time the connection is dropped\n"
+                 << "    -R,--report-hr      FLAG Notify pool of effective hashing rate\n"
+                 << "    --HWMON             INT[0 .. 2] Default = 0\n"
+                 << "                        GPU hardware monitoring level. Can be one of:\n"
+                 << "                        0 No monitoring\n"
+                 << "                        1 Monitor temperature and fan percentage\n"
+                 << "                        2 As 1 plus monitor power drain\n"
+                 << "    --exit              FLAG Stop miner whenever an error is encountered\n"
+                 << "    --nocolor           FLAG Monochrome display log lines\n"
                  << "    --syslog            FLAG Use syslog appropriate output (drop timestamp "
-                    "and"
-                 << endl
-                 << "                        channel prefix)" << endl
-                 << "    --stdout            FLAG Log to stdout instead of stderr" << endl
-                 << "    --eval              FLAG Enable host software re-evaluation of GPUs"
-                 << endl
-                 << "                        found nonces. Trims some ms. from submission" << endl
-                 << "                        time but it may increase rejected solution rate."
-                 << endl
+                    "and\n"
+                 << "                        channel prefix)\n"
+                 << "    --eval              FLAG Enable host software re-evaluation of GPUs\n"
+                 << "                        found nonces. Trims some ms. from submission\n"
+                 << "                        time but it may increase rejected solution rate.\n"
                  << "    --list-devices      FLAG Lists the detected OpenCL/CUDA devices and "
-                    "exits"
-                 << endl
-                 << "                        Must be combined with -G or -U or -X flags" << endl
-                 << "    --tstart            UINT[30 .. 100] Default = 0" << endl
-                 << "                        Suspend mining on GPU which temperature is above"
-                 << endl
-                 << "                        this threshold. Implies --HWMON 1" << endl
-                 << "                        If not set or zero no temp control is performed"
-                 << endl
-                 << "    --tstop             UINT[30 .. 100] Default = 40" << endl
+                    "exits\n"
+                 << "                        Must be combined with -G or -U or -X flags\n"
+                 << "    --tstart            UINT[30 .. 100] Default = 0\n"
+                 << "                        Suspend mining on GPU which temperature is above\n"
+                 << "                        this threshold. Implies --HWMON 1\n"
+                 << "                        If not set or zero no temp control is performed\n"
+                 << "    --tstop             UINT[30 .. 100] Default = 40\n"
                  << "                        Resume mining on previously overheated GPU when "
-                    "temp"
-                 << endl
-                 << "                        drops below this threshold. Implies --HWMON 1" << endl
-                 << "                        Must be lower than --tstart" << endl
-                 << "    -v,--verbosity      INT[0 .. 255] Default = 0 " << endl
-                 << "                        Set output verbosity level. Use the sum of :" << endl
-                 << "                        1   to log stratum json messages" << endl
-                 << "                        2   to log found solutions per GPU" << endl
+                    "temp\n"
+                 << "                        drops below this threshold. Implies --HWMON 1\n"
+                 << "                        Must be lower than --tstart\n"
+                 << "    -v,--verbosity      INT[0 .. 255] Default = 0\n"
+                 << "                        Set output verbosity level. Use the sum of :\n"
+                 << "                        1   to log stratum json messages\n"
+                 << "                        2   to log found solutions per GPU\n"
 #ifdef DEV_BUILD
-                 << "                        32  to log socket (dis)connections" << endl
-                 << "                        64  to log timing of job switches" << endl
-                 << "                        128 to log time for solution submission" << endl
+                 << "                        32  to log socket (dis)connections\n"
+                 << "                        64  to log timing of job switches\n"
+                 << "                        128 to log time for solution submission\n"
 #endif
-                 << endl;
+                 << '\n';
         }
 
         if (ctx == "env")
         {
-            cout << "Environment variables :" << endl
-                 << endl
-                 << "    If you need or do feel more comfortable you can set the following" << endl
-                 << "    environment variables. Please respect letter casing." << endl
-                 << endl
-                 << "    NO_COLOR            Set to any value to disable colored output." << endl
-                 << "                        Acts the same as --nocolor command line argument"
-                 << endl
-                 << "    SYSLOG              Set to any value to strip timestamp, colors and "
-                    "channel"
-                 << endl
-                 << "                        from output log." << endl
-                 << "                        Acts the same as --syslog command line argument"
-                 << endl
+            cout << "Environment variables :\n\n"
+                 << "    If you need or do feel more comfortable you can set the following\n"
+                 << "    environment variables. Please respect letter casing.\n\n"
 #ifndef _WIN32
                  << "    SSL_CERT_FILE       Set to the full path to of your CA certificates "
-                    "file"
-                 << endl
-                 << "                        if it is not in standard path :" << endl
-                 << "                        /etc/ssl/certs/ca-certificates.crt." << endl
+                    "file\n"
+                 << "                        if it is not in standard path :\n"
+                 << "                        /etc/ssl/certs/ca-certificates.crt.\n"
 #endif
                  << "    SSL_NOVERIFY        set to any value to to disable the verification "
-                    "chain "
-                    "for"
-                 << endl
+                    "chain for\n"
                  << "                        certificates. WARNING ! Disabling certificate "
-                    "validation"
-                 << endl
+                    "validation\n"
                  << "                        declines every security implied in connecting to a "
-                    "secured"
-                 << endl
-                 << "                        SSL/TLS remote endpoint." << endl
+                    "secured\n"
+                 << "                        SSL/TLS remote endpoint.\n"
                  << "                        USE AT YOU OWN RISK AND ONLY IF YOU KNOW WHAT "
-                    "YOU'RE "
-                    "DOING"
-                 << endl;
+                    "YOU'RE DOING\n\n";
         }
 
         if (ctx == "con")
         {
-            cout << "Connections specifications :" << endl
-                 << endl
+            cout << "\nConnections specifications :\n\n"
                  << "    Whether you need to connect to a stratum pool or to make use of "
-                    "getWork "
-                    "polling"
-                 << endl
+                    "getWork polling\n"
                  << "    mode (generally used to solo mine) you need to specify the connection "
-                    "making use"
-                 << endl
+                    "making use\n"
                  << "    of -P command line argument filling up the URL. The URL is in the form "
-                    ":"
-                 << endl
-                 << "    " << endl
-                 << "    scheme://[user[.workername][:password]@]hostname:port[/...]." << endl
-                 << "    " << endl
-                 << "    where 'scheme' can be any of :" << endl
-                 << "    " << endl
-                 << "    getwork    for http getWork mode" << endl
-                 << "    stratum    for tcp stratum mode" << endl
-                 << "    stratums   for tcp encrypted stratum mode" << endl
+                    ":\n\n"
+                 << "    scheme://[user[.workername][:password]@]hostname:port[/...].\n\n"
+                 << "    where 'scheme' can be any of :\n\n"
+                 << "    getwork    for http getWork mode\n"
+                 << "    stratum    for tcp stratum mode\n"
+                 << "    stratums   for tcp encrypted stratum mode\n"
                  << "    stratumss  for tcp encrypted stratum mode with strong TLS 1.2 "
-                    "validation"
-                 << endl
-                 << endl
-                 << "    Example 1: -P getwork://127.0.0.1:8545" << endl
+                    "validation\n\n"
+                 << "    Example 1: -P getwork://127.0.0.1:8545\n"
                  << "    Example 2: "
-                    "-P stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555"
-                 << endl
+                    "-P stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555\n"
                  << "    Example 3: "
                     "-P stratum://0x012345678901234567890234567890123.miner1@nanopool.org:9999/"
-                    "john.doe%40gmail.com"
-                 << endl
+                    "john.doe%40gmail.com\n"
                  << "    Example 4: "
                     "-P stratum://0x012345678901234567890234567890123@nanopool.org:9999/miner1/"
-                    "john.doe%40gmail.com"
-                 << endl
-                 << endl
-                 << "    Please note: if your user or worker or password do contain characters"
-                 << endl
-                 << "    which may impair the correct parsing (namely any of . : @ # ?) you have to"
-                 << endl
-                 << "    enclose those values in backticks( ` ASCII 096) or Url Encode them" << endl
-                 << "    Also note that backtick has a special meaning in *nix environments thus"
-                 << endl
-                 << "    you need to further escape those backticks with backslash." << endl
-                 << endl
-                 << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555"
-                 << endl
-                 << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555" << endl
-                 << "    (In Windows backslashes are not needed)" << endl
-                 << endl
-                 << endl
-                 << "    Common url encoded chars are " << endl
-                 << "    . (dot)      %2e" << endl
-                 << "    : (column)   %3a" << endl
-                 << "    @ (at sign)  %40" << endl
-                 << "    ? (question) %3f" << endl
-                 << "    # (number)   %23" << endl
-                 << "    / (slash)    %2f" << endl
-                 << "    + (plus)     %2b" << endl
-                 << endl
-                 << "    You can add as many -P arguments as you want. Every -P specification"
-                 << endl
-                 << "    after the first one behaves as fail-over connection. When also the" << endl
-                 << "    the fail-over disconnects miner passes to the next connection" << endl
-                 << "    available and so on till the list is exhausted. At that moment" << endl
-                 << "    miner restarts the connection cycle from the first one." << endl
-                 << "    An exception to this behavior is ruled by the --failover-timeout" << endl
-                 << "    command line argument. See 'nsfminer -H misc' for details." << endl
-                 << endl
-                 << "    The special notation '-P exit' stops the failover loop." << endl
-                 << "    When miner reaches this kind of connection it simply quits." << endl
-                 << endl
-                 << "    When using stratum mode miner tries to auto-detect the correct" << endl
-                 << "    flavour provided by the pool. Should be fine in 99% of the cases." << endl
-                 << "    Nevertheless you might want to fine tune the stratum flavour by" << endl
-                 << "    any of of the following valid schemes :" << endl
-                 << endl
-                 << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << endl
-                 << endl
+                    "john.doe%40gmail.com\n\n"
+                 << "    Please note: if your user or worker or password do contain characters\n"
+                 << "    which may impair the correct parsing (namely any of . : @ # ?) you have "
+                    "to\n"
+                 << "    enclose those values in backticks( ` ASCII 096) or Url Encode them\n"
+                 << "    Also note that backtick has a special meaning in *nix environments thus\n"
+                 << "    you need to further escape those backticks with backslash.\n\n"
+                 << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555\n"
+                 << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555\n"
+                 << "    (In Windows backslashes are not needed)\n\n"
+                 << "    Common url encoded chars are\n"
+                 << "    . (dot)      %2e\n"
+                 << "    : (column)   %3a\n"
+                 << "    @ (at sign)  %40\n"
+                 << "    ? (question) %3f\n"
+                 << "    # (number)   %23\n"
+                 << "    / (slash)    %2f\n"
+                 << "    + (plus)     %2b\n\n"
+                 << "    You can add as many -P arguments as you want. Every -P specification\n"
+                 << "    after the first one behaves as fail-over connection. When also the\n"
+                 << "    the fail-over disconnects miner passes to the next connection\n"
+                 << "    available and so on till the list is exhausted. At that moment\n"
+                 << "    miner restarts the connection cycle from the first one.\n"
+                 << "    An exception to this behavior is ruled by the --failover-timeout\n"
+                 << "    command line argument. See 'nsfminer -H misc' for details.\n\n"
+                 << "    The special notation '-P exit' stops the failover loop.\n"
+                 << "    When miner reaches this kind of connection it simply quits.\n\n"
+                 << "    When using stratum mode miner tries to auto-detect the correct\n"
+                 << "    flavour provided by the pool. Should be fine in 99% of the cases.\n"
+                 << "    Nevertheless you might want to fine tune the stratum flavour by\n"
+                 << "    any of of the following valid schemes :\n\n"
+                 << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << "\n\n"
                  << "    where a scheme is made up of two parts, the stratum variant + the tcp "
-                    "transport protocol"
-                 << endl
-                 << endl
-                 << "    Stratum variants :" << endl
-                 << endl
-                 << "        stratum     Stratum" << endl
-                 << "        stratum1    Eth Proxy compatible" << endl
-                 << "        stratum2    EthereumStratum 1.0.0 (nicehash)" << endl
-                 << "        stratum3    EthereumStratum 2.0.0" << endl
-                 << endl
-                 << "    Transport variants :" << endl
-                 << endl
-                 << "        tcp         Unencrypted tcp connection" << endl
-                 << "        tls         Encrypted tcp connection (including deprecated TLS 1.1)"
-                 << endl
-                 << "        tls12       Encrypted tcp connection with TLS 1.2" << endl
-                 << "        ssl         Encrypted tcp connection with TLS 1.2" << endl
-                 << endl;
+                    "transport protocol\n"
+                 << "    Stratum variants :\n\n"
+                 << "        stratum     Stratum\n"
+                 << "        stratum1    Eth Proxy compatible\n"
+                 << "        stratum2    EthereumStratum 1.0.0 (nicehash)\n"
+                 << "        stratum3    EthereumStratum 2.0.0\n\n"
+                 << "    Transport variants :\n\n"
+                 << "        tcp         Unencrypted tcp connection\n"
+                 << "        tls         Encrypted tcp connection (including deprecated TLS 1.1)\n"
+                 << "        tls12       Encrypted tcp connection with TLS 1.2\n"
+                 << "        ssl         Encrypted tcp connection with TLS 1.2\n\n";
         }
     }
 
@@ -1127,44 +1086,11 @@ int main(int argc, char** argv)
         }
     }
 #endif
-    // Always out release version
-    auto* bi = nsfminer_get_buildinfo();
-    cnote << EthYellow "nsfminer " << bi->project_version << " (No stinkin' fees edition)";
-    cnote << EthWhite "Copyright 2021 Jean M. Cyr, Licensed under the terms";
-    cnote << EthWhite " of the GNU General Public License Version 3";
-    cnote << EthWhite "https://github.com/no-fee-ethereum-mining/nsfminer";
-    cnote << EthWhite "Build: " << bi->system_name << '/' << bi->build_type << '/'
-          << bi->compiler_id;
-    ;
-    stringstream ss;
-    ss << EthWhite "3rd Party: ";
-#if defined(__GNUC__)
-    ss << "GCC " << bi->compiler_version << ", ";
-#else
-    ss << "MSVC " << bi->compiler_version << ", ";
-#endif
-
-#if ETH_ETHASHCUDA
-    int v;
-    if (cudaRuntimeGetVersion(&v) == cudaSuccess)
-        ss << "CUDA " << v / 1000 << '.' << (v % 100) / 10 << ", ";
-
-#endif
-    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
-       << BOOST_VERSION % 100;
-    vector<string> sv;
-    string s(SSLeay_version(SSLEAY_VERSION));
-    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
-    ss << ", OpenSSL " << sv[1];
-    cnote << ss.str() << EthReset;
-    ss.str("");
-    ss << EthWhite "3rd Party: CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
-    cnote << ss.str() << EthReset;
 
     if (argc < 2)
     {
-        cwarn << "No arguments specified.";
-        cwarn << "Try 'nsfminer --help' to get a list of arguments.";
+        cout << "No arguments specified.";
+        cout << "Try 'nsfminer --help' to get a list of arguments.";
         return 1;
     }
 
@@ -1185,10 +1111,14 @@ int main(int argc, char** argv)
             if (!cli.validateArgs(argc, argv))
                 return 0;
 
-            if (getenv("SYSLOG"))
-                g_logSyslog = true;
-            if (g_logSyslog || (getenv("NO_COLOR")))
+            if (g_logSyslog)
                 g_logNoColor = true;
+
+            vector<string> vs;
+            headers(vs, !g_logNoColor);
+            for (auto& v : vs)
+                cnote << v;
+
 
             cli.execute();
             cout << endl << endl;
@@ -1196,30 +1126,29 @@ int main(int argc, char** argv)
         }
         catch (invalid_argument& ex1)
         {
-            cwarn << "Error: " << ex1.what();
-            cwarn << "Try nsfminer --help to get an explained list of arguments.";
+            cout << "\nError: " << ex1.what()
+                 << "\nTry nsfminer --help to get an explained list of arguments.\n\n";
             return 1;
         }
         catch (runtime_error& ex2)
         {
-            cwarn << "Error: " << ex2.what();
+            cout << "\nError: " << ex2.what() << "\n\n";
             return 2;
         }
         catch (exception& ex3)
         {
-            cwarn << "Error: " << ex3.what();
+            cout << "\nError: " << ex3.what() << "\n\n";
             return 3;
         }
         catch (...)
         {
-            cwarn << "Error: Unknown failure occurred. Possible memory corruption.";
+            cout << "\n\nError: Unknown failure occurred. Possible memory corruption.\n\n";
             return 4;
         }
     }
     catch (const exception& ex)
     {
-        cwarn << "Could not initialize CLI interface ";
-        cwarn << "Error: " << ex.what();
+        cout << "Could not initialize CLI interface " << endl << "Error: " << ex.what();
         return 4;
     }
 }
