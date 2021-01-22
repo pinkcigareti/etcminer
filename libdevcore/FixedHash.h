@@ -182,13 +182,7 @@ public:
     /// @returns an abridged version of the hash as a user-readable hex string.
 
     std::string abridged() const {
-#if defined(_WIN32)
-        const char* ellipsis = "...";
-#else
-        const char* ellipsis = "\342\200\246";
-#endif
-
-        return toHex(ref().cropped(0, 4)) + ellipsis;
+        return toHex(ref().cropped(0, 4));
     }
 
     /// @returns the hash as a user-readable hex string.
