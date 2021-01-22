@@ -3,7 +3,7 @@
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
 
-> Ethereum miner with OpenCL, CUDA and stratum support
+> Ethereum (ethash) miner with OpenCL, CUDA and stratum support
 
 **nsfminer** is an Ethash GPU mining application: with nsfminer you can mine every coin which relies on an Ethash Proof of Work.
 
