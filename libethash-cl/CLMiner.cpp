@@ -296,7 +296,7 @@ void CLMiner::workLoop()
         {
 
             // Read results.
-            volatile SearchResults results;
+            SearchResults results;
 
             if (m_queue.size())
             {
