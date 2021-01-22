@@ -4,25 +4,24 @@ commands:
   restore_cache_cmd:
     steps:
       - restore_cache:
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-            - v1-dependencies-{{ checksum "nsfminer.xml" }}
+          key: nsfminer
 
   save_cache_cmd:
     steps:
       - save_cache:
           paths:
             - ~/.hunter
-          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          key: nsfminer
 
   build:
     steps:
-      - restore_cache_cmd
       - run: ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
       - run: echo $TZ > /etc/timezone
       - run: apt update
       - run: apt install -y git cmake mesa-common-dev
       - checkout
       - run: git submodule update --init --recursive
+      - restore_cache_cmd
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -DETHASHCL=ON -DETHASHCUDA=ON -DAPICORE=ON -H. -Bbuild
       - save_cache_cmd
       - run: cmake --build build -- -j4
