@@ -389,9 +389,10 @@ void CLMiner::workLoop()
                     if (nonce != m_lastNonce)
                     {
                         m_lastNonce = nonce;
-                        h256* mix = (h256*)&results.rslt[i].mix;
+                        h256 mix((byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
+
                         Farm::f().submitProof(
-                            Solution{nonce, *mix, current, chrono::steady_clock::now(), m_index});
+                            Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
                         cllog << EthWhite << "Job: " << current.header.abridged()
                               << " Solution: " << toHex(nonce, HexPrefix::Add) << EthReset;
                     }
