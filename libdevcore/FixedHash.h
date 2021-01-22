@@ -181,9 +181,7 @@ public:
 
     /// @returns an abridged version of the hash as a user-readable hex string.
 
-    std::string abridged() const {
-        return toHex(ref().cropped(0, 4));
-    }
+    std::string abridged() const { return toHex(ref().cropped(0, 4)); }
 
     /// @returns the hash as a user-readable hex string.
     std::string hex(HexPrefix _prefix = HexPrefix::DontAdd) const { return toHex(ref(), 2, _prefix); }
