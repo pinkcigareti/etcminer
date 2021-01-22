@@ -1855,6 +1855,7 @@ protected:
 
     static bool isReferenceCountable(cl_device_id device)
     {
+        (void)device;  // keep compiler happy
         bool retVal = false;
 #if CL_HPP_TARGET_OPENCL_VERSION >= 120
 #if CL_HPP_MINIMUM_OPENCL_VERSION < 120

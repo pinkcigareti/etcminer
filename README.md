@@ -9,7 +9,7 @@
 
 This is a direct descendent of the Ethminer project at https://github.com/ethereum-mining/ethminer. Since that project
 is largely abandoned and unmanaged this personal version is published with the hope that it may continue to be useful. In the spirit
-of open source problem reports and pull requests are welcome.
+of open source problem reports and pull requests are welcome, but please use git-clang-format on your requests.
 
 ## Features
 
