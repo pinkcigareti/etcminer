@@ -30,16 +30,10 @@ LogOutputStreamBase::LogOutputStreamBase(bool error)
     static locale logLocl = locale("");
     m_sstr.imbue(logLocl);
     if (g_logSyslog)
-        m_sstr << left << setw(8) << getThreadName() << " " EthReset;
+        m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else
-    {
-        time_t rawTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        char buf[24];
-        if (strftime(buf, 24, "%X", localtime(&rawTime)) == 0)
-            buf[0] = '\0';  // empty if case strftime fails
-        m_sstr << (error ? EthRed : EthCoalBold) << buf << " " EthWhite << left << setw(5)
-               << getThreadName() << " " EthReset;
-        }
+        m_sstr << ' ' << (error ? EthRed : EthWhite) << left << setw(5) << getThreadName()
+               << " " EthReset;
 }
 
 /// Associate a name with each thread for nice logging.
