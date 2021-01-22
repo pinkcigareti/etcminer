@@ -4,15 +4,16 @@ commands:
   restore_cache_cmd:
     steps:
       - restore_cache:
-          keys:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
             - v1-dependencies-{{ checksum "nsfminer.xml" }}
-            - v1-dependencies-
+
   save_cache_cmd:
     steps:
       - save_cache:
           paths:
             - ~/.hunter
-          key: v1-dependencies-{{ checksum "nsfminer.xml" }}
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+
   build:
     steps:
       - restore_cache_cmd
