@@ -15,12 +15,11 @@ commands:
           key: v1-dependencies-{{ checksum "nsfminer.xml" }}
   build:
     steps:
-      - checkout
       - restore_cache_cmd
       - run: ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
       - run: echo $TZ > /etc/timezone
       - run: apt update
-      - run: apt install -y git cmake mesa-common-dev libidn11-dev python3-requests python3-git
+      - run: apt install -y git cmake mesa-common-dev
       - checkout
       - run: git submodule update --init --recursive
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -DETHASHCL=ON -DETHASHCUDA=ON -DAPICORE=ON -H. -Bbuild
