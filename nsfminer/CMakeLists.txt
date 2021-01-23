@@ -13,10 +13,11 @@ if(MSVC)
 	target_sources(${EXECUTABLE} PRIVATE nsfminer.rc)
 endif()
 
-hunter_add_package(CLI11)
-find_package(CLI11 CONFIG REQUIRED)
+hunter_add_package(Boost COMPONENTS program_options)
+find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
 
-target_link_libraries(nsfminer PRIVATE ethcore poolprotocols devcore nsfminer-buildinfo CLI11::CLI11 Boost::system Boost::thread)
+target_link_libraries(nsfminer PRIVATE
+        ethcore poolprotocols devcore nsfminer-buildinfo Boost::system Boost::thread Boost::program_options)
 
 if(ETHDBUS)
 	find_package(PkgConfig)

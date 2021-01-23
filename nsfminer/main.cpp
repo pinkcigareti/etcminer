@@ -1,10 +1,18 @@
 
-#include <CLI/CLI.hpp>
+#if defined(__linux__)
+#include <execinfo.h>
+#elif defined(_WIN32)
+#include <Windows.h>
+#endif
 
-#include <nsfminer/buildinfo.h>
+#include <algorithm>
 #include <condition_variable>
 
+#include <boost/program_options.hpp>
+
 #include <openssl/crypto.h>
+
+#include <nsfminer/buildinfo.h>
 
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
@@ -29,15 +37,15 @@
 
 #include <ethash/version.h>
 
-#if defined(__linux__)
-#include <execinfo.h>
-#elif defined(_WIN32)
-#include <Windows.h>
+#if ETH_DBUS
+#include <nsfminer/DBusInt.h>
 #endif
 
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
+
+using namespace boost::program_options;
 
 // Global vars
 bool g_running = false;
@@ -54,9 +62,7 @@ struct MiningChannel : public LogChannel
 
 #define minelog clog(MiningChannel)
 
-#if ETH_DBUS
-#include <nsfminer/DBusInt.h>
-#endif
+static bool should_list;
 
 static void headers(vector<string>& h, bool color)
 {
@@ -108,9 +114,17 @@ static void headers(vector<string>& h, bool color)
     h.push_back(ss.str());
 
     ss.str("");
-    ss << white << "3rd Party: CLI11 " CLI11_VERSION ", Ethash " << ethash::version;
+    ss << white << "3rd Party: Ethash " << ethash::version;
     h.push_back(ss.str());
 }
+
+static void on_help_module(string m);
+static void on_verbosity(unsigned u);
+static void on_hwmon(unsigned u);
+static void on_api_port(int i);
+static void on_cu_block_size(unsigned p);
+static void on_cu_streams(unsigned s);
+static void on_cl_local_work(unsigned b);
 
 class MinerCLI
 {
@@ -155,7 +169,7 @@ public:
 #if ETH_DBUS
             dbusint.send(Farm::f().Telemetry().str().c_str());
 #endif
-            // Resubmit timer
+            // Restart timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
             m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
                 &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
@@ -169,7 +183,7 @@ public:
         switch (sig)
         {
 #if defined(__linux__)
-#define BACKTRACE_MAX_FRAMES 100
+#define BACKTRACE_MAX_FRAMES 30
         case SIGSEGV:
             static bool in_handler = false;
             if (!in_handler)
@@ -257,149 +271,269 @@ public:
     bool validateArgs(int argc, char** argv)
     {
         queue<string> warnings;
+        bool cl_miner, cuda_miner, cpu_miner;
+        vector<string> pools;
 
-        CLI::App app("\nnsfminer - GPU Ethash miner");
-
-        bool bhelp = false;
-        string shelpExt;
-
-        app.set_help_flag();
-        app.add_flag("-h,--help", bhelp, "Show help");
-
-        app.add_set(
-            "-H,--help-ext", shelpExt,
-            {
-                "con", "test",
+        options_description general("General options");
+        options_description con("Connection options");
+        options_description test("Test options");
 #if ETH_ETHASHCL
-                    "cl",
+        options_description cl("OpenCL options");
 #endif
 #if ETH_ETHASHCUDA
-                    "cu",
+        options_description cu("CUDA options");
 #endif
 #if ETH_ETHASHCPU
-                    "cp",
+        options_description cp("CPU options");
 #endif
 #if API_CORE
-                    "api",
+        options_description api("API options");
 #endif
-                    "misc", "env"
-            },
-            "", true);
+        options_description misc("Miscellaneous options");
+        options_description env("Environment options");
 
-        bool version = false;
+        // clang-format off
 
-        app.add_flag("-V,--version", version, "Show program version");
+        general.add_options()
 
-        app.add_option("-v,--verbosity", g_logOptions, "", true)->check(CLI::Range(LOG_NEXT - 1));
+            ("help,h", "This help message")("help-module,H",
+                value<string>()->notifier(on_help_module),
 
-        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)
-            ->check(CLI::Range(1, 99999));
-
-        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)
-            ->check(CLI::Range(0, 99999));
-
-        app.add_option("--retry-delay", m_PoolSettings.delayBeforeRetry, "", true)
-            ->check(CLI::Range(1, 999));
-
-        app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)
-            ->check(CLI::Range(180, 99999));
-
-        app.add_option("--response-timeout", m_PoolSettings.noResponseTimeout, "", true)
-            ->check(CLI::Range(2, 999));
-
-        app.add_flag("-R,--report-hashrate,--report-hr", m_PoolSettings.reportHashrate, "");
-
-        app.add_option("--display-interval", m_cliDisplayInterval, "", true)
-            ->check(CLI::Range(1, 1800));
-
-        app.add_option("--HWMON", m_FarmSettings.hwMon, "", true)->check(CLI::Range(0, 2));
-
-        app.add_flag("--exit", g_exitOnError, "");
-
-        vector<string> pools;
-        app.add_option("-P,--pool", pools, "");
-
-        app.add_option("--failover-timeout", m_PoolSettings.poolFailoverTimeout, "", true)
-            ->check(CLI::Range(0, 999));
-
-        app.add_flag("--nocolor", g_logNoColor, "");
-
-        app.add_flag("--syslog", g_logSyslog, "");
-
+                "Help for a given module, one of:"
+                " con test"
+#if ETH_ETHASHCL
+                " cl"
+#endif
+#if ETH_ETHASHCUDA
+                " cu"
+#endif
+#if ETH_ETHASHCPU
+                " cp"
+#endif
 #if API_CORE
-
-        app.add_option("--api-bind", m_api_bind, "", true)
-            ->check([this](const string& bind_arg) -> string {
-                try
-                {
-                    MinerCLI::ParseBind(bind_arg, this->m_api_address, this->m_api_port, true);
-                }
-                catch (const exception& ex)
-                {
-                    throw CLI::ValidationError("--api-bind", ex.what());
-                }
-                // not sure what to return, and the documentation doesn't say either.
-                // https://github.com/CLIUtils/CLI11/issues/144
-                return string("");
-            });
-
-        app.add_option("--api-port", m_api_port, "", true)->check(CLI::Range(-65535, 65535));
-
-        app.add_option("--api-password", m_api_password, "");
+                " api"
 #endif
+                " misc env")
+
+            ("version,V",
+
+                "The version number")
+
+            ("pool,P", value<vector<string>>()->multitoken(),
+
+                "One or more Stratum pool or http (getWork) connection as URL(s)\n\n"
+                "scheme://[user[.workername][:password]@]hostname:port[/...]\n\n"
+                "For details and some samples how to fill in this value please use\n"
+                "nsfminer --help-ext con\n\n")
+#if ETH_ETHASHCL
+            ("opencl,G",
+
+                "Mine/Benchmark using OpenCL only")
+#endif
+#if ETH_ETHASHCUDA
+            ("cuda,U",
+
+                "Mine/Benchmark using CUDA only")
+#endif
+#if ETH_ETHASHCPU
+            ("cpu",
+
+                "Development ONLY ! (NO MINING)")
+#endif
+            ;
+
+        misc.add_options()
+
+            ("verbosity,v",
+
+                value<unsigned>()->default_value(0)->notifier(on_verbosity),
+
+                "Set output verbosity level. Use the sum of :\n"
+                "1 - to log stratum json messages\n"
+                "2 - to log found solutions per GPU")
+
+            ("farm-recheck", value<unsigned>()->default_value(500),
+
+                "Set polling interval for new work in getWork mode. "
+                "Value expressed in milliseconds. "
+                "It has no meaning in stratum mode")
+
+            ("farm-retries", value<unsigned>()->default_value(3),
+
+                "Set number of reconnection retries to same pool")
+
+            ("retry-delay", value<unsigned>()->default_value(0),
+
+                "Delay in seconds before reconnection retry")
+
+            ("work-timeout", value<unsigned>()->default_value(180),
+
+                "If no new work received from pool after this "
+                "amount of time the connection is dropped. "
+                "Value expressed in seconds.")
+
+            ("response-timeout", value<unsigned>()->default_value(2),
+
+                "If no response from pool to a stratum message "
+                "after this amount of time the connection is dropped")
+
+            ("report-hashrate,R",
+
+                "Report miner hash rate to the pool")
+
+            ("display-interval", value<unsigned>()->default_value(5),
+
+                "Statistic display interval in seconds")
+
+            ("HWMON", value<unsigned>()->default_value(0)->notifier(on_hwmon),
+
+                "GPU hardware monitoring level. Can be one of:\n"
+                "0 - No monitoring\n"
+                "1 - Monitor temperature and fan percentage\n"
+                "2 - As 1 plus monitor power drain"
+#ifdef DEV_BUILD
+                "32 - to log socket (dis)connections\n"
+                "64 - to log timing of job switches\n"
+                "128 - to log time for solution submission\n"
+#endif
+                )
+
+            ("exit",
+
+                "Stop miner whenever an error is encountered")
+
+            ("failover-timeout", value<unsigned>()->default_value(0),
+
+                "Sets the number of minutes miner can stay "
+                "connected to a fail-over pool before trying to "
+                "reconnect to the primary (the first) connection.")
+
+            ("nocolor",
+
+                "Monochrome display log lines")
+
+            ("syslog",
+
+                "Use syslog appropriate output (drop timestamp "
+                "and channel prefix)")
 
 #if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
 
-        app.add_flag("--list-devices", m_shouldListDevices, "");
+            ("list-devices,L",
+
+                "Lists the detected OpenCL/CUDA devices and "
+                "exits. Can be combined with -G or -U flags")
 #endif
+            ("eval",
+                "Enable host software re-evaluation of GPUs "
+                "found nonces. Trims some ms. from submission "
+                "time but it may increase rejected solution rate.")
 
-        app.add_flag("--eval", m_FarmSettings.eval, "");
+            ("tstop", value<unsigned>()->default_value(0),
 
-        bool cl_miner = false;
-        app.add_flag("-G,--opencl", cl_miner, "");
+                "Suspend mining on GPU which temperature is above "
+                "this threshold. Implies --HWMON 1. "
+                "If not set or zero no temp control is performed")
 
-        bool cuda_miner = false;
-        app.add_flag("-U,--cuda", cuda_miner, "");
+            ("tstart", value<unsigned>()->default_value(0),
 
-        bool cpu_miner = false;
+                "Resume mining on previously overheated GPU when "
+                "temp drops below this threshold. Implies --HWMON 1. "
+                "Must be lower than --tstart");
+#if API_CORE
 
-#if ETH_ETHASHCPU
+        api.add_options()
 
-        app.add_flag("--cpu", cpu_miner, "");
+            ("api-bind", value<string>()->default_value(""),
+
+                "Set the API address:port the miner should listen "
+                "on. Use negative port number for readonly mode")
+
+            ("api-port", value<int>()->default_value(0)->notifier(on_api_port),
+
+                "Set the API port, the miner should listen on all "
+                "bound addresses. Use negative numbers for readonly "
+                "mode")
+
+            ("api-password", value<string>()->default_value(""),
+
+                "Set the password to protect interaction with API "
+                "server. If not set, any connection is granted access. "
+                "Be advised passwords are sent unencrypted");
 #endif
-
 #if ETH_ETHASHCUDA
-        app.add_set("--cu-block-size", m_FarmSettings.cuBlockSize, {32, 64, 128, 256}, "", true);
+        cu.add_options()
 
-        app.add_option("--cu-streams", m_FarmSettings.cuStreams, "", true)->check(CLI::Range(1, 4));
+            ("cu-block", value<unsigned>()->default_value(128)->notifier(on_cu_block_size),
 
+                "Set the block size, valid values are 32, 64, 128, or 256")
+
+            ("cu-streams", value<unsigned>()->default_value(2)->notifier(on_cu_streams),
+
+                "Set the number of streams per GPU, valid values 1, 2 or 4");
 #endif
-
 #if ETH_ETHASHCL
-        app.add_set("--cl-local-work", m_FarmSettings.clGroupSize, {64, 128, 256}, "", true);
+        cl.add_options()
 
+            ("cl-work", value<unsigned>()->default_value(128)->notifier(on_cl_local_work),
+
+                "Set the work group size, valid values are 64 128 or 256");
 #endif
+        test.add_options()
 
-        auto sim_opt = app.add_option(
-            "-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
+            ("benchmark,M", value<unsigned>()->default_value(0),
 
-        app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
+                "Mining test. Used to test hashing speed. "
+                "Specify the block number to test on.")
 
-        app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
+            ("simulate,Z", value<unsigned>()->default_value(0),
 
-        // Exception handling is held at higher level
-        app.parse(argc, argv);
-        if (bhelp)
+                "Mining test. Used to test hashing speed. "
+                "Specify the block number to test on.");
+
+        // clang-format on
+
+        options_description all("All options");
+        all.add(general)
+            .add(con)
+            .add(test)
+#if ETH_ETHASHCL
+            .add(cl)
+#endif
+#if ETH_ETHASHCUDA
+            .add(cu)
+#endif
+#if ETH_ETHASHCPU
+            .add(cp)
+#endif
+#if API_CORE
+            .add(api)
+#endif
+            .add(misc)
+            .add(env);
+
+        options_description visible("General options");
+        visible.add(general);
+
+        variables_map vm;
+        try
         {
-            help();
+            store(parse_command_line(argc, argv, all), vm);
+            notify(vm);
+        }
+        catch (boost::program_options::error& e)
+        {
+            cout << endl << "Error: " << e.what() << endl << endl;
             return false;
         }
-        else if (!shelpExt.empty())
+
+        if (vm.count("help"))
         {
-            helpExt(shelpExt);
+            cout << endl << visible << endl;
             return false;
         }
-        else if (version)
+
+        if (vm.count("version"))
         {
             vector<string> vs;
             headers(vs, false);
@@ -410,21 +544,183 @@ public:
             return false;
         }
 
+        if (vm.count("help-module"))
+        {
+            const string& s = vm["help-module"].as<string>();
+            if (s == "con")  // Connections
+                cout
+                    << "\n\nConnections specifications :\n\n"
+                    << "    Whether you need to connect to a stratum pool or to make use of\n"
+                    << "    getWork polling mode (generally used to solo mine) you need to "
+                       "specify\n"
+                    << "    the connection  making use of -P command line argument filling up the\n"
+                    << "    URL. The URL is in the form:\n\n "
+                    << "    scheme://[user[.workername][:password]@]hostname:port[/...].\n\n"
+                    << "    where 'scheme' can be any of :\n\n"
+                    << "    getwork    for http getWork mode\n"
+                    << "    stratum    for tcp stratum mode\n"
+                    << "    stratums   for tcp encrypted stratum mode\n"
+                    << "    stratumss  for tcp encrypted stratum mode with strong TLS 1.2\n"
+                    << "    validation\n\n"
+                    << "    Example 1: -P getwork://127.0.0.1:8545\n"
+                    << "    Example 2: "
+                       "-P "
+                       "stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555\n"
+                    << "    Example 3: "
+                       "-P stratum://0x012345678901234567890234567890123.miner1@nanopool.org:9999/"
+                       "john.doe%40gmail.com\n"
+                    << "    Example 4: "
+                       "-P stratum://0x012345678901234567890234567890123@nanopool.org:9999/miner1/"
+                       "john.doe%40gmail.com\n\n"
+                    << "    Please note: if your user or worker or password do contain characters\n"
+                    << "    which may impair the correct parsing (namely any of . : @ # ?) you "
+                       "have\n"
+                    << "    to enclose those values in backticks( ` ASCII 096) or Url Encode them\n"
+                    << "    Also note that backtick has a special meaning in *nix environments "
+                       "thus\n"
+                    << "    you need to further escape those backticks with backslash.\n\n"
+                    << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555\n"
+                    << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555\n"
+                    << "    (In Windows backslashes are not needed)\n\n"
+                    << "    Common url encoded chars are\n"
+                    << "    . (dot)      %2e\n"
+                    << "    : (column)   %3a\n"
+                    << "    @ (at sign)  %40\n"
+                    << "    ? (question) %3f\n"
+                    << "    # (number)   %23\n"
+                    << "    / (slash)    %2f\n"
+                    << "    + (plus)     %2b\n\n"
+                    << "    You can add as many -P arguments as you want. Every -P specification\n"
+                    << "    after the first one behaves as fail-over connection. When also the\n"
+                    << "    the fail-over disconnects miner passes to the next connection\n"
+                    << "    available and so on till the list is exhausted. At that moment\n"
+                    << "    miner restarts the connection cycle from the first one.\n"
+                    << "    An exception to this behavior is ruled by the --failover-timeout\n"
+                    << "    command line argument. See 'nsfminer -H misc' for details.\n\n"
+                    << "    The special notation '-P exit' stops the failover loop.\n"
+                    << "    When miner reaches this kind of connection it simply quits.\n\n"
+                    << "    When using stratum mode miner tries to auto-detect the correct\n"
+                    << "    flavour provided by the pool. Should be fine in 99% of the cases.\n"
+                    << "    Nevertheless you might want to fine tune the stratum flavour by\n"
+                    << "    any of of the following valid schemes :\n\n"
+                    << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << "\n\n"
+                    << "    where a scheme is made up of two parts, the stratum variant + the tcp\n"
+                    << "    transport protocol\n\n"
+                    << "    Stratum variants :\n\n"
+                    << "        stratum     Stratum\n"
+                    << "        stratum1    Eth Proxy compatible\n"
+                    << "        stratum2    EthereumStratum 1.0.0 (nicehash)\n"
+                    << "        stratum3    EthereumStratum 2.0.0\n\n"
+                    << "    Transport variants :\n\n"
+                    << "        tcp         Unencrypted tcp connection\n"
+                    << "        tls         Encrypted tcp connection (including deprecated TLS "
+                       "1.1)\n"
+                    << "        tls12       Encrypted tcp connection with TLS 1.2\n"
+                    << "        ssl         Encrypted tcp connection with TLS 1.2\n\n";
+            else if (s == "test")  // Simulation
+                cout << endl << test << endl;
+#if ETH_ETHASHCL
+            else if (s == "cl")  // opencl
+                cout << endl << cl << endl;
+#endif
+#if ETH_ETHASHCUDA
+            else if (s == "cu")  // cuda
+                cout << endl << cu << endl;
+#endif
+#if ETH_ETHASHCPU
+            else if (s == "cp")  // cpu
+                cout << endl << cp << endl;
+#endif
+#if API_CORE
+            else if (s == "api")  // programming interface
+                cout << endl << api << endl;
+#endif
+            else if (s == "misc")  // miscellaneous
+                cout << endl << misc << endl;
+            else if (s == "env")  // environment
+                cout << "\nEnvironment variables :\n\n"
+                     << "    If you need or do feel more comfortable you can set the following\n"
+                     << "    environment variables. Please respect letter casing.\n\n"
+#ifndef _WIN32
+                     << "    SSL_CERT_FILE  Set to the full path to of your CA certificates\n"
+                     << "                   file if it is not in standard path :\n"
+                     << "                   /etc/ssl/certs/ca-certificates.crt.\n"
+#endif
+                     << "    SSL_NOVERIFY   set to any value to to disable the verification\n"
+                     << "                   chain for certificates. WARNING ! Disabling\n"
+                     << "                   certificate validation declines every security\n"
+                     << "                   implied in connecting to a secured SSL/TLS\n"
+                     << "                   remote endpoint. USE AT YOU OWN RISK AND ONLY IF\n"
+                     << "                   YOU KNOW WHAT YOU'RE DOING\n\n";
+            return false;
+        }
+
+        g_logOptions = vm["verbosity"].as<unsigned>();
+        g_logNoColor = vm.count("nocolor");
+        g_logSyslog = vm.count("syslog");
+        g_exitOnError = vm.count("exit");
+
+        m_PoolSettings.getWorkPollInterval = vm["farm-recheck"].as<unsigned>();
+        m_PoolSettings.connectionMaxRetries = vm["farm-retries"].as<unsigned>();
+        m_PoolSettings.delayBeforeRetry = vm["retry-delay"].as<unsigned>();
+        m_PoolSettings.noWorkTimeout = vm["work-timeout"].as<unsigned>();
+        m_PoolSettings.noResponseTimeout = vm["response-timeout"].as<unsigned>();
+        m_PoolSettings.reportHashrate = vm.count("report-hashrate");
+        m_PoolSettings.poolFailoverTimeout = vm["failover-timeout"].as<unsigned>();
+        if (vm.count("simulation"))
+            m_PoolSettings.benchmarkBlock = vm["simulate"].as<unsigned>();
+        if (vm.count("benchmark"))
+            m_PoolSettings.benchmarkBlock = vm["benchmark"].as<unsigned>();
+
+        m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
+        should_list = m_shouldListDevices = vm.count("list-devices");
+
+        m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
+        m_FarmSettings.eval = vm.count("eval");
+        m_FarmSettings.cuBlockSize = vm["cu-block"].as<unsigned>();
+        m_FarmSettings.cuStreams = vm["cu-streams"].as<unsigned>();
+        m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
+        m_FarmSettings.tempStop = vm["tstop"].as<unsigned>();
+        m_FarmSettings.tempStart = vm["tstart"].as<unsigned>();
+
+        cl_miner = vm.count("opencl");
+        cuda_miner = vm.count("cuda");
+        cpu_miner = vm.count("cpu");
+        if (vm.count("pool"))
+            for (auto& p : vm["pool"].as<vector<string>>())
+                pools.push_back(p);
+
+        m_api_bind = vm["api-bind"].as<string>();
+        m_api_port = vm["api-port"].as<int>();
+        m_api_password = vm["api-password"].as<string>();
+        if (m_api_bind != "")
+        {
+            try
+            {
+                ParseBind(m_api_bind, m_api_address, m_api_port, true);
+            }
+            catch (const exception& ex)
+            {
+                cout << "Error: --api-bind address invalid\n\n";
+                return false;
+            }
+        }
+
         if (cl_miner)
             m_minerType = MinerType::CL;
         else if (cuda_miner)
             m_minerType = MinerType::CUDA;
         else if (cpu_miner)
             m_minerType = MinerType::CPU;
+        else if (cl_miner && cuda_miner)
+            m_minerType = MinerType::Mixed;
         else
             m_minerType = MinerType::Mixed;
 
-        /*
-            Operation mode Simulation do not require pool definitions
-            Operation mode Stratum or GetWork do need at least one
-        */
+        //  Operation mode Simulation do not require pool definitions
+        //  Operation mode Stratum or GetWork do need at least one
 
-        if (sim_opt->count())
+        if (m_PoolSettings.benchmarkBlock)
         {
             m_mode = OperationMode::Simulation;
             pools.clear();
@@ -432,9 +728,7 @@ public:
                 shared_ptr<URI>(new URI("simulation://localhost:0", true)));
         }
         else
-        {
             m_mode = OperationMode::Mining;
-        }
 
         if (!m_shouldListDevices && m_mode != OperationMode::Simulation)
         {
@@ -468,7 +762,7 @@ public:
                 catch (const exception& _ex)
                 {
                     string what = _ex.what();
-                    throw runtime_error("Bad URI : " + what);
+                    throw runtime_error("Bad pool URI : " + what);
                 }
             }
         }
@@ -486,15 +780,12 @@ public:
         }
 
         // Output warnings if any
-        if (warnings.size())
+        while (warnings.size())
         {
-            while (warnings.size())
-            {
-                cout << warnings.front() << endl;
-                warnings.pop();
-            }
-            cout << endl;
+            cout << warnings.front() << endl;
+            warnings.pop();
         }
+
         return true;
     }
 
@@ -518,7 +809,7 @@ public:
             throw runtime_error("No usable mining devices found");
 
         // If requested list detected devices and exit
-        if (m_shouldListDevices)
+        if (should_list)
         {
             cout << setw(4) << " Id ";
             cout << setiosflags(ios::left) << setw(10) << "Pci Id    ";
@@ -622,10 +913,8 @@ public:
         // Subscribe devices with appropriate Miner Type
         // Use CUDA first when available then, as second, OpenCL
 
-        // Subscribe all detected devices
 #if ETH_ETHASHCUDA
         if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-        {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
                 if (!it->second.cuDetected ||
@@ -633,11 +922,9 @@ public:
                     continue;
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
             }
-        }
 #endif
 #if ETH_ETHASHCL
         if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-        {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
                 if (!it->second.clDetected ||
@@ -645,24 +932,17 @@ public:
                     continue;
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
             }
-        }
 #endif
 #if ETH_ETHASHCPU
         if (m_minerType == MinerType::CPU)
-        {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-            {
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
-            }
-        }
 #endif
         // Count of subscribed devices
         int subscribedDevices = 0;
         for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-        {
             if (it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                 subscribedDevices++;
-        }
 
         // If no OpenCL and/or CUDA devices subscribed then throw error
         if (!subscribedDevices)
@@ -685,283 +965,6 @@ public:
         doMiner();
     }
 
-    void help()
-    {
-        cout << "\nnsfminer - GPU ethash miner\n\n"
-             << "minimal usage : nsfminer [DEVICES_TYPE] [OPTIONS] -P... [-P...]\n\n"
-             << "Devices type options :\n\n"
-             << "    By default the miner will try to use all devices types\n"
-             << "    it can detect. Optionally you can limit this behavior\n"
-             << "    setting either of the following options\n\n"
-#if ETH_ETHASHCL
-             << "    -G,--opencl         Mine/Benchmark using OpenCL only\n"
-#endif
-#if ETH_ETHASHCUDA
-             << "    -U,--cuda           Mine/Benchmark using CUDA only\n"
-#endif
-#if ETH_ETHASHCPU
-             << "    --cpu               Development ONLY ! (NO MINING)\n"
-#endif
-             << "\nConnection options :\n\n"
-             << "    -P,--pool           Stratum pool or http (getWork) connection as URL\n"
-             << "                        "
-                "scheme://[user[.workername][:password]@]hostname:port[/...]\n"
-             << "                        For an explication and some samples about\n"
-             << "                        how to fill in this value please use\n"
-             << "                        nsfminer --help-ext con\n\n"
-             << "Common Options :\n\n"
-             << "    -h,--help           Displays this help text and exits\n"
-             << "    -H,--help-ext       TEXT {'con','test',"
-#if ETH_ETHASHCL
-             << "cl,"
-#endif
-#if ETH_ETHASHCUDA
-             << "cu,"
-#endif
-#if ETH_ETHASHCPU
-             << "cp,"
-#endif
-#if API_CORE
-             << "api,"
-#endif
-             << "'misc'}\n"
-             << "                        Display help text about one of these contexts:\n"
-             << "                        'con'  Connections and their definitions\n"
-             << "                        'test' Benchmark/Simulation options\n"
-#if ETH_ETHASHCL
-             << "                        'cl'   Extended OpenCL options\n"
-#endif
-#if ETH_ETHASHCUDA
-             << "                        'cu'   Extended CUDA options\n"
-#endif
-#if ETH_ETHASHCPU
-             << "                        'cp'   Extended CPU options\n"
-#endif
-#if API_CORE
-             << "                        'api'  API and Http monitoring interface\n"
-#endif
-             << "                        'misc' Other miscellaneous options\n"
-             << "    -V,--version        Show program version and exits\n\n";
-    }
-
-    void helpExt(string ctx)
-    {
-        // Help text for benchmarking options
-        if (ctx == "test")
-        {
-            cout << "\nBenchmarking / Simulation options :\n\n"
-                 << "    When playing with benchmark or simulation no connection specification\n"
-                 << "    is needed ie. you can omit any -P argument.\n\n"
-                 << "    -M,--benchmark      UINT [0 ..] Default not set\n"
-                 << "                        Mining test. Used to test hashing speed.\n"
-                 << "                        Specify the block number to test on.\n\n"
-                 << "    -Z,--simulation     UINT [0 ..] Default not set\n"
-                 << "                        Mining test. Used to test hashing speed.\n"
-                 << "                        Specify the block number to test on.\n\n";
-        }
-
-        // Help text for API interfaces options
-        if (ctx == "api")
-        {
-            cout
-                << "\nAPI Interface Options :\n\n"
-                << "    Ethminer provide an interface for monitor and or control\n"
-                << "    Please note that information delivered by API interface\n"
-                << "    may depend on value of --HWMON\n"
-                << "    A single endpoint is used to accept both HTTP or plain tcp\n"
-                << "    requests.\n\n"
-                << "    --api-bind          TEXT Default not set\n"
-                << "                        Set the API address:port the miner should listen\n"
-                << "                        on. Use negative port number for readonly mode\n"
-                << "    --api-port          INT [1 .. 65535] Default not set\n"
-                << "                        Set the API port, the miner should listen on all\n"
-                << "                        bound addresses. Use negative numbers for readonly\n"
-                << "                        mode\n"
-                << "    --api-password      TEXT Default not set\n"
-                << "                        Set the password to protect interaction with API\n"
-                << "                        server. If not set, any connection is granted access.\n"
-                << "                        Be advised passwords are sent unencrypted over "
-                << "plain TCP!!\n\n";
-        }
-
-        if (ctx == "cl")
-        {
-            cout << "\nOpenCL Extended Options :\n\n"
-                 << "    Use this extended OpenCL arguments to fine tune the performance.\n"
-                 << "    Be advised default values are best generic findings by developers\n\n"
-                 << "    --cl-local-work     UINT {64,128,256} Default = 128\n"
-                 << "                        Set the local work size multiplier\n\n";
-        }
-
-        if (ctx == "cu")
-        {
-            cout << "\nCUDA Extended Options :\n\n"
-                 << "    Use this extended CUDA arguments to fine tune the performance.\n"
-                 << "    Be advised default values are best generic findings by developers\n\n"
-                 << "    --cu-block-size     UINT {32,64,128,256} Default = 128\n"
-                 << "                        Set the block size\n\n"
-                 << "    --cu-streams        INT [1 .. 4] Default = 2\n"
-                 << "                        Set the number of streams per GPU\n\n";
-        }
-
-        if (ctx == "cp")
-        {
-            cout << "\nCPU Extended Options :\n\n"
-                 << "    Use this extended CPU arguments\n\n"
-                 << "    --cp-devices        UINT {} Default not set\n"
-                 << "                        Space separated list of device indexes to use\n"
-                 << "                        eg --cp-devices 0 2 3\n"
-                 << "                        If not set all available CPUs will be used\n\n";
-        }
-
-        if (ctx == "misc")
-        {
-            cout << "\nMiscellaneous Options :\n\n"
-                 << "    This set of options is valid for mining mode independently from\n"
-                 << "    OpenCL or CUDA or Mixed mining mode.\n\n"
-                 << "    --display-interval  INT[1 .. 1800] Default = 5\n"
-                 << "                        Statistic display interval in seconds\n"
-                 << "    --farm-recheck      INT[1 .. 99999] Default = 500\n"
-                 << "                        Set polling interval for new work in getWork mode\n"
-                 << "                        Value expressed in milliseconds\n"
-                 << "                        It has no meaning in stratum mode\n"
-                 << "    --farm-retries      INT[1 .. 99999] Default = 3\n"
-                 << "                        Set number of reconnection retries to same pool\n"
-                 << "    --retry-delay       INT[1 .. 999] Default = 0\n"
-                 << "                        Delay in seconds before reconnection retry\n"
-                 << "    --failover-timeout  INT[0 .. ] Default not set\n"
-                 << "                        Sets the number of minutes miner can stay\n"
-                 << "                        connected to a fail-over pool before trying to\n"
-                 << "                        reconnect to the primary (the first) connection.\n"
-                 << "                        before switching to a fail-over connection\n"
-                 << "    --work-timeout      INT[180 .. 99999] Default = 180\n"
-                 << "                        If no new work received from pool after this\n"
-                 << "                        amount of time the connection is dropped\n"
-                 << "                        Value expressed in seconds.\n"
-                 << "    --response-timeout  INT[2 .. 999] Default = 2\n"
-                 << "                        If no response from pool to a stratum message \n"
-                 << "                        after this amount of time the connection is dropped\n"
-                 << "    -R,--report-hr      FLAG Notify pool of effective hashing rate\n"
-                 << "    --HWMON             INT[0 .. 2] Default = 0\n"
-                 << "                        GPU hardware monitoring level. Can be one of:\n"
-                 << "                        0 No monitoring\n"
-                 << "                        1 Monitor temperature and fan percentage\n"
-                 << "                        2 As 1 plus monitor power drain\n"
-                 << "    --exit              FLAG Stop miner whenever an error is encountered\n"
-                 << "    --nocolor           FLAG Monochrome display log lines\n"
-                 << "    --syslog            FLAG Use syslog appropriate output (drop timestamp\n"
-                 << "                        and channel prefix)\n"
-                 << "    --eval              FLAG Enable host software re-evaluation of GPUs\n"
-                 << "                        found nonces. Trims some ms. from submission\n"
-                 << "                        time but it may increase rejected solution rate.\n"
-                 << "    --list-devices      FLAG Lists the detected OpenCL/CUDA devices and\n"
-                 << "                        exits. Can be combined with -G or -U flags\n"
-                 << "    --tstop             UINT[30 .. 100] Default = 0\n"
-                 << "                        Suspend mining on GPU which temperature is above\n"
-                 << "                        this threshold. Implies --HWMON 1\n"
-                 << "                        If not set or zero no temp control is performed\n"
-                 << "    --tstart            UINT[30 .. 100] Default = 40\n"
-                 << "                        Resume mining on previously overheated GPU when\n"
-                 << "                        temp drops below this threshold. Implies --HWMON 1\n"
-                 << "                        Must be lower than --tstart\n"
-                 << "    -v,--verbosity      INT[0 .. 255] Default = 0\n"
-                 << "                        Set output verbosity level. Use the sum of :\n"
-                 << "                        1   to log stratum json messages\n"
-                 << "                        2   to log found solutions per GPU\n"
-#ifdef DEV_BUILD
-                 << "                        32  to log socket (dis)connections\n"
-                 << "                        64  to log timing of job switches\n"
-                 << "                        128 to log time for solution submission\n"
-#endif
-                 << '\n';
-        }
-
-        if (ctx == "env")
-        {
-            cout << "Environment variables :\n\n"
-                 << "    If you need or do feel more comfortable you can set the following\n"
-                 << "    environment variables. Please respect letter casing.\n\n"
-#ifndef _WIN32
-                 << "    SSL_CERT_FILE       Set to the full path to of your CA certificates\n"
-                 << "                        file if it is not in standard path :\n"
-                 << "                          /etc/ssl/certs/ca-certificates.crt.\n"
-#endif
-                 << "    SSL_NOVERIFY        set to any value to to disable the verification\n"
-                 << "                        chain for certificates. WARNING ! Disabling\n"
-                 << "                        certificate validation declines every security\n"
-                 << "                        implied in connecting to a secured\n SSL/TLS\n"
-                 << "                        remote endpoint.\nUSE AT YOU OWN RISK AND ONLY IF\n"
-                 << "                        YOU KNOW WHAT YOU'RE DOING\n\n";
-        }
-
-        if (ctx == "con")
-        {
-            cout << "\nConnections specifications :\n\n"
-                 << "    Whether you need to connect to a stratum pool or to make use of\n"
-                 << "    getWork polling mode (generally used to solo mine) you need to specify\n"
-                 << "    the connection  making use of -P command line argument filling up the\n"
-                 << "    URL. The URL is in the form:\n\n "
-                 << "    scheme://[user[.workername][:password]@]hostname:port[/...].\n\n"
-                 << "    where 'scheme' can be any of :\n\n"
-                 << "    getwork    for http getWork mode\n"
-                 << "    stratum    for tcp stratum mode\n"
-                 << "    stratums   for tcp encrypted stratum mode\n"
-                 << "    stratumss  for tcp encrypted stratum mode with strong TLS 1.2\n"
-                 << "    validation\n\n"
-                 << "    Example 1: -P getwork://127.0.0.1:8545\n"
-                 << "    Example 2: "
-                    "-P stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555\n"
-                 << "    Example 3: "
-                    "-P stratum://0x012345678901234567890234567890123.miner1@nanopool.org:9999/"
-                    "john.doe%40gmail.com\n"
-                 << "    Example 4: "
-                    "-P stratum://0x012345678901234567890234567890123@nanopool.org:9999/miner1/"
-                    "john.doe%40gmail.com\n\n"
-                 << "    Please note: if your user or worker or password do contain characters\n"
-                 << "    which may impair the correct parsing (namely any of . : @ # ?) you have\n"
-                 << "    to enclose those values in backticks( ` ASCII 096) or Url Encode them\n"
-                 << "    Also note that backtick has a special meaning in *nix environments thus\n"
-                 << "    you need to further escape those backticks with backslash.\n\n"
-                 << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555\n"
-                 << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555\n"
-                 << "    (In Windows backslashes are not needed)\n\n"
-                 << "    Common url encoded chars are\n"
-                 << "    . (dot)      %2e\n"
-                 << "    : (column)   %3a\n"
-                 << "    @ (at sign)  %40\n"
-                 << "    ? (question) %3f\n"
-                 << "    # (number)   %23\n"
-                 << "    / (slash)    %2f\n"
-                 << "    + (plus)     %2b\n\n"
-                 << "    You can add as many -P arguments as you want. Every -P specification\n"
-                 << "    after the first one behaves as fail-over connection. When also the\n"
-                 << "    the fail-over disconnects miner passes to the next connection\n"
-                 << "    available and so on till the list is exhausted. At that moment\n"
-                 << "    miner restarts the connection cycle from the first one.\n"
-                 << "    An exception to this behavior is ruled by the --failover-timeout\n"
-                 << "    command line argument. See 'nsfminer -H misc' for details.\n\n"
-                 << "    The special notation '-P exit' stops the failover loop.\n"
-                 << "    When miner reaches this kind of connection it simply quits.\n\n"
-                 << "    When using stratum mode miner tries to auto-detect the correct\n"
-                 << "    flavour provided by the pool. Should be fine in 99% of the cases.\n"
-                 << "    Nevertheless you might want to fine tune the stratum flavour by\n"
-                 << "    any of of the following valid schemes :\n\n"
-                 << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << "\n\n"
-                 << "    where a scheme is made up of two parts, the stratum variant + the tcp\n"
-                 << "    transport protocol\n\n"
-                 << "    Stratum variants :\n\n"
-                 << "        stratum     Stratum\n"
-                 << "        stratum1    Eth Proxy compatible\n"
-                 << "        stratum2    EthereumStratum 1.0.0 (nicehash)\n"
-                 << "        stratum3    EthereumStratum 2.0.0\n\n"
-                 << "    Transport variants :\n\n"
-                 << "        tcp         Unencrypted tcp connection\n"
-                 << "        tls         Encrypted tcp connection (including deprecated TLS 1.1)\n"
-                 << "        tls12       Encrypted tcp connection with TLS 1.2\n"
-                 << "        ssl         Encrypted tcp connection with TLS 1.2\n\n";
-        }
-    }
-
 private:
     void doMiner()
     {
@@ -975,7 +978,6 @@ private:
         ApiServer api(m_api_address, m_api_port, m_api_password);
         if (m_api_port)
             api.start();
-
 #endif
 
         // Start PoolManager
@@ -1010,9 +1012,8 @@ private:
     boost::asio::deadline_timer m_cliDisplayTimer;  // The timer which ticks display lines
     boost::asio::io_service::strand m_io_strand;    // A strand to serialize posts in
                                                     // multithreaded environment
-
     // Physical Mining Devices descriptor
-    map<string, DeviceDescriptor> m_DevicesCollection = {};
+    map<string, DeviceDescriptor> m_DevicesCollection;
 
     // Mining options
     MinerType m_minerType = MinerType::Mixed;
@@ -1022,13 +1023,8 @@ private:
     FarmSettings m_FarmSettings;  // Operating settings for Farm
     PoolSettings m_PoolSettings;  // Operating settings for PoolManager
 
-    //// -- Pool manager related params
-    // vector<shared_ptr<URI>> m_poolConns;
-
-
     // -- CLI Interface related params
-    unsigned m_cliDisplayInterval =
-        5;  // Display stats/info on cli interface every this number of seconds
+    unsigned m_cliDisplayInterval = 5;  // Display stats/info interval in seconds
 
     // -- CLI Flow control
     mutex m_climtx;
@@ -1046,6 +1042,85 @@ private:
 #endif
 };
 
+void on_help_module(string m)
+{
+    static const vector<string> modules({
+#if ETH_ETHASHCL
+        "cl",
+#endif
+#if ETH_ETHASHCUDA
+            "cu",
+#endif
+#if ETH_ETHASHCPU
+            "cp",
+#endif
+#if API_CORE
+            "api",
+#endif
+            "con", "test", "misc", "env"
+    });
+    if (find(modules.begin(), modules.end(), m) != modules.end())
+        return;
+
+    throw boost::program_options::error(
+        "The --help-module parameter must be one of the following: con test misc env"
+#if ETH_ETHASHCL
+        " cl"
+#endif
+#if ETH_ETHASHCUDA
+        " cu"
+#endif
+#if ETH_ETHASHCPU
+        " cp"
+#endif
+#if API_CORE
+        " api"
+#endif
+    );
+}
+
+void on_verbosity(unsigned u)
+{
+    if (u < LOG_NEXT)
+        return;
+    throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
+}
+
+void on_hwmon(unsigned u)
+{
+    if (u < 3)
+        return;
+    throw boost::program_options::error("The --HWMON value must be 0, 1 or 2");
+}
+
+void on_api_port(int i)
+{
+    if (i >= -65535 && i <= 65535)
+        return;
+    throw boost::program_options::error("The --api-port value is out of range");
+}
+
+void on_cu_block_size(unsigned b)
+{
+    if (b == 32 || b == 64 || b == 128 || b == 256)
+        return;
+    throw boost::program_options::error("The --cu-block value is out of range");
+}
+
+static void on_cu_streams(unsigned s)
+{
+    if (s == 1 || s == 2 || s == 4)
+        return;
+    throw boost::program_options::error("The --cu-streams value is out of range");
+}
+
+void on_cl_local_work(unsigned b)
+{
+    if (b == 64 || b == 128 || b == 256)
+        return;
+    throw boost::program_options::error("The --cl-work value is out of range");
+}
+
 int main(int argc, char** argv)
 {
     // Return values
@@ -1053,25 +1128,20 @@ int main(int argc, char** argv)
     // 1 - Invalid/Insufficient command line arguments
     // 2 - Runtime error
     // 3 - Other exceptions
-    // 4 - Possible corruption
+    // 4 - Unknown exception
+
+    dev::setThreadName("miner");
 
 #if defined(_WIN32)
     // Need to change the code page from the default OEM code page (437) so that
     // UTF-8 characters are displayed correctly in the console
     SetConsoleOutputCP(CP_UTF8);
-#endif
-
-    dev::setThreadName("miner");
-
-#if defined(_WIN32)
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE)
     {
-        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (hOut != INVALID_HANDLE_VALUE)
-        {
-            DWORD dwMode;
-            if (GetConsoleMode(hOut, &dwMode))
-                SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-        }
+        DWORD dwMode;
+        if (GetConsoleMode(hOut, &dwMode))
+            SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     }
 #endif
 
@@ -1102,41 +1172,43 @@ int main(int argc, char** argv)
             if (g_logSyslog)
                 g_logNoColor = true;
 
-            vector<string> vs;
-            headers(vs, !g_logNoColor);
-            for (auto& v : vs)
-                cnote << v;
-
+            if (!should_list)
+            {
+                vector<string> vs;
+                headers(vs, !g_logNoColor);
+                for (auto& v : vs)
+                    cnote << v;
+            }
 
             cli.execute();
+
             cout << endl << endl;
             return 0;
         }
-        catch (invalid_argument& ex1)
+        catch (boost::program_options::error& e)
         {
-            cout << "\nError: " << ex1.what()
-                 << "\nTry nsfminer --help to get an explained list of arguments.\n\n";
+            cout << "\nError: " << e.what() << "\n\n";
             return 1;
         }
-        catch (runtime_error& ex2)
+        catch (runtime_error& e)
         {
-            cout << "\nError: " << ex2.what() << "\n\n";
+            cout << "\nError: " << e.what() << "\n\n";
             return 2;
         }
-        catch (exception& ex3)
+        catch (exception& e)
         {
-            cout << "\nError: " << ex3.what() << "\n\n";
+            cout << "\nError: " << e.what() << "\n\n";
             return 3;
         }
         catch (...)
         {
-            cout << "\n\nError: Unknown failure occurred. Possible memory corruption.\n\n";
+            cout << "\n\nError: Unknown failure occurred.\n\n";
             return 4;
         }
     }
-    catch (const exception& ex)
+    catch (const exception& e)
     {
-        cout << "Could not initialize CLI interface " << endl << "Error: " << ex.what();
+        cout << "Could not initialize CLI interface\nError: " << e.what() << "\n\n";
         return 4;
     }
 }
