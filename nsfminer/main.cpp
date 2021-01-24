@@ -118,13 +118,90 @@ static void headers(vector<string>& h, bool color)
     h.push_back(ss.str());
 }
 
-static void on_help_module(string m);
-static void on_verbosity(unsigned u);
-static void on_hwmon(unsigned u);
-static void on_api_port(int i);
-static void on_cu_block_size(unsigned p);
-static void on_cu_streams(unsigned s);
-static void on_cl_local_work(unsigned b);
+static void on_help_module(string m)
+{
+    static const vector<string> modules({
+#if ETH_ETHASHCL
+        "cl",
+#endif
+#if ETH_ETHASHCUDA
+            "cu",
+#endif
+#if ETH_ETHASHCPU
+            "cp",
+#endif
+#if API_CORE
+            "api",
+#endif
+            "con", "test", "misc", "env"
+    });
+    if (find(modules.begin(), modules.end(), m) != modules.end())
+        return;
+
+    throw boost::program_options::error(
+        "The --help-module parameter must be one of the following: con test misc env"
+#if ETH_ETHASHCL
+        " cl"
+#endif
+#if ETH_ETHASHCUDA
+        " cu"
+#endif
+#if ETH_ETHASHCPU
+        " cp"
+#endif
+#if API_CORE
+        " api"
+#endif
+    );
+}
+
+static void on_verbosity(unsigned u)
+{
+    if (u < LOG_NEXT)
+        return;
+    throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
+}
+
+static void on_hwmon(unsigned u)
+{
+    if (u < 3)
+        return;
+    throw boost::program_options::error("The --HWMON value must be 0, 1 or 2");
+}
+
+#if API_CORE
+static void on_api_port(int i)
+{
+    if (i >= -65535 && i <= 65535)
+        return;
+    throw boost::program_options::error("The --api-port value is out of range");
+}
+#endif
+
+#if ETH_ETHASHCUDA
+static void on_cu_block_size(unsigned b)
+{
+    if (b == 32 || b == 64 || b == 128 || b == 256)
+        return;
+    throw boost::program_options::error("The --cu-block value is out of range");
+}
+
+static void on_cu_streams(unsigned s)
+{
+    if (s == 1 || s == 2 || s == 4)
+        return;
+    throw boost::program_options::error("The --cu-streams value is out of range");
+}
+#endif
+
+#if ETH_ETHASHCL
+static void on_cl_local_work(unsigned b)
+{
+    if (b == 64 || b == 128 || b == 256)
+        return;
+    throw boost::program_options::error("The --cl-work value is out of range");
+}
+#endif
 
 class MinerCLI
 {
@@ -690,6 +767,7 @@ public:
             for (auto& p : vm["pool"].as<vector<string>>())
                 pools.push_back(p);
 
+#if API_CORE
         m_api_bind = vm["api-bind"].as<string>();
         m_api_port = vm["api-port"].as<int>();
         m_api_password = vm["api-password"].as<string>();
@@ -705,6 +783,7 @@ public:
                 return false;
             }
         }
+#endif
 
         if (cl_miner)
             m_minerType = MinerType::CL;
@@ -1041,85 +1120,6 @@ private:
     DBusInt dbusint;
 #endif
 };
-
-void on_help_module(string m)
-{
-    static const vector<string> modules({
-#if ETH_ETHASHCL
-        "cl",
-#endif
-#if ETH_ETHASHCUDA
-            "cu",
-#endif
-#if ETH_ETHASHCPU
-            "cp",
-#endif
-#if API_CORE
-            "api",
-#endif
-            "con", "test", "misc", "env"
-    });
-    if (find(modules.begin(), modules.end(), m) != modules.end())
-        return;
-
-    throw boost::program_options::error(
-        "The --help-module parameter must be one of the following: con test misc env"
-#if ETH_ETHASHCL
-        " cl"
-#endif
-#if ETH_ETHASHCUDA
-        " cu"
-#endif
-#if ETH_ETHASHCPU
-        " cp"
-#endif
-#if API_CORE
-        " api"
-#endif
-    );
-}
-
-void on_verbosity(unsigned u)
-{
-    if (u < LOG_NEXT)
-        return;
-    throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
-}
-
-void on_hwmon(unsigned u)
-{
-    if (u < 3)
-        return;
-    throw boost::program_options::error("The --HWMON value must be 0, 1 or 2");
-}
-
-void on_api_port(int i)
-{
-    if (i >= -65535 && i <= 65535)
-        return;
-    throw boost::program_options::error("The --api-port value is out of range");
-}
-
-void on_cu_block_size(unsigned b)
-{
-    if (b == 32 || b == 64 || b == 128 || b == 256)
-        return;
-    throw boost::program_options::error("The --cu-block value is out of range");
-}
-
-static void on_cu_streams(unsigned s)
-{
-    if (s == 1 || s == 2 || s == 4)
-        return;
-    throw boost::program_options::error("The --cu-streams value is out of range");
-}
-
-void on_cl_local_work(unsigned b)
-{
-    if (b == 64 || b == 128 || b == 256)
-        return;
-    throw boost::program_options::error("The --cl-work value is out of range");
-}
 
 int main(int argc, char** argv)
 {
