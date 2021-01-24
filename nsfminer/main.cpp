@@ -37,10 +37,6 @@
 
 #include <ethash/version.h>
 
-#if ETH_DBUS
-#include <nsfminer/DBusInt.h>
-#endif
-
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
@@ -61,6 +57,10 @@ struct MiningChannel : public LogChannel
 };
 
 #define minelog clog(MiningChannel)
+
+#if ETH_DBUS
+#include <nsfminer/DBusInt.h>
+#endif
 
 static bool should_list;
 
