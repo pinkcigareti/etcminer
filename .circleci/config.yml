@@ -4,14 +4,15 @@ commands:
   restore_cache_cmd:
     steps:
       - restore_cache:
-          key: nsfminer-v1
+          key: nsfminer-{{ .Environment.CACHE_VERSION }}
+
 
   save_cache_cmd:
     steps:
       - save_cache:
           paths:
             - ~/.hunter
-          key: nsfminer-v1
+          key: nsfminer-{{ .Environment.CACHE_VERSION }}
 
   build:
     steps:
