@@ -1,9 +1,0 @@
-rm -rf release
-rm -rf build
-mkdir release
-mkdir build
-cd build
-cmake .. -DETHASHCL=ON -DAPICORE=ON -DBINKERN=OFF -DETHASHCUDA=ON
-make -j4
-cd ..
-tar -cO -C build/nsfminer nsfminer | gzip -9 > release/linux-nsfminer-cuda11-0.0.0.tgz
