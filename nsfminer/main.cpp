@@ -754,9 +754,16 @@ public:
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
         m_FarmSettings.eval = vm.count("eval");
+
+#if ETH_ETHASHCUDA
         m_FarmSettings.cuBlockSize = vm["cu-block"].as<unsigned>();
         m_FarmSettings.cuStreams = vm["cu-streams"].as<unsigned>();
+#endif
+
+#if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
+#endif
+
         m_FarmSettings.tempStop = vm["tstop"].as<unsigned>();
         m_FarmSettings.tempStart = vm["tstart"].as<unsigned>();
 
