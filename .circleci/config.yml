@@ -18,7 +18,7 @@ commands:
       - run: ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
       - run: echo $TZ > /etc/timezone
       - run: apt update
-      - run: apt install -y git cmake mesa-common-dev
+      - run: apt install -y git cmake mesa-common-dev libdbus-1-dev
       - checkout
       - run: git submodule update --init --recursive
       - restore_cache_cmd
