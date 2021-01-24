@@ -1,8 +1,6 @@
 
 #if defined(__linux__)
 #include <execinfo.h>
-#elif defined(_WIN32)
-#include <Windows.h>
 #endif
 
 #include <algorithm>
@@ -352,7 +350,6 @@ public:
         vector<string> pools;
 
         options_description general("General options");
-        options_description con("Connection options");
         options_description test("Test options");
 #if ETH_ETHASHCL
         options_description cl("OpenCL options");
@@ -367,7 +364,6 @@ public:
         options_description api("API options");
 #endif
         options_description misc("Miscellaneous options");
-        options_description env("Environment options");
 
         // clang-format off
 
@@ -572,7 +568,6 @@ public:
 
         options_description all("All options");
         all.add(general)
-            .add(con)
             .add(test)
 #if ETH_ETHASHCL
             .add(cl)
@@ -586,8 +581,7 @@ public:
 #if API_CORE
             .add(api)
 #endif
-            .add(misc)
-            .add(env);
+            .add(misc);
 
         options_description visible("General options");
         visible.add(general);
@@ -784,7 +778,7 @@ public:
             {
                 ParseBind(m_api_bind, m_api_address, m_api_port, true);
             }
-            catch (const exception& ex)
+            catch (const exception&)
             {
                 cout << "Error: --api-bind address invalid\n\n";
                 return false;
