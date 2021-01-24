@@ -22,9 +22,9 @@ commands:
       - checkout
       - run: git submodule update --init --recursive
       - restore_cache_cmd
-      - run: cmake -DHUNTER_JOBS_NUMBER=4 -DETHASHCL=ON -DETHASHCUDA=ON -DAPICORE=ON -DETHDBUS=ON -DDEVBUILD=ON -DETHASHCPU=ON -H. -Bbuild
-      - save_cache_cmd
+      - run: cmake -DHUNTER_JOBS_NUMBER=4 -H. -Bbuild
       - run: cmake --build build -- -j4
+      - save_cache_cmd
       - store_artifacts:
           path: build/nsfminer/nsfminer
           destination: nsfminer
@@ -34,20 +34,9 @@ executors:
    docker:
      - image: nvidia/cuda:11.0-devel-ubuntu20.04
 
- docker-executor-u18n10:
-   docker:
-     - image: nvidia/cuda:10.2-devel-ubuntu18.04
-
 jobs:
   build-with-docker-u20n11:
     executor: docker-executor-u20n11
-    steps:
-      - build
-    environment:
-        TZ: "America/New_York"
-
-  build-with-docker-u18n10:
-    executor: docker-executor-u18n10
     steps:
       - build
     environment:
