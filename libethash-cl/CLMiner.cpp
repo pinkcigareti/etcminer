@@ -389,7 +389,7 @@ void CLMiner::workLoop()
                     if (nonce != m_lastNonce)
                     {
                         m_lastNonce = nonce;
-                        h256 mix((byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
+                        h256 mix((::byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
 
                         Farm::f().submitProof(
                             Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});

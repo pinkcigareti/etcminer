@@ -381,7 +381,7 @@ void CUDAMiner::search(
                 for (uint32_t i = 0; i < r.counts.solCount; i++)
                 {
                     uint64_t nonce(start_nonce - stream_blocks + r.results[i].gid);
-                    h256 mix((byte*)&r.results[i].mix, h256::ConstructFromPointer);
+                    h256 mix((::byte*)&r.results[i].mix, h256::ConstructFromPointer);
 
                     Farm::f().submitProof(
                         Solution{nonce, mix, w, chrono::steady_clock::now(), m_index});
