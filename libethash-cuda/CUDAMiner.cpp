@@ -289,7 +289,7 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             deviceDescriptor.cuDeviceIndex = i;
             deviceDescriptor.cuDeviceOrdinal = i;
             deviceDescriptor.cuName = string(props.name);
-            deviceDescriptor.totalMemory = freeMem;
+            deviceDescriptor.totalMemory = totalMem;
             deviceDescriptor.cuCompute =
                 (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;

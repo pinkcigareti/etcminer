@@ -12,10 +12,15 @@
 /// The logging system's current verbosity.
 #define LOG_JSON 1
 #define LOG_PER_GPU 2
+#if DEV_BUILD
 #define LOG_CONNECT 32
 #define LOG_SWITCH 64
 #define LOG_SUBMIT 128
 #define LOG_NEXT 256
+#else
+#define LOG_NEXT 4
+#endif
+
 
 extern unsigned g_logOptions;
 extern bool g_logNoColor;
