@@ -12,7 +12,6 @@
     * [miner_getstat1](#miner_getstat1)
     * [miner_restart](#miner_restart)
     * [miner_reboot](#miner_reboot)
-    * [miner_shuffle](#miner_shuffle)
     * [miner_getconnections](#miner_getconnections)
     * [miner_setactiveconnection](#miner_setactiveconnection)
     * [miner_addconnection](#miner_addconnection)
@@ -92,7 +91,6 @@ This shows the API interface is live and listening on the configured endpoint.
 | [miner_getstat1](#miner_getstat1) | Request the retrieval of operational data in compatible format | No
 | [miner_restart](#miner_restart) | Instructs nsfminer to stop and restart mining | Yes |
 | [miner_reboot](#miner_reboot) | Try to launch reboot.bat (on Windows) or reboot.sh (on Linux) in the nsfminer executable directory | Yes
-| [miner_shuffle](#miner_shuffle) | Initializes a new random scramble nonce | Yes
 | [miner_getconnections](#miner_getconnections) | Returns the list of connections held by nsfminer | No
 | [miner_setactiveconnection](#miner_setactiveconnection) | Instruct nsfminer to immediately connect to the specified connection | Yes
 | [miner_addconnection](#miner_addconnection) | Provides nsfminer with a new connection to use | Yes
@@ -350,40 +348,6 @@ and expect back a result like this:
 which confirms an executable file was found and nsfminer tried to start it.
 
 **Note**: This method is not available if the API interface is in read-only mode (see above).
-
-### miner_shuffle
-
-The mining process is nothing more that finding the right number (nonce) which, applied to an algorithm (ethash) and some data, gives a result which is below or equal to a given target. This is very very (very) short!
-The range of nonces to be searched is a huge number: 2^64 = 18446744073709600000~ possible values. Each one has the same probability to be the _right_ one.
-
-Every time nsfminer receives a job from a pool you'd expect the miner to begin searching from the first, but that would be boring. So the concept of scramble nonce has been introduced to achieve these goals:
-
-* Start the searching from a random point within the range
-* Ensure all GPUs do not search the same data, or, in other words, ensure each GPU searches its own range of numbers without overlapping with the same numbers of the other GPUs
-
-All `miner_shuffle` method does is to re-initialize a new random scramble nonce to start from in next jobs.
-
-To invoke the action:
-
-```js
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "method": "miner_shuffle"
-}
-```
-
-and expect back a result like this:
-
-```js
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "result": true
-}
-```
-
-which confirms the action has been performed.
 
 ### miner_getconnections
 

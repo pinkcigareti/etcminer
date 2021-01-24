@@ -18,15 +18,16 @@ of open source problem reports and pull requests are welcome, but please use git
 * realistic benchmarking
 * stratum mining without proxy
 * Automatic devices configuration
-* farm failover (getwork + stratum)
+* farm failover
 
 ## Table of Contents
 
 * [Usage](#usage)
     * [Examples connecting to pools](#examples-connecting-to-pools)
 * [Build](#build)
-    * [Master branch build status](#master-branchr-buildr-status)
+    * [Master branch build status](#master-branch-build-status)
     * [Building from source](#building-from-source)
+* [API](#api)
 * [Contribute](#contribute)
 
 ## Usage
@@ -50,6 +51,13 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 [![CircleCI](https://circleci.com/gh/no-fee-ethereum-mining/nsfminer.svg?style=svg)](https://circleci.com/gh/no-fee-ethereum-mining/fminer)
 
+### Building from source
+
+[Instructions](docs/BUILD.md)
+
+## API
+
+[Specifications](docs/API_DOCUMENTATION.md)
 
 ## Contribute
 
