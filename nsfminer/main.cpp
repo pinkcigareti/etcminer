@@ -397,7 +397,7 @@ public:
                 "One or more Stratum pool or http (getWork) connection as URL(s)\n\n"
                 "scheme://[user[.workername][:password]@]hostname:port[/...]\n\n"
                 "For details and some samples how to fill in this value please use\n"
-                "nsfminer --help-ext con\n\n")
+                "nsfminer --help-module con\n\n")
 #if ETH_ETHASHCL
             ("opencl,G",
 
