@@ -455,7 +455,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             platformType = ClPlatformTypeEnum::Intel;
         else
         {
-            cerr << "Unrecognized platform " << platformName << endl;
+            cerr << EthRed "Unrecognized platform " << platformName << endl;
             continue;
         }
 
@@ -476,6 +476,12 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 clDeviceType = DeviceTypeEnum::Cpu;
             else if (detectedType == CL_DEVICE_TYPE_ACCELERATOR)
                 clDeviceType = DeviceTypeEnum::Accelerator;
+            else
+            {
+                cerr << EthRed "Unrecognized device type " << detectedType << endl;
+                continue;
+            }
+
 
             string uniqueId;
             DeviceDescriptor deviceDescriptor;
@@ -483,15 +489,22 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             if (clDeviceType == DeviceTypeEnum::Gpu && platformType == ClPlatformTypeEnum::Nvidia)
             {
                 cl_int bus_id, slot_id;
-                if (clGetDeviceInfo(device.get(), 0x4008, sizeof(bus_id), &bus_id, NULL) ==
-                        CL_SUCCESS &&
-                    clGetDeviceInfo(device.get(), 0x4009, sizeof(slot_id), &slot_id, NULL) ==
-                        CL_SUCCESS)
+                if (clGetDeviceInfo(device.get(), 0x4008 /*CL_DEVICE_PCI_BUS_ID_NV*/,
+                        sizeof(bus_id), &bus_id, NULL) == CL_SUCCESS &&
+                    clGetDeviceInfo(device.get(), 0x4009 /*CL_DEVICE_PCI_SLOT_ID_NV*/,
+                        sizeof(slot_id), &slot_id, NULL) == CL_SUCCESS)
                 {
                     ostringstream s;
                     s << setfill('0') << setw(2) << hex << bus_id << ":" << setw(2)
                       << (unsigned int)(slot_id >> 3) << "." << (unsigned int)(slot_id & 0x7);
                     uniqueId = s.str();
+                }
+                else
+                {
+                    cerr << EthRed "Failed to retrieve device Nvidia bud id or slot number" << endl;
+                    // We're not prepared (yet) to handle other platforms or types
+                    ++dIdx;
+                    continue;
                 }
             }
             else if (clDeviceType == DeviceTypeEnum::Gpu &&
@@ -499,12 +512,20 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                          platformType == ClPlatformTypeEnum::Clover))
             {
                 cl_char t[24];
-                if (clGetDeviceInfo(device.get(), 0x4037, sizeof(t), &t, NULL) == CL_SUCCESS)
+                if (clGetDeviceInfo(device.get(), 0x4037 /*CL_DEVICE_TOPOLOGY_AMD*/, sizeof(t), &t,
+                        NULL) == CL_SUCCESS)
                 {
                     ostringstream s;
                     s << setfill('0') << setw(2) << hex << (unsigned int)(t[21]) << ":" << setw(2)
                       << (unsigned int)(t[22]) << "." << (unsigned int)(t[23]);
                     uniqueId = s.str();
+                }
+                else
+                {
+                    cerr << EthRed "Failed to retrieve device AMD topology" << endl;
+                    // We're not prepared (yet) to handle other platforms or types
+                    ++dIdx;
+                    continue;
                 }
             }
             else if (clDeviceType == DeviceTypeEnum::Gpu && platformType == ClPlatformTypeEnum::Intel)
@@ -522,6 +543,8 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             }
             else
             {
+                cerr << EthRed "Unknow opencl device, device type " << hex << (unsigned)clDeviceType
+                     << endl;
                 // We're not prepared (yet) to handle other platforms or types
                 ++dIdx;
                 continue;
