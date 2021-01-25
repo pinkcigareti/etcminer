@@ -198,6 +198,8 @@ public:
 private:
     std::atomic<bool> m_paused = {false};
 
+    void checkForHungMiners();
+
     // Async submits solution serializing execution
     // in Farm's strand
     void submitProofAsync(Solution const& _s);
@@ -205,10 +207,6 @@ private:
     // Collects data about hashing and hardware status
     void collectData(const boost::system::error_code& ec);
 
-    /**
-     * @brief Spawn a file - must be located in the directory of ethminer binary
-     * @return false if file was not found or it is not executeable
-     */
     bool spawn_file_in_bin_dir(const char* filename, const std::vector<std::string>& args);
 
     mutable std::mutex farmWorkMutex;

@@ -178,6 +178,7 @@ void CUDAMiner::workLoop()
             const WorkPackage w = work();
             if (!w)
             {
+                m_hung_miner.store(false);
                 unique_lock<mutex> l(miner_work_mutex);
                 m_new_work_signal.wait_for(l, chrono::seconds(3));
                 continue;
@@ -327,6 +328,7 @@ void CUDAMiner::search(
     {
         HostToDevice((uint8_t*)m_search_buf[streamIdx] + offsetof(Search_results, done), zero3,
             sizeof(zero3));
+        m_hung_miner.store(false);
         run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[streamIdx],
             m_search_buf[streamIdx], start_nonce);
     }
@@ -374,8 +376,11 @@ void CUDAMiner::search(
             if (m_done)
                 streams_bsy &= ~stream_mask;
             else
+            {
+                m_hung_miner.store(false);
                 run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, stream,
                     (Search_results*)buffer, start_nonce);
+            }
 
             if (r.counts.solCount)
                 for (uint32_t i = 0; i < r.counts.solCount; i++)

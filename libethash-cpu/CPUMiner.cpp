@@ -212,7 +212,7 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             auto sol = Solution{r.nonce, mix, w, chrono::steady_clock::now(), m_index};
 
             cpulog << EthWhite << "Job: " << w.header.abridged()
-                   << " Solution: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
+                   << " Solution: " << toHex(sol.nonce, HexPrefix::Add);
             Farm::f().submitProof(sol);
         }
         nonce += blocksize;

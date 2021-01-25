@@ -701,7 +701,7 @@ string EthStratumClient::processError(Json::Value& responseObject)
 void EthStratumClient::processExtranonce(string& enonce)
 {
     m_session->extraNonceSizeBytes = enonce.length();
-    cnote << "Extranonce set to " EthWhite << enonce << EthReset;
+    cnote << "Extranonce set to " EthWhite << enonce;
     enonce.resize(16, '0');
     m_session->extraNonce = stoull(enonce, nullptr, 16);
 }

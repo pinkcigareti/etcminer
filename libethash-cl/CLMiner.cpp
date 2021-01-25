@@ -288,7 +288,7 @@ void CLMiner::workLoop()
     current.header = h256();
 
     if (!initDevice())
-    return;
+        return;
 
     try
     {
@@ -314,7 +314,7 @@ void CLMiner::workLoop()
                         results.count * sizeof(results.rslt[0]), (void*)&results);
                 }
                 // clean the solution count, hash count, and abort flag
-                m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
+                m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_TRUE,
                     offsetof(SearchResults, count), sizeof(zerox3), zerox3);
             }
             else
@@ -324,6 +324,7 @@ void CLMiner::workLoop()
             const WorkPackage w = work();
             if (!w)
             {
+                m_hung_miner.store(false);
                 unique_lock<mutex> l(miner_work_mutex);
                 m_new_work_signal.wait_for(l, chrono::seconds(3));
                 continue;
@@ -375,8 +376,10 @@ void CLMiner::workLoop()
             if (hr > 1e7)
                 m_block_multiple =
                     uint32_t(hr * CL_TARGET_BATCH_TIME / m_deviceDescriptor.clGroupSize);
+
             // Run the kernel.
             m_searchKernel.setArg(5, startNonce);
+            m_hung_miner.store(false);
             m_queue[0].enqueueNDRangeKernel(m_searchKernel, cl::NullRange,
                 m_deviceDescriptor.clGroupSize * m_block_multiple, m_deviceDescriptor.clGroupSize);
 
@@ -394,7 +397,7 @@ void CLMiner::workLoop()
                         Farm::f().submitProof(
                             Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
                         cllog << EthWhite << "Job: " << current.header.abridged()
-                              << " Solution: " << toHex(nonce, HexPrefix::Add) << EthReset;
+                              << " Solution: " << toHex(nonce, HexPrefix::Add);
                     }
                 }
             }
@@ -602,7 +605,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
 
 bool CLMiner::initDevice()
 {
-
+    m_initialized = false;
     // LookUp device
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();
@@ -727,7 +730,6 @@ void CLMiner::initEpoch()
         m_context.push_back(cl::Context(vector<cl::Device>(&m_device, &m_device + 1)));
         m_queue.clear();
         m_queue.push_back(cl::CommandQueue(m_context[0], m_device));
-
 
         m_dagItems = m_epochContext.dagNumItems;
 

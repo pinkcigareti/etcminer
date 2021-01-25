@@ -359,6 +359,10 @@ public:
 
     void TriggerHashRateUpdate() noexcept;
 
+    std::atomic<bool> m_hung_miner = {false};
+
+    bool m_initialized = false;
+
 protected:
     /**
      * @brief Initializes miner's device.
@@ -390,8 +394,6 @@ protected:
     mutable std::mutex miner_work_mutex;
     mutable std::mutex x_pause;
     std::condition_variable m_new_work_signal;
-
-    bool m_initialized = false;
 
     uint32_t m_block_multiple;
 

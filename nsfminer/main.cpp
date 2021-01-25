@@ -131,26 +131,26 @@ static void on_help_module(string m)
 #if API_CORE
             "api",
 #endif
-            "con", "test", "misc", "env"
+            "con", "test", "misc", "env", "reboot"
     });
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
 
     throw boost::program_options::error(
-        "The --help-module parameter must be one of the following: con test misc env"
+        "The --help-module parameter must be one of the following: "
 #if ETH_ETHASHCL
-        " cl"
+        "cl, "
 #endif
 #if ETH_ETHASHCUDA
-        " cu"
+        "cu, "
 #endif
 #if ETH_ETHASHCPU
-        " cp"
+        "cp, "
 #endif
 #if API_CORE
-        " api"
+        "api, "
 #endif
-    );
+        "con, test, misc, env, or reboot");
 }
 
 static void on_verbosity(unsigned u)
@@ -372,21 +372,20 @@ public:
             ("help,h", "This help message")("help-module,H",
                 value<string>()->notifier(on_help_module),
 
-                "Help for a given module, one of:"
-                " con test"
+                "Help for a given module, one of: "
 #if ETH_ETHASHCL
-                " cl"
+                "cl, "
 #endif
 #if ETH_ETHASHCUDA
-                " cu"
+                "cu, "
 #endif
 #if ETH_ETHASHCPU
-                " cp"
+                "cp, "
 #endif
 #if API_CORE
-                " api"
+                "api, "
 #endif
-                " misc env")
+                "misc, env, con, test, or reboot")
 
             ("version,V",
 
@@ -618,7 +617,7 @@ public:
         if (vm.count("help-module"))
         {
             const string& s = vm["help-module"].as<string>();
-            if (s == "con")  // Connections
+            if (s == "con")
                 cout
                     << "\n\nConnections specifications :\n\n"
                     << "    Whether you need to connect to a stratum pool or to make use of\n"
@@ -708,7 +707,7 @@ public:
 #endif
             else if (s == "misc")  // miscellaneous
                 cout << endl << misc << endl;
-            else if (s == "env")  // environment
+            else if (s == "env")
                 cout << "\nEnvironment variables :\n\n"
                      << "    If you need or do feel more comfortable you can set the following\n"
                      << "    environment variables. Please respect letter casing.\n\n"
@@ -723,6 +722,17 @@ public:
                      << "                   implied in connecting to a secured SSL/TLS\n"
                      << "                   remote endpoint. USE AT YOU OWN RISK AND ONLY IF\n"
                      << "                   YOU KNOW WHAT YOU'RE DOING\n\n";
+            else if (s == "reboot")
+                cout << "\nMiner reboots:\n\n"
+                     << "    The user may create a reboot script that will be invoked\n"
+                     << "    if ever the miner deems it needs to restart. That can happen\n"
+                     << "    if requested via the API, or if the miner detects a hung\n"
+                     << "    GPU. The script is invoked with 1 parameter, 'api_miner_reboot'\n"
+                     << "    for API reboots, and 'hung_miner_reboot' for hung GPUs\n\n"
+                     << "    The script needs a specific file name and must be first in\n"
+                     << "    the search path.\n\n"
+                     << "    For Linux:   reboot.sh\n\n"
+                     << "    For Windows: reboot.bat\n\n";
             return false;
         }
 

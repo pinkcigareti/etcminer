@@ -174,12 +174,12 @@ void Farm::setWork(WorkPackage const& _newWp)
     m_currentWp = _newWp;
 
     // Get the randomly selected nonce
-    uint16_t nonce_segment_with = 64 - (unsigned)ceil(log2(m_miners.size()));
+    uint16_t segmentBits(64 - (unsigned)ceil(log2(m_miners.size())));
     if (m_currentWp.exSizeBytes > 0)
     {
         // Equally divide the residual segment among miners
         m_currentWp.startNonce = m_currentWp.startNonce;
-        nonce_segment_with -= m_currentWp.exSizeBytes * 4;
+        segmentBits -= m_currentWp.exSizeBytes * 4;
     }
     else
         m_currentWp.startNonce = uniform_int_distribution<uint64_t>()(m_engine);
@@ -187,7 +187,7 @@ void Farm::setWork(WorkPackage const& _newWp)
     for (unsigned int i = 0; i < m_miners.size(); i++)
     {
         m_miners.at(i)->setWork(m_currentWp);
-        m_currentWp.startNonce += 1ULL << nonce_segment_with;
+        m_currentWp.startNonce += 1ULL << segmentBits;
     }
 }
 
@@ -443,11 +443,31 @@ void Farm::submitProofAsync(Solution const& _s)
 #endif
 }
 
+void Farm::checkForHungMiners()
+{
+    // Process miners
+    for (auto const& miner : m_miners)
+        if (!miner->paused() && miner->m_initialized)
+        {
+            if (miner->m_hung_miner.load())
+            {
+                if (g_exitOnError)
+                    throw runtime_error("Hung GPU");
+                else if (!reboot({{"hung_miner_reboot"}}))
+                    cwarn << "Hung GPU " << miner->Index() << " detected and reboot script failed!";
+                return;
+            }
+            miner->m_hung_miner.store(true);
+        }
+}
+
 // Collects data about hashing and hardware status
 void Farm::collectData(const boost::system::error_code& ec)
 {
     if (ec)
         return;
+
+    checkForHungMiners();
 
     // Reset hashrate (it will accumulate from miners)
     float farm_hr = 0.0f;
