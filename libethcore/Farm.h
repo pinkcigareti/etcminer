@@ -250,6 +250,8 @@ private:
 
     static Farm* m_this;
     std::map<std::string, DeviceDescriptor>& m_DevicesCollection;
+
+    random_device m_engine;
 };
 
 }  // namespace eth

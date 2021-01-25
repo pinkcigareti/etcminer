@@ -174,15 +174,20 @@ void Farm::setWork(WorkPackage const& _newWp)
     m_currentWp = _newWp;
 
     // Get the randomly selected nonce
-    random_device engine;
-    if (m_currentWp.exSizeBytes == 0)
-        m_currentWp.startNonce = uniform_int_distribution<uint64_t>()(engine);
+    uint16_t nonce_segment_with = 64 - (unsigned)ceil(log2(m_miners.size()));
+    if (m_currentWp.exSizeBytes > 0)
+    {
+        // Equally divide the residual segment among miners
+        m_currentWp.startNonce = m_currentWp.startNonce;
+        nonce_segment_with -= m_currentWp.exSizeBytes * 4;
+    }
+    else
+        m_currentWp.startNonce = uniform_int_distribution<uint64_t>()(m_engine);
 
-    uint16_t bits = uint16_t(ceil(log2(m_miners.size())));
     for (unsigned int i = 0; i < m_miners.size(); i++)
     {
         m_miners.at(i)->setWork(m_currentWp);
-        m_currentWp.startNonce += 1ULL << (64 - bits);
+        m_currentWp.startNonce += 1ULL << nonce_segment_with;
     }
 }
 
