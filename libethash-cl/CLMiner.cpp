@@ -334,14 +334,7 @@ void CLMiner::workLoop()
             {
 
                 if (current.epoch != w.epoch)
-                {
-                    delete m_abortqueue;
-                    m_abortqueue = nullptr;
-
                     initEpoch();
-
-                    m_abortqueue = new cl::CommandQueue(*m_context, m_device);
-                }
 
                 // Upper 64 bits of the boundary.
                 const uint64_t target = (uint64_t)(u64)((u256)w.boundary >> 192);
@@ -412,12 +405,14 @@ void CLMiner::workLoop()
         if (m_queue)
             m_queue->finish();
 
-        clear_buffer();
+        clear_buffers();
+        m_abortMutex.unlock();
     }
     catch (cl::Error const& _e)
     {
         string _what = ethCLErrorHelper("OpenCL Error", _e);
-        clear_buffer();
+        clear_buffers();
+        m_abortMutex.unlock();
         throw runtime_error(_what);
     }
 }
@@ -425,6 +420,7 @@ void CLMiner::workLoop()
 
 void CLMiner::kick_miner()
 {
+    m_abortMutex.lock();
     // Memory for abort Cannot be static because crashes on macOS.
     if (m_abortqueue)
     {
@@ -432,6 +428,7 @@ void CLMiner::kick_miner()
         m_abortqueue->enqueueWriteBuffer(
             *m_searchBuffer, CL_FALSE, offsetof(SearchResults, abort), sizeof(one), &one);
     }
+    m_abortMutex.unlock();
     m_new_work_signal.notify_one();
 }
 
@@ -456,11 +453,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
         else if (platformName.find("Intel") != string::npos)
             platformType = ClPlatformTypeEnum::Intel;
         else
-        {
-            cerr << EthRed "Unrecognized platform " << platformName << endl;
             continue;
-        }
-
 
         string platformVersion = platforms.at(pIdx).getInfo<CL_PLATFORM_VERSION>();
         unsigned int platformVersionMajor = stoi(platformVersion.substr(7, 1));
@@ -479,11 +472,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             else if (detectedType == CL_DEVICE_TYPE_ACCELERATOR)
                 clDeviceType = DeviceTypeEnum::Accelerator;
             else
-            {
-                cerr << EthRed "Unrecognized device type " << detectedType << endl;
                 continue;
-            }
-
 
             string uniqueId;
             DeviceDescriptor deviceDescriptor;
@@ -501,13 +490,6 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                       << (unsigned int)(slot_id >> 3) << "." << (unsigned int)(slot_id & 0x7);
                     uniqueId = s.str();
                 }
-                else
-                {
-                    cerr << EthRed "Failed to retrieve device Nvidia bud id or slot number" << endl;
-                    // We're not prepared (yet) to handle other platforms or types
-                    ++dIdx;
-                    continue;
-                }
             }
             else if (clDeviceType == DeviceTypeEnum::Gpu &&
                      (platformType == ClPlatformTypeEnum::Amd ||
@@ -521,13 +503,6 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                     s << setfill('0') << setw(2) << hex << (unsigned int)(t[21]) << ":" << setw(2)
                       << (unsigned int)(t[22]) << "." << (unsigned int)(t[23]);
                     uniqueId = s.str();
-                }
-                else
-                {
-                    cerr << EthRed "Failed to retrieve device AMD topology" << endl;
-                    // We're not prepared (yet) to handle other platforms or types
-                    ++dIdx;
-                    continue;
                 }
             }
             else if (clDeviceType == DeviceTypeEnum::Gpu && platformType == ClPlatformTypeEnum::Intel)
@@ -545,14 +520,12 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             }
             else
             {
-                cerr << EthRed "Unknow opencl device, device type " << hex << (unsigned)clDeviceType
-                     << endl;
                 // We're not prepared (yet) to handle other platforms or types
                 ++dIdx;
                 continue;
             }
 
-           if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
+            if (_DevicesCollection.find(uniqueId) != _DevicesCollection.end())
                 deviceDescriptor = _DevicesCollection[uniqueId];
             else
                 deviceDescriptor = DeviceDescriptor();
@@ -719,14 +692,12 @@ void CLMiner::initEpoch()
         }
 
 #endif
+        clear_buffers();
         // create context
-        if (m_context)
-            delete m_context;
         m_context = new cl::Context(vector<cl::Device>(&m_device, &m_device + 1));
-        if (m_queue)
-            delete m_queue;
         // create new queue with default in order execution property
         m_queue = new cl::CommandQueue(*m_context, m_device);
+        m_abortqueue = new cl::CommandQueue(*m_context, m_device);
 
         m_dagItems = m_epochContext.dagNumItems;
 
@@ -825,17 +796,11 @@ void CLMiner::initEpoch()
         // create buffer for dag
         try
         {
-            if (m_dag[0])
-                delete m_dag[0];
-            if (m_dag[1])
-                delete m_dag[1];
             unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
             m_dag[0] =
                 new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + delta);
             m_dag[1] =
                 new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - delta);
-            if (m_light)
-                delete m_light;
             try
             {
                 m_light = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
@@ -869,8 +834,6 @@ void CLMiner::initEpoch()
             return;
         }
         // create buffer for header
-        if (m_header)
-            delete m_header;
         m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
 
         m_searchKernel.setArg(1, m_header[0]);
@@ -879,8 +842,6 @@ void CLMiner::initEpoch()
         m_searchKernel.setArg(4, m_dagItems);
 
         // create mining buffers
-        if (m_searchBuffer)
-            delete m_searchBuffer;
         m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
 
         m_dagKernel.setArg(1, *m_light);
@@ -913,7 +874,7 @@ void CLMiner::initEpoch()
         auto dagTime =
             chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit);
 
-        ReportDAGDone((double)m_epochContext.dagSize, dagTime.count());
+        ReportDAGDone(m_epochContext.dagSize, uint32_t(dagTime.count()));
     }
     catch (cl::Error const& err)
     {
@@ -921,4 +882,5 @@ void CLMiner::initEpoch()
         pause(MinerPauseEnum::PauseDueToInitEpochError);
     }
     m_initialized = true;
+    m_abortMutex.unlock();
 }

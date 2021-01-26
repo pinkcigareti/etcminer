@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <mutex>
 
 #include <libdevcore/Worker.h>
 #include <libethcore/EthashAux.h>
@@ -69,7 +70,9 @@ private:
     cl::Buffer* m_header = nullptr;
     cl::Buffer* m_searchBuffer = nullptr;
 
-    void clear_buffer() {
+    void clear_buffers()
+    {
+        m_abortMutex.lock();
         if (m_dag[0])
         {
             delete m_dag[0];
@@ -114,6 +117,7 @@ private:
 
     unsigned m_dagItems = 0;
     uint64_t m_lastNonce = 0;
+    std::mutex m_abortMutex;
 };
 
 }  // namespace eth
