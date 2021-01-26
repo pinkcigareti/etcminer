@@ -315,7 +315,7 @@ void CLMiner::workLoop()
                         results.count * sizeof(results.rslt[0]), (void*)&results);
                 }
                 // clean the solution count, hash count, and abort flag
-                m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_TRUE,
+                m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
                     offsetof(SearchResults, count), sizeof(zerox3), zerox3);
             }
             else
@@ -351,7 +351,7 @@ void CLMiner::workLoop()
 
                 // Update header constant buffer.
                 m_queue[0].enqueueWriteBuffer(
-                    m_header[0], CL_TRUE, 0, w.header.size, w.header.data());
+                    m_header[0], CL_FALSE, 0, w.header.size, w.header.data());
                 // zero the result count
                 m_queue[0].enqueueWriteBuffer(m_searchBuffer[0], CL_FALSE,
                     offsetof(SearchResults, count), sizeof(zerox3), zerox3);
