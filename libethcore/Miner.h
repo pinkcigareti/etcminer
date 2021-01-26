@@ -185,9 +185,9 @@ struct TelemetryType
 
     TelemetryAccountType farm;
     std::vector<TelemetryAccountType> miners;
-    std::string str()
+    void strvec(std::list<string>& telemetry)
     {
-        std::stringstream _ret;
+        std::stringstream ss;
 
         /*
 
@@ -214,9 +214,9 @@ struct TelemetryType
         int hoursSize = (hours.count() > 9 ? (hours.count() > 99 ? 3 : 2) : 1);
         duration -= hours;
         auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
-        _ret << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2)
-             << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str()
-             << EthReset << " ";
+        ss << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2)
+           << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset
+           << " ";
 
         static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
@@ -227,35 +227,46 @@ struct TelemetryType
             magnitude++;
         }
 
-        _ret << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
-             << suffixes[magnitude] << EthReset << " - ";
+        ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude]
+           << EthReset << " - ";
+        telemetry.push_back(ss.str());
 
         int i = -1;                 // Current miner index
-        int m = miners.size() - 1;  // Max miner index
         for (TelemetryAccountType miner : miners)
         {
+            ss.str("");
             i++;
             hr = miner.hashrate;
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
-            _ret << (miner.paused ? EthRed : (hr < 1 ? EthYellow : "")) << miner.prefix << i << " " << EthTeal
-                 << std::fixed << std::setprecision(2) << hr << EthReset;
+            ss << (miner.paused ? EthRed : (hr < 1 ? EthYellow : "")) << miner.prefix << i << " "
+               << EthTeal << std::fixed << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
-                _ret << " " << EthTeal << miner.sensors.str() << EthReset;
+                ss << " " << EthTeal << miner.sensors.str() << EthReset;
 
             // Eventually push also solutions per single GPU
             if (g_logOptions & LOG_PER_GPU)
-                _ret << " " << EthTeal << miner.solutions.str() << EthReset;
+                ss << " " << EthTeal << miner.solutions.str() << EthReset;
 
-            // Separator if not the last miner index
-            if (i < m)
-                _ret << ", ";
+            telemetry.push_back(ss.str());
         }
-
-        return _ret.str();
     };
+
+    std::string str()
+    {
+        std::list<string> vs;
+        strvec(vs);
+        std::string s(vs.front());
+        vs.pop_front();
+        while (vs.size() != 1)
+        {
+            s += vs.front() + ", ";
+            vs.pop_front();
+        }
+        return s + vs.front();
+    }
 };
 
 

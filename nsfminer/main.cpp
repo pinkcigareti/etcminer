@@ -237,10 +237,20 @@ public:
     {
         if (!ec && g_running)
         {
-            string logLine =
-                PoolManager::p().isConnected() ? Farm::f().Telemetry().str() : "Not connected";
-            minelog << logLine;
-
+            if (m_multi)
+            {
+                list<string> vs;
+                Farm::f().Telemetry().strvec(vs);
+                string s(vs.front());
+                vs.pop_front();
+                while (!vs.empty())
+                {
+                    cnote << s << vs.front();
+                    vs.pop_front();
+                }
+            }
+            else
+                cnote << Farm::f().Telemetry().str();
 #if ETH_DBUS
             dbusint.send(Farm::f().Telemetry().str().c_str());
 #endif
@@ -511,7 +521,9 @@ public:
 
                 "Resume mining on previously overheated GPU when "
                 "temp drops below this threshold. Implies --HWMON 1. "
-                "Must be lower than --tstart");
+                "Must be lower than --tstart")
+            ("multi,m",
+		"Use multi-line status display");
 #if API_CORE
 
         api.add_options()
@@ -755,6 +767,7 @@ public:
 
         m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
         should_list = m_shouldListDevices = vm.count("list-devices");
+        m_multi = vm.count("multi");
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
         m_FarmSettings.eval = vm.count("eval");
@@ -1118,6 +1131,8 @@ private:
 
     // -- CLI Flow control
     mutex m_climtx;
+
+    bool m_multi = false;
 
 #if API_CORE
     // -- API and Http interfaces related params
