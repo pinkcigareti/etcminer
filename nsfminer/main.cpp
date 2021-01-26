@@ -104,14 +104,12 @@ static void headers(vector<string>& h, bool color)
 #endif
     ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
        << BOOST_VERSION % 100;
+    h.push_back(ss.str());
+    ss.str("");
     vector<string> sv;
     string s(SSLeay_version(SSLEAY_VERSION));
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
-    ss << ", OpenSSL " << sv[1];
-    h.push_back(ss.str());
-
-    ss.str("");
-    ss << white << "3rd Party: Ethash " << ethash::version;
+    ss << white << "3rd Party: OpenSSL " << sv[1] << ", Ethash " << ethash::version;
     h.push_back(ss.str());
 }
 

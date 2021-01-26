@@ -66,13 +66,11 @@ void CUDAMiner::initEpoch()
     m_current_target = 0;
     auto startInit = chrono::steady_clock::now();
     size_t RequiredTotalMemory = (m_epochContext.dagSize + m_epochContext.lightSize);
-    size_t RequiredDagMemory = m_epochContext.dagSize;
 
     // Release the pause flag if any
     resume(MinerPauseEnum::PauseDueToInsufficientMemory);
     resume(MinerPauseEnum::PauseDueToInitEpochError);
 
-    bool lightOnHost = false;
     try
     {
         hash128_t* dag;
@@ -92,31 +90,13 @@ void CUDAMiner::initEpoch()
             // Check whether the current device has sufficient memory every time we recreate the dag
             if (m_deviceDescriptor.totalMemory < RequiredTotalMemory)
             {
-                if (m_deviceDescriptor.totalMemory < RequiredDagMemory)
-                {
-                    cudalog << "Epoch " << m_epochContext.epochNumber << " requires "
-                            << dev::getFormattedMemory((double)RequiredDagMemory) << " memory.";
-                    cudalog << "This device hasn't enough memory available. Mining suspended ...";
-                    pause(MinerPauseEnum::PauseDueToInsufficientMemory);
-                    return;  // This will prevent to exit the thread and
-                             // Eventually resume mining when changing coin or epoch (NiceHash)
-                }
-                else
-                    lightOnHost = true;
+                ReportGPUNoMemoryAndPause(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
+                return;  // This will prevent to exit the thread and
+                         // Eventually resume mining when changing coin or epoch (NiceHash)
             }
-
-            cudalog << "Generating DAG + Light(on " << (lightOnHost ? "host" : "GPU")
-                    << ") : " << dev::getFormattedMemory((double)RequiredTotalMemory);
 
             // create buffer for cache
-            if (lightOnHost)
-            {
-                CUDA_CALL(
-                    cudaHostAlloc((void**)&light, m_epochContext.lightSize, cudaHostAllocDefault));
-                cudalog << "WARNING: Generating DAG will take minutes, not seconds";
-            }
-            else
-                CUDA_CALL(cudaMalloc((void**)&light, m_epochContext.lightSize));
+            CUDA_CALL(cudaMalloc((void**)&light, m_epochContext.lightSize));
             m_allocated_memory_light_cache = m_epochContext.lightSize;
             CUDA_CALL(cudaMalloc((void**)&dag, m_epochContext.dagSize));
             m_allocated_memory_dag = m_epochContext.dagSize;
@@ -129,11 +109,10 @@ void CUDAMiner::initEpoch()
             }
         }
         else
-        {
-            cudalog << "Generating DAG + Light (reusing buffers): "
-                    << dev::getFormattedMemory((double)RequiredTotalMemory);
             get_constants(&dag, NULL, &light, NULL);
-        }
+
+        ReportGPUMemoryUsage(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
+
 
         HostToDevice(light, m_epochContext.lightCache, m_epochContext.lightSize);
 
@@ -143,15 +122,9 @@ void CUDAMiner::initEpoch()
         ethash_generate_dag(
             m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
-        cudalog << "Generated DAG + Light in "
-                << chrono::duration_cast<chrono::milliseconds>(
-                       chrono::steady_clock::now() - startInit)
-                       .count()
-                << " ms. "
-                << dev::getFormattedMemory(
-                       lightOnHost ? (double)(m_deviceDescriptor.totalMemory - RequiredDagMemory) :
-                                     (double)(m_deviceDescriptor.totalMemory - RequiredTotalMemory))
-                << " left.";
+        ReportDAGDone(m_allocated_memory_dag,
+            chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit)
+                .count());
     }
     catch (const cuda_runtime_error& ec)
     {
@@ -391,8 +364,7 @@ void CUDAMiner::search(
 
                     Farm::f().submitProof(
                         Solution{nonce, mix, w, chrono::steady_clock::now(), m_index});
-                    cudalog << EthWhite << "Job: " << w.header.abridged()
-                            << " Solution: " << toHex(nonce, HexPrefix::Add) << EthReset;
+                    ReportSolution(w.header, nonce);
                 }
             if (shouldStop())
                 m_done = true;

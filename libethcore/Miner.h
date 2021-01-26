@@ -241,7 +241,7 @@ struct TelemetryType
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
-            ss << (miner.paused ? EthRed : (hr < 1 ? EthYellow : "")) << miner.prefix << i << " "
+            ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
                << EthTeal << std::fixed << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
@@ -376,21 +376,13 @@ public:
     bool m_initialized = false;
 
 protected:
-    /**
-     * @brief Initializes miner's device.
-     */
     virtual bool initDevice() = 0;
-
-    /**
-     * @brief Miner's specific initialization to current (or changed) epoch.
-     */
     virtual void initEpoch() = 0;
-
-    /**
-     * @brief Returns current workpackage this miner is working on
-     */
     WorkPackage work() const;
-
+    void ReportSolution(const h256& header, uint64_t nonce);
+    void ReportDAGDone(uint64_t dagSize, uint32_t dagTime);
+    void ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMemory);
+    void ReportGPUNoMemoryAndPause(uint64_t requiredTotalMemory, uint64_t totalMemory);
     void updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept;
 
     const unsigned m_index = 0;           // Ordinal index of the Instance (not the device)

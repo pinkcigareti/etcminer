@@ -397,8 +397,7 @@ void CLMiner::workLoop()
 
                         Farm::f().submitProof(
                             Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
-                        cllog << EthWhite << "Job: " << current.header.abridged()
-                              << " Solution: " << toHex(nonce, HexPrefix::Add);
+                        ReportSolution(current.header, nonce);
                     }
                 }
             }
@@ -688,7 +687,7 @@ void CLMiner::initEpoch()
 {
     m_initialized = false;
     auto startInit = chrono::steady_clock::now();
-    size_t RequiredMemory = (m_epochContext.dagSize);
+    size_t RequiredMemory = m_epochContext.dagSize + m_epochContext.lightSize;
 
     // Release the pause flag if any
     resume(MinerPauseEnum::PauseDueToInsufficientMemory);
@@ -697,17 +696,12 @@ void CLMiner::initEpoch()
     // Check whether the current device has sufficient memory every time we recreate the dag
     if (m_deviceDescriptor.totalMemory < RequiredMemory)
     {
-        cllog << "Epoch " << m_epochContext.epochNumber << " requires "
-              << dev::getFormattedMemory((double)RequiredMemory) << " memory. Only "
-              << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory)
-              << " available on device.";
-        pause(MinerPauseEnum::PauseDueToInsufficientMemory);
+        ReportGPUNoMemoryAndPause(RequiredMemory, m_deviceDescriptor.totalMemory);
         return;  // This will prevent to exit the thread and
                  // Eventually resume mining when changing coin or epoch (NiceHash)
     }
 
-    cllog << "Generating split DAG + Light (total): "
-          << dev::getFormattedMemory((double)RequiredMemory);
+    ReportGPUMemoryUsage(RequiredMemory, m_deviceDescriptor.totalMemory);
 
     try
     {
@@ -730,6 +724,7 @@ void CLMiner::initEpoch()
         m_context.clear();
         m_context.push_back(cl::Context(vector<cl::Device>(&m_device, &m_device + 1)));
         m_queue.clear();
+        // create new queue with default in order execution property
         m_queue.push_back(cl::CommandQueue(m_context[0], m_device));
 
         m_dagItems = m_epochContext.dagNumItems;
@@ -741,7 +736,6 @@ void CLMiner::initEpoch()
         // TODO: Just use C++ raw string literal.
         string code;
 
-        cllog << "OpenCL kernel";
         code = string(ethash_cl, ethash_cl + sizeof(ethash_cl));
 
         addDefinition(code, "WORKSIZE", m_deviceDescriptor.clGroupSize);
@@ -830,20 +824,13 @@ void CLMiner::initEpoch()
         // create buffer for dag
         try
         {
-            cllog << "Creating split DAG buffer, total size: "
-                  << dev::getFormattedMemory((double)m_epochContext.dagSize) << ", free: "
-                  << dev::getFormattedMemory(
-                         (double)(m_deviceDescriptor.totalMemory - RequiredMemory));
             m_dag.clear();
             unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
             m_dag.push_back(
                 cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + delta));
             m_dag.push_back(
                 cl::Buffer(m_context[0], CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - delta));
-            cllog << "Creating light cache buffer, size: "
-                  << dev::getFormattedMemory((double)m_epochContext.lightSize);
             m_light.clear();
-            bool light_on_host = false;
             try
             {
                 m_light.emplace_back(m_context[0], CL_MEM_READ_ONLY, m_epochContext.lightSize);
@@ -853,19 +840,10 @@ void CLMiner::initEpoch()
                 if ((err.err() == CL_OUT_OF_RESOURCES) || (err.err() == CL_OUT_OF_HOST_MEMORY))
                 {
                     // Ok, no room for light cache on GPU. Try allocating on host
-                    clog(WarnChannel) << "No room on GPU, allocating light cache on host";
-                    light_on_host = true;
-                }
-                else
+                    clog(WarnChannel) << "No room on GPU";
                     throw;
+                }
             }
-            if (light_on_host)
-            {
-                m_light.emplace_back(m_context[0], CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                    m_epochContext.lightSize);
-                cllog << "WARNING: Generating DAG will take minutes, not seconds";
-            }
-            cllog << "Loading kernels";
 
             // If we have a binary kernel to use, let's try it
             // otherwise just do a normal opencl load
@@ -927,9 +905,8 @@ void CLMiner::initEpoch()
 
         auto dagTime =
             chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit);
-        cllog << dev::getFormattedMemory((double)m_epochContext.dagSize)
-              << " of DAG data generated in "
-              << dagTime.count() << " ms.";
+
+        ReportDAGDone((double)m_epochContext.dagSize, dagTime.count());
     }
     catch (cl::Error const& err)
     {

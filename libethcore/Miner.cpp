@@ -5,6 +5,11 @@ namespace dev
 {
 namespace eth
 {
+struct MinerChannel : public LogChannel
+{
+    static bool name() { return false; }
+    static const int verbosity = 2;
+};
 
 FarmFace* FarmFace::m_this = nullptr;
 
@@ -28,6 +33,33 @@ void Miner::setWork(WorkPackage const& _work)
 #endif
     }
     kick_miner();
+}
+
+void Miner::ReportSolution(const h256& header, uint64_t nonce)
+{
+    clog(MinerChannel) << EthWhite << "Job: " << header.abridged()
+                       << " Solution: " << toHex(nonce, HexPrefix::Add);
+}
+
+void Miner::ReportDAGDone(uint64_t dagSize, uint32_t dagTime)
+{
+    clog(MinerChannel) << dev::getFormattedMemory(float(dagSize)) << " of DAG data generated in "
+                       << fixed << setprecision(1) << dagTime / 1000.0f << " seconds";
+}
+
+void Miner::ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMemory)
+{
+    clog(MinerChannel) << "Using " << dev::getFormattedMemory(float(requiredTotalMemory))
+                       << " out of " << dev::getFormattedMemory(float(totalMemory))
+                       << " GPU memory";
+}
+
+void Miner::ReportGPUNoMemoryAndPause(uint64_t requiredMemory, uint64_t totalMemory)
+{
+    clog(MinerChannel) << "Epoch " << m_epochContext.epochNumber << " requires "
+                       << dev::getFormattedMemory((double)requiredMemory) << " memory. Only "
+                       << dev::getFormattedMemory((double)totalMemory) << " available on device.";
+    pause(MinerPauseEnum::PauseDueToInsufficientMemory);
 }
 
 void Miner::pause(MinerPauseEnum what) 
