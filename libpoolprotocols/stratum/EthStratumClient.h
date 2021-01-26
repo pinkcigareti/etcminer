@@ -72,6 +72,7 @@ public:
         bool _ret = PoolClient::isConnected();
         return _ret && !isPendingState();
     }
+
     bool isPendingState() override
     {
         return (m_connecting.load(std::memory_order_relaxed) ||
@@ -80,7 +81,6 @@ public:
 
     void submitHashrate(uint64_t const& rate, string const& id) override;
     void submitSolution(const Solution& solution) override;
-
     h256 currentHeaderHash() { return m_current.header; }
     bool current() { return static_cast<bool>(m_current); }
 
@@ -95,11 +95,9 @@ private:
     void start_connect();
     void connect_handler(const boost::system::error_code& ec);
     void workloop_timer_elapsed(const boost::system::error_code& ec);
-
     void processResponse(Json::Value& responseObject);
     std::string processError(Json::Value& erroresponseObject);
     void processExtranonce(std::string& enonce);
-
     void recvSocketData();
     void onRecvSocketDataCompleted(
         const boost::system::error_code& ec, std::size_t bytes_transferred);

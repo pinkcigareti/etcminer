@@ -30,7 +30,6 @@
 #error "Invalid OS configuration"
 #endif
 
-
 using namespace std;
 using namespace dev;
 using namespace eth;

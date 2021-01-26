@@ -12,6 +12,7 @@ void Worker::startWorking()
 {
     //	cnote << "startWorking for thread" << m_name;
     unique_lock<mutex> l(workerWorkMutex);
+
     if (m_work)
     {
         WorkerState ex = WorkerState::Stopped;

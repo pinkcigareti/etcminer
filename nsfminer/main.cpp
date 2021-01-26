@@ -96,7 +96,6 @@ static void headers(vector<string>& h, bool color)
 #else
     ss << "MSVC " << bi->compiler_version << ", ";
 #endif
-
 #if ETH_ETHASHCUDA
     int v;
     if (cudaRuntimeGetVersion(&v) == cudaSuccess)

@@ -16,10 +16,12 @@ bool LogChannel::name()
 {
     return false;
 }
+
 bool WarnChannel::name()
 {
     return true;
 }
+
 bool NoteChannel::name()
 {
     return false;

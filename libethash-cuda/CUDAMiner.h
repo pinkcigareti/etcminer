@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "ethash_cuda_miner_kernel.h"

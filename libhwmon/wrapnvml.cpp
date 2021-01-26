@@ -49,7 +49,6 @@ wrap_nvml_handle* wrap_nvml_create()
         return nullptr;
     }
         
-
     nvmlh = (wrap_nvml_handle*)calloc(1, sizeof(wrap_nvml_handle));
 
     nvmlh->nvml_dll = nvml_dll;

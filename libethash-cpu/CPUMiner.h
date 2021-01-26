@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <libdevcore/Worker.h>

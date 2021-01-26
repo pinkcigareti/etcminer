@@ -25,7 +25,6 @@ public:
 
     void connect() override;
     void disconnect() override;
-
     void submitHashrate(uint64_t const& rate, string const& id) override;
     void submitSolution(const Solution& solution) override;
 

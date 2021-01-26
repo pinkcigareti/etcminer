@@ -34,7 +34,6 @@ EthStratumClient::EthStratumClient(int worktimeout, int responsetimeout)
     clear_response_pleas();
 }
 
-
 void EthStratumClient::init_socket()
 {
     // Prepare Socket

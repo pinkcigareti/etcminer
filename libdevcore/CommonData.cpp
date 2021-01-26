@@ -72,9 +72,7 @@ string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
     BigInteger product;
 
     if (diff == 0)
-    {
         product = BigInteger("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-    }
     else
     {
         diff = 1 / diff;

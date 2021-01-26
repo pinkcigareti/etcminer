@@ -46,7 +46,6 @@ private:
     virtual void workLoop() = 0;
 
     std::string m_name;
-
     mutable std::mutex workerWorkMutex;   ///< Lock for the network existence.
     std::unique_ptr<std::thread> m_work;  ///< The network thread.
     std::atomic<WorkerState> m_state = {WorkerState::Starting};

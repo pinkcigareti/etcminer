@@ -137,9 +137,7 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
         m_urlinfo = matches[2].str();
     }
     else
-    {
         m_urlinfo = m_authority;
-    }
 
     /*
       If m_userinfo present and valued it can be composed by either :

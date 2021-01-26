@@ -35,7 +35,6 @@ wrap_adl_handle* wrap_adl_create()
 #warning "Unrecognized platform: need ADL DLL path for this platform..."
     return nullptr;
 #endif
-
 #ifdef _WIN32
     char tmp[512];
     ExpandEnvironmentStringsA(libatiadlxx, tmp, sizeof(tmp));

@@ -10,6 +10,7 @@
 #endif
 
 // Define grayscale palette
+
 #define HTTP_HDR0_COLOR "#e8e8e8"
 #define HTTP_HDR1_COLOR "#f0f0f0"
 #define HTTP_ROW0_COLOR "#f8f8f8"

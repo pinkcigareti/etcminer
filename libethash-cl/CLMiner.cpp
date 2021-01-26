@@ -26,6 +26,7 @@ struct CLChannel : public LogChannel
     static const int verbosity = 2;
     static const bool debug = false;
 };
+
 #define cllog clog(CLChannel)
 
 /**

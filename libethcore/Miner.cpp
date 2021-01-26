@@ -23,12 +23,10 @@ void Miner::setWork(WorkPackage const& _work)
             m_work.header = h256();
         else
             m_work = _work;
-
 #ifdef DEV_BUILD
         m_workSwitchStart = chrono::steady_clock::now();
 #endif
     }
-
     kick_miner();
 }
 

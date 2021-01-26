@@ -154,6 +154,7 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
     }
 
     unsigned int gpucount = devices.size();
+
     sysfsh = (wrap_amdsysfs_handle*)calloc(1, sizeof(wrap_amdsysfs_handle));
     if (sysfsh == nullptr)
     {

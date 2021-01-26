@@ -48,7 +48,6 @@ struct Session
     string algo = "ethash";
     unsigned int epoch = 0;
     chrono::steady_clock::time_point lastTxStamp = chrono::steady_clock::now();
-
 };
 
 class PoolClient

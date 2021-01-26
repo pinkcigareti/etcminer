@@ -21,7 +21,6 @@
 #define LOG_NEXT 4
 #endif
 
-
 extern unsigned g_logOptions;
 extern bool g_logNoColor;
 extern bool g_logSyslog;

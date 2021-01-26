@@ -74,9 +74,7 @@ void PoolManager::setClientHandlers()
                     &PoolManager::failovertimer_elapsed, this, boost::asio::placeholders::error)));
             }
             else
-            {
                 m_failovertimer.cancel();
-            }
         }
 
         if (!Farm::f().isMining())

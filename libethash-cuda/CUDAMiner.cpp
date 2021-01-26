@@ -13,6 +13,7 @@ struct CUDAChannel : public LogChannel
     static bool name() { return false; }
     static const int verbosity = 2;
 };
+
 #define cudalog clog(CUDAChannel)
 
 CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cu-", _index)

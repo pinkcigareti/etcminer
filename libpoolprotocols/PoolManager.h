@@ -58,43 +58,29 @@ public:
 
 private:
     void rotateConnect();
-
     void setClientHandlers();
-
     void showMiningAt();
-
     void setActiveConnectionCommon(unsigned int idx);
-
-    PoolSettings m_Settings;
-
     void failovertimer_elapsed(const boost::system::error_code& ec);
     void submithrtimer_elapsed(const boost::system::error_code& ec);
     void reconnecttimer_elapsed(const boost::system::error_code& ec);
 
+    PoolSettings m_Settings;
     std::atomic<bool> m_running = {false};
     std::atomic<bool> m_stopping = {false};
     std::atomic<bool> m_async_pending = {false};
-
     unsigned m_connectionAttempt = 0;
-
     std::string m_selectedHost = "";  // Holds host name (and endpoint) of selected connection
     std::atomic<unsigned> m_connectionSwitches = {0};
-
     unsigned m_activeConnectionIdx = 0;
-
     WorkPackage m_currentWp;
-
     boost::asio::io_service::strand m_io_strand;
     boost::asio::deadline_timer m_failovertimer;
     boost::asio::deadline_timer m_submithrtimer;
     boost::asio::deadline_timer m_reconnecttimer;
-
     std::unique_ptr<PoolClient> p_client = nullptr;
-
     std::atomic<unsigned> m_epochChanges = {0};
-
     static PoolManager* m_this;
-
     int m_lastBlock;
 };
 

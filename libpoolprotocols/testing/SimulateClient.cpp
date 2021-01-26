@@ -79,10 +79,6 @@ void SimulateClient::workLoop()
 {
     m_start_time = chrono::steady_clock::now();
 
-    // apply exponential sliding average
-    // ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-
-
     WorkPackage current;
     current.seed = h256::random();  // We don't actually need a real seed as the epoch
                                     // is calculated upon block number (see poolmanager)
