@@ -57,26 +57,59 @@ private:
     
     void workLoop() override;
 
-    vector<cl::Context> m_context;
-    vector<cl::CommandQueue> m_queue;
-    vector<cl::CommandQueue> m_abortqueue;
+    cl::Context* m_context = nullptr;
+    cl::CommandQueue* m_queue = nullptr;
+    cl::CommandQueue* m_abortqueue = nullptr;
     cl::Kernel m_searchKernel;
     cl::Kernel m_dagKernel;
     cl::Device m_device;
 
-    vector<cl::Buffer> m_dag;
-    vector<cl::Buffer> m_light;
-    vector<cl::Buffer> m_header;
-    vector<cl::Buffer> m_searchBuffer;
+    cl::Buffer* m_dag[2] = {nullptr, nullptr};
+    cl::Buffer* m_light = nullptr;
+    cl::Buffer* m_header = nullptr;
+    cl::Buffer* m_searchBuffer = nullptr;
 
     void clear_buffer() {
-        m_dag.clear();
-        m_light.clear();
-        m_header.clear();
-        m_searchBuffer.clear();
-        m_queue.clear();
-        m_context.clear();
-        m_abortqueue.clear();
+        if (m_dag[0])
+        {
+            delete m_dag[0];
+            m_dag[0] = nullptr;
+        }
+        if (m_dag[1])
+        {
+            delete m_dag[1];
+            m_dag[1] = nullptr;
+        }
+        if (m_light)
+        {
+            delete m_light;
+            m_light = nullptr;
+        }
+        if (m_header)
+        {
+            delete m_header;
+            m_header = nullptr;
+        }
+        if (m_searchBuffer)
+        {
+            delete m_searchBuffer;
+            m_searchBuffer = nullptr;
+        }
+        if (m_queue)
+        {
+            delete m_queue;
+            m_queue = nullptr;
+        }
+        if (m_abortqueue)
+        {
+            delete m_abortqueue;
+            m_abortqueue = nullptr;
+        }
+        if (m_context)
+        {
+            delete m_context;
+            m_context = nullptr;
+        }
     }
 
     unsigned m_dagItems = 0;
