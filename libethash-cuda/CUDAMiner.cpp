@@ -154,6 +154,8 @@ void CUDAMiner::workLoop()
             if (current.epoch != w.epoch)
             {
                 initEpoch();
+		if (paused())
+		    break;
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one

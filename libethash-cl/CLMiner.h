@@ -116,7 +116,6 @@ private:
     }
 
     unsigned m_dagItems = 0;
-    uint64_t m_lastNonce = 0;
     std::mutex m_abortMutex;
 };
 

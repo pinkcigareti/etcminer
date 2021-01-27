@@ -312,7 +312,7 @@ void CLMiner::workLoop()
                 results.count = 0;
 
             // Wait for work or 3 seconds (whichever the first)
-            const WorkPackage w = work();
+            WorkPackage w = work();
             if (!w)
             {
                 m_hung_miner.store(false);
@@ -325,7 +325,12 @@ void CLMiner::workLoop()
             {
 
                 if (current.epoch != w.epoch)
+		{
                     initEpoch();
+		    if (paused())
+			break;
+		    w = work();
+		}
 
                 // Upper 64 bits of the boundary.
                 const uint64_t target = (uint64_t)(u64)((u256)w.boundary >> 192);
@@ -373,15 +378,11 @@ void CLMiner::workLoop()
                 for (uint32_t i = 0; i < results.count; i++)
                 {
                     uint64_t nonce = current.startNonce + results.rslt[i].gid;
-                    if (nonce != m_lastNonce)
-                    {
-                        m_lastNonce = nonce;
-                        h256 mix((::byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
+                    h256 mix((::byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
 
-                        Farm::f().submitProof(
-                            Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
-                        ReportSolution(current.header, nonce);
-                    }
+                    Farm::f().submitProof(
+                        Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
+                    ReportSolution(current.header, nonce);
                 }
             }
 
@@ -609,7 +610,7 @@ bool CLMiner::initDevice()
     else
     {
         // Don't know what to do with this
-        cnote << "Unrecognized Platform";
+        cwarn << "Unrecognized Platform";
         return false;
     }
 
@@ -619,13 +620,13 @@ bool CLMiner::initDevice()
     {
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
         {
-            cnote
+            cwarn
                 << "OpenCL " << m_deviceDescriptor.clPlatformVersion
                 << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!";
         }
         else
         {
-            cnote << "OpenCL " << m_deviceDescriptor.clPlatformVersion
+            cwarn << "OpenCL " << m_deviceDescriptor.clPlatformVersion
                   << " not supported. Minimum required version is 1.2";
             throw new runtime_error("OpenCL 1.2 required");
         }
@@ -652,10 +653,6 @@ void CLMiner::initEpoch()
     auto startInit = chrono::steady_clock::now();
     size_t RequiredMemory = m_epochContext.dagSize + m_epochContext.lightSize;
 
-    // Release the pause flag if any
-    resume(MinerPauseEnum::PauseDueToInsufficientMemory);
-    resume(MinerPauseEnum::PauseDueToInitEpochError);
-
     // Check whether the current device has sufficient memory every time we recreate the dag
     if (m_deviceDescriptor.totalMemory < RequiredMemory)
     {
@@ -664,6 +661,10 @@ void CLMiner::initEpoch()
                  // Eventually resume mining when changing coin or epoch (NiceHash)
     }
 
+    // Release the pause flag if any
+    resume(MinerPauseEnum::PauseDueToInsufficientMemory);
+    resume(MinerPauseEnum::PauseDueToInitEpochError);
+
     ReportGPUMemoryUsage(RequiredMemory, m_deviceDescriptor.totalMemory);
 
     try
@@ -671,7 +672,6 @@ void CLMiner::initEpoch()
 
         char options[256] = {0};
         int computeCapability = 0;
-#ifndef __clang__
 
         // Nvidia
         if (!m_deviceDescriptor.clNvCompute.empty())
@@ -682,7 +682,6 @@ void CLMiner::initEpoch()
             sprintf(options, "-cl-nv-maxrregcount=%d", maxregs);
         }
 
-#endif
         clear_buffers();
         // create context
         m_context = new cl::Context(vector<cl::Device>(&m_device, &m_device + 1));
@@ -869,8 +868,9 @@ void CLMiner::initEpoch()
     }
     catch (cl::Error const& err)
     {
-        cnote << ethCLErrorHelper("OpenCL init failed", err);
+        ccrit << ethCLErrorHelper("OpenCL init failed", err);
         pause(MinerPauseEnum::PauseDueToInitEpochError);
+	return;
     }
     m_initialized = true;
     m_abortMutex.unlock();
