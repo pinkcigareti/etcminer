@@ -20,15 +20,6 @@ namespace eth
 // to the assembly code for the binary kernels.
 const size_t c_maxSearchResults = 4;
 
-struct CLChannel : public LogChannel
-{
-    static bool name() { return false; }
-    static const int verbosity = 2;
-    static const bool debug = false;
-};
-
-#define cllog clog(CLChannel)
-
 /**
  * Returns the name of a numerical cl_int error
  * Takes constants from CL/cl.h and returns them in a readable format
@@ -357,7 +348,7 @@ void CLMiner::workLoop()
 
 #ifdef DEV_BUILD
                 if (g_logOptions & LOG_SWITCH)
-                    cllog << "Switch time: "
+                    cnote << "Switch time: "
                           << chrono::duration_cast<chrono::microseconds>(
                                  chrono::steady_clock::now() - m_workSwitchStart)
                                  .count()
@@ -618,7 +609,7 @@ bool CLMiner::initDevice()
     else
     {
         // Don't know what to do with this
-        cllog << "Unrecognized Platform";
+        cnote << "Unrecognized Platform";
         return false;
     }
 
@@ -628,13 +619,13 @@ bool CLMiner::initDevice()
     {
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
         {
-            cllog
+            cnote
                 << "OpenCL " << m_deviceDescriptor.clPlatformVersion
                 << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!";
         }
         else
         {
-            cllog << "OpenCL " << m_deviceDescriptor.clPlatformVersion
+            cnote << "OpenCL " << m_deviceDescriptor.clPlatformVersion
                   << " not supported. Minimum required version is 1.2";
             throw new runtime_error("OpenCL 1.2 required");
         }
@@ -649,7 +640,7 @@ bool CLMiner::initDevice()
         s << " (" << m_deviceDescriptor.clDeviceVersion;
 
     s << ") Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
-    cllog << s.str();
+    cnote << s.str();
 
     return true;
 
@@ -725,9 +716,9 @@ void CLMiner::initEpoch()
         }
         catch (cl::BuildError const& buildErr)
         {
-            cwarn << "OpenCL kernel build log:\n"
+            ccrit << "OpenCL kernel build log:\n"
                   << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
-            cwarn << "OpenCL kernel build error (" << buildErr.err() << "):\n" << buildErr.what();
+            ccrit << "OpenCL kernel build error (" << buildErr.err() << "):\n" << buildErr.what();
             pause(MinerPauseEnum::PauseDueToInitEpochError);
             return;
         }
@@ -749,7 +740,7 @@ void CLMiner::initEpoch()
             fname_strm << boost::dll::program_location().parent_path().string()
                        << "/kernels/ethash_" << device_name << "_lws"
                        << m_deviceDescriptor.clGroupSize << ".bin";
-            cllog << "Loading binary kernel " << fname_strm.str();
+            cnote << "Loading binary kernel " << fname_strm.str();
             try
             {
                 kernel_file.open(fname_strm.str(), ios::in | ios::binary);
@@ -767,7 +758,7 @@ void CLMiner::initEpoch()
                     try
                     {
                         program.build({m_device}, options);
-                        cllog << "Build info success:"
+                        cnote << "Build info success:"
                               << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
                         binaryProgram = program;
                         loadedBinary = true;
@@ -810,7 +801,7 @@ void CLMiner::initEpoch()
                 if ((err.err() == CL_OUT_OF_RESOURCES) || (err.err() == CL_OUT_OF_HOST_MEMORY))
                 {
                     // Ok, no room for light cache on GPU. Try allocating on host
-                    clog(WarnChannel) << "No room on GPU";
+                    ccrit << "No room on GPU";
                     throw;
                 }
             }
@@ -878,7 +869,7 @@ void CLMiner::initEpoch()
     }
     catch (cl::Error const& err)
     {
-        cllog << ethCLErrorHelper("OpenCL init failed", err);
+        cnote << ethCLErrorHelper("OpenCL init failed", err);
         pause(MinerPauseEnum::PauseDueToInitEpochError);
     }
     m_initialized = true;

@@ -48,14 +48,6 @@ bool g_exitOnError = false;  // Whether or not miner should exit on mining threa
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service;  // The IO service itself
 
-struct MiningChannel : public LogChannel
-{
-    static bool name() { return false; }
-    static const int verbosity = 2;
-};
-
-#define minelog clog(MiningChannel)
-
 #if ETH_DBUS
 #include <nsfminer/DBusInt.h>
 #endif
@@ -305,7 +297,7 @@ public:
             break;
         default:
             cerr << endl;
-            cwarn << "Got interrupt ...";
+            ccrit << "Got interrupt ...";
             g_running = false;
             g_shouldstop.notify_all();
             break;

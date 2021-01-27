@@ -38,10 +38,10 @@ void Worker::startWorking()
                 }
                 catch (exception const& _e)
                 {
-                    clog(WarnChannel) << "Exception thrown in Worker thread: " << _e.what();
+                    ccrit << "Exception thrown in Worker thread: " << _e.what();
                     if (g_exitOnError)
                     {
-                        clog(WarnChannel) << "Terminating due to --exit";
+                        ccrit << "Terminating due to --exit";
                         raise(SIGTERM);
                     }
                 }

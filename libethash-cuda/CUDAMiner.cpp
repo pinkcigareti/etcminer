@@ -8,14 +8,6 @@ using namespace std;
 using namespace dev;
 using namespace eth;
 
-struct CUDAChannel : public LogChannel
-{
-    static bool name() { return false; }
-    static const int verbosity = 2;
-};
-
-#define cudalog clog(CUDAChannel)
-
 CUDAMiner::CUDAMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cu-", _index)
 {
     m_deviceDescriptor = _device;
@@ -34,9 +26,9 @@ CUDAMiner::~CUDAMiner()
 
 bool CUDAMiner::initDevice()
 {
-    cudalog << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.cuName
-            << " (Compute " + m_deviceDescriptor.cuCompute + ") Memory : "
-            << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
+    cnote << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.cuName
+          << " (Compute " + m_deviceDescriptor.cuCompute + ") Memory : "
+          << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
     // Set Hardware Monitor Info
     m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
@@ -50,9 +42,9 @@ bool CUDAMiner::initDevice()
     }
     catch (const cuda_runtime_error& ec)
     {
-        cudalog << "Could not set CUDA device on Pci Id " << m_deviceDescriptor.uniqueId
-                << " Error : " << ec.what();
-        cudalog << "Mining aborted on this device.";
+        cnote << "Could not set CUDA device on Pci Id " << m_deviceDescriptor.uniqueId
+              << " Error : " << ec.what();
+        cnote << "Mining aborted on this device.";
         return false;
     }
     return true;
@@ -128,9 +120,9 @@ void CUDAMiner::initEpoch()
     }
     catch (const cuda_runtime_error& ec)
     {
-        cudalog << "Unexpected error " << ec.what() << " on CUDA device "
-                << m_deviceDescriptor.uniqueId;
-        cudalog << "Mining suspended ...";
+        cnote << "Unexpected error " << ec.what() << " on CUDA device "
+              << m_deviceDescriptor.uniqueId;
+        cnote << "Mining suspended ...";
         pause(MinerPauseEnum::PauseDueToInitEpochError);
     }
 
@@ -227,7 +219,7 @@ int CUDAMiner::getNumDevices()
             cwarn << "Insufficient CUDA driver " << to_string(driverVersion);
     }
     else
-        cwarn << "CUDA Error : " << cudaGetErrorString(err);
+        ccrit << "CUDA Error : " << cudaGetErrorString(err);
 
     return 0;
 }
@@ -277,7 +269,7 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
         }
         catch (const cuda_runtime_error& _e)
         {
-            cwarn << _e.what();
+            ccrit << _e.what();
         }
     }
 }
@@ -375,10 +367,10 @@ void CUDAMiner::search(
 #ifdef DEV_BUILD
     // Optionally log job switch time
     if (!shouldStop() && (g_logOptions & LOG_SWITCH))
-        cudalog << "Switch time: "
-                << chrono::duration_cast<chrono::microseconds>(
-                       chrono::steady_clock::now() - m_workSwitchStart)
-                       .count()
-                << " us.";
+        cnote << "Switch time: "
+              << chrono::duration_cast<chrono::microseconds>(
+                     chrono::steady_clock::now() - m_workSwitchStart)
+                     .count()
+              << " us.";
 #endif
 }

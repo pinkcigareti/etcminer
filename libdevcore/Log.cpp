@@ -12,30 +12,38 @@ unsigned g_logOptions = 0;
 bool g_logNoColor = false;
 bool g_logSyslog = false;
 
-bool LogChannel::name()
+int LogChannel::severity()
 {
-    return false;
+    return 0;
 }
 
-bool WarnChannel::name()
+int CritChannel::severity()
 {
-    return true;
+    return 2;
 }
 
-bool NoteChannel::name()
+int WarnChannel::severity()
 {
-    return false;
+    return 1;
 }
 
-LogOutputStreamBase::LogOutputStreamBase(bool error)
+int NoteChannel::severity()
+{
+    return 0;
+}
+
+LogOutputStreamBase::LogOutputStreamBase(int severity)
 {
     static locale logLocl = locale("");
     m_sstr.imbue(logLocl);
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else
-        m_sstr << ' ' << (error ? EthRed : EthWhite) << left << setw(5) << getThreadName()
-               << " " EthReset;
+        m_sstr << ' '
+               << (severity == 2    ? EthRed :
+                      severity == 1 ? EthYellow :
+                                      EthWhite)
+               << left << setw(5) << getThreadName() << " " EthReset;
 }
 
 /// Associate a name with each thread for nice logging.

@@ -36,25 +36,30 @@ void setThreadName(char const* _n);
 /// Set the current thread's log name.
 std::string getThreadName();
 
-/// The default logging channels. Each has an associated verbosity and three-letter prefix (name()
-/// ). Channels should inherit from LogChannel and define name() and verbosity.
+/// The default logging channels. Each has an associated verbosity and three-letter prefix
+/// (severity()
+/// ). Channels should inherit from LogChannel and define severity() and verbosity.
 struct LogChannel
 {
-    static bool name();
+    static int severity();
+};
+struct CritChannel : public LogChannel
+{
+    static int severity();
 };
 struct WarnChannel : public LogChannel
 {
-    static bool name();
+    static int severity();
 };
 struct NoteChannel : public LogChannel
 {
-    static bool name();
+    static int severity();
 };
 
 class LogOutputStreamBase
 {
 public:
-    LogOutputStreamBase(bool error);
+    LogOutputStreamBase(int error);
 
     template <class T>
     void append(T const& _t)
@@ -67,14 +72,14 @@ protected:
 };
 
 /// Logging class, iostream-like, that can be shifted to.
-template <class Id>
+template <class I>
 class LogOutputStream : LogOutputStreamBase
 {
 public:
     /// Construct a new object.
     /// If _term is true the the prefix info is terminated with a ']' character; if not it ends only
     /// with a '|' character.
-    LogOutputStream() : LogOutputStreamBase(Id::name()) {}
+    LogOutputStream() : LogOutputStreamBase(I::severity()) {}
 
     /// Destructor. Posts the accrued log entry to the g_logPost function.
     ~LogOutputStream() { simpleDebugOut(m_sstr.str()); }
@@ -94,5 +99,5 @@ public:
 // Dirties the global namespace, but oh so convenient...
 #define cnote clog(dev::NoteChannel)
 #define cwarn clog(dev::WarnChannel)
-
+#define ccrit clog(dev::CritChannel)
 }  // namespace dev

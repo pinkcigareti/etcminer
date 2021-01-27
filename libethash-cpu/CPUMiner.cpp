@@ -97,14 +97,6 @@ unsigned CPUMiner::getNumDevices()
 
 /* ######################## CPU Miner ######################## */
 
-struct CPUChannel : public LogChannel
-{
-    static bool name() { return false; }
-    static const int verbosity = 2;
-};
-#define cpulog clog(CPUChannel)
-
-
 CPUMiner::CPUMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cpu-", _index)
 {
     m_deviceDescriptor = _device;
@@ -123,8 +115,8 @@ CPUMiner::~CPUMiner()
  */
 bool CPUMiner::initDevice()
 {
-    cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.name
-           << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
+    cnote << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.name
+          << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
 #if defined(__linux__)
     cpu_set_t cpuset;
@@ -210,8 +202,8 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
             auto sol = Solution{r.nonce, mix, w, chrono::steady_clock::now(), m_index};
 
-            cpulog << EthWhite << "Job: " << w.header.abridged()
-                   << " Solution: " << toHex(sol.nonce, HexPrefix::Add);
+            cnote << EthWhite << "Job: " << w.header.abridged()
+                  << " Solution: " << toHex(sol.nonce, HexPrefix::Add);
             Farm::f().submitProof(sol);
         }
         nonce += blocksize;
