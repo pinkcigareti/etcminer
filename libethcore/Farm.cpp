@@ -27,7 +27,6 @@ Farm::Farm(map<string, DeviceDescriptor>& _DevicesCollection, FarmSettings _sett
     m_DevicesCollection(_DevicesCollection)
 {
     m_this = this;
-
     // Init HWMON if needed
     if (m_Settings.hwMon)
     {
@@ -223,9 +222,10 @@ bool Farm::start()
 
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
+                minerTelemetry.prefix = "cl";
                 if (m_Settings.clGroupSize)
                     it->second.clGroupSize = m_Settings.clGroupSize;
-                minerTelemetry.prefix = "cl";
+		it->second.clBin = m_Settings.clBin;
                 m_miners.push_back(shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
             }
 #endif

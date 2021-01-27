@@ -255,6 +255,9 @@ CLMiner::~CLMiner()
 // ethash.cl
 struct SearchResults
 {
+    uint32_t count;
+    uint32_t hashCount;
+    uint32_t abort;
     struct
     {
         uint32_t gid;
@@ -263,9 +266,6 @@ struct SearchResults
         uint32_t mix[8];
         uint32_t pad[7];  // pad to 16 words for easy indexing
     } rslt[c_maxSearchResults];
-    uint32_t count;
-    uint32_t hashCount;
-    uint32_t abort;
 };
 
 void CLMiner::workLoop()
@@ -325,12 +325,11 @@ void CLMiner::workLoop()
             {
 
                 if (current.epoch != w.epoch)
-		{
-                    initEpoch();
-		    if (paused())
-			break;
-		    w = work();
-		}
+                {
+                    if (!initEpoch())
+                        break;
+                    w = work();
+                }
 
                 // Upper 64 bits of the boundary.
                 const uint64_t target = (uint64_t)(u64)((u256)w.boundary >> 192);
@@ -397,13 +396,13 @@ void CLMiner::workLoop()
         if (m_queue)
             m_queue->finish();
 
-        clear_buffers();
+        free_buffers();
         m_abortMutex.unlock();
     }
     catch (cl::Error const& _e)
     {
         string _what = ethCLErrorHelper("OpenCL Error", _e);
-        clear_buffers();
+        free_buffers();
         m_abortMutex.unlock();
         throw runtime_error(_what);
     }
@@ -647,7 +646,7 @@ bool CLMiner::initDevice()
 
 }
 
-void CLMiner::initEpoch()
+bool CLMiner::initEpoch()
 {
     m_initialized = false;
     auto startInit = chrono::steady_clock::now();
@@ -657,8 +656,8 @@ void CLMiner::initEpoch()
     if (m_deviceDescriptor.totalMemory < RequiredMemory)
     {
         ReportGPUNoMemoryAndPause(RequiredMemory, m_deviceDescriptor.totalMemory);
-        return;  // This will prevent to exit the thread and
-                 // Eventually resume mining when changing coin or epoch (NiceHash)
+        return false;  // This will prevent to exit the thread and
+                       // Eventually resume mining when changing coin or epoch (NiceHash)
     }
 
     // Release the pause flag if any
@@ -682,7 +681,7 @@ void CLMiner::initEpoch()
             sprintf(options, "-cl-nv-maxrregcount=%d", maxregs);
         }
 
-        clear_buffers();
+        free_buffers();
         // create context
         m_context = new cl::Context(vector<cl::Device>(&m_device, &m_device + 1));
         // create new queue with default in order execution property
@@ -719,7 +718,8 @@ void CLMiner::initEpoch()
                   << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
             ccrit << "OpenCL kernel build error (" << buildErr.err() << "):\n" << buildErr.what();
             pause(MinerPauseEnum::PauseDueToInitEpochError);
-            return;
+            free_buffers();
+            return false;
         }
 
         /* If we have a binary kernel, we load it in tandem with the opencl,
@@ -727,8 +727,7 @@ void CLMiner::initEpoch()
            the default kernel if loading fails for whatever reason */
         bool loadedBinary = false;
         string device_name = m_deviceDescriptor.clName;
-
-        if (false /*m_settings.binary*/)
+        if (m_deviceDescriptor.clBin)
         {
             ifstream kernel_file;
             vector<unsigned char> bin_data;
@@ -821,7 +820,8 @@ void CLMiner::initEpoch()
         {
             cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
             pause(MinerPauseEnum::PauseDueToInitEpochError);
-            return;
+            free_buffers();
+            return false;
         }
         // create buffer for header
         m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
@@ -870,8 +870,10 @@ void CLMiner::initEpoch()
     {
         ccrit << ethCLErrorHelper("OpenCL init failed", err);
         pause(MinerPauseEnum::PauseDueToInitEpochError);
-	return;
+        free_buffers();
+        return false;
     }
     m_initialized = true;
     m_abortMutex.unlock();
+    return true;
 }

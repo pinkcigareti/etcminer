@@ -50,7 +50,7 @@ bool CUDAMiner::initDevice()
     return true;
 }
 
-void CUDAMiner::initEpoch()
+bool CUDAMiner::initEpoch()
 {
     m_initialized = false;
     // If we get here it means epoch has changed so it's not necessary
@@ -83,8 +83,8 @@ void CUDAMiner::initEpoch()
             if (m_deviceDescriptor.totalMemory < RequiredTotalMemory)
             {
                 ReportGPUNoMemoryAndPause(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
-                return;  // This will prevent to exit the thread and
-                         // Eventually resume mining when changing coin or epoch (NiceHash)
+                return false;  // This will prevent to exit the thread and
+                               // Eventually resume mining when changing coin or epoch (NiceHash)
             }
 
             // create buffer for cache
@@ -124,9 +124,11 @@ void CUDAMiner::initEpoch()
               << m_deviceDescriptor.uniqueId;
         cnote << "Mining suspended ...";
         pause(MinerPauseEnum::PauseDueToInitEpochError);
+        return false;
     }
 
     m_initialized = true;
+    return true;
 }
 
 void CUDAMiner::workLoop()
@@ -153,9 +155,8 @@ void CUDAMiner::workLoop()
             // Epoch change ?
             if (current.epoch != w.epoch)
             {
-                initEpoch();
-		if (paused())
-		    break;
+                if (!initEpoch())
+                    break;
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one
