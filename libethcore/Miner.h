@@ -158,6 +158,7 @@ struct DeviceDescriptor
     string clPlatformName;
     ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
     unsigned clGroupSize;
+    bool clBin;
 };
 
 struct HwMonitorInfo

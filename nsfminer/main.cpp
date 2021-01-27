@@ -550,7 +550,11 @@ public:
 
             ("cl-work", value<unsigned>()->default_value(128)->notifier(on_cl_local_work),
 
-                "Set the work group size, valid values are 64 128 or 256");
+                "Set the work group size, valid values are 64 128 or 256")
+
+	    ("cl-bin",
+
+		"Try to load binary kernel");
 #endif
         test.add_options()
 
@@ -768,6 +772,7 @@ public:
 
 #if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
+	m_FarmSettings.clBin = vm.count("cl-bin");
 #endif
 
         m_FarmSettings.tempStop = vm["tstop"].as<unsigned>();
@@ -1051,6 +1056,7 @@ public:
         signal(SIGTERM, MinerCLI::signalHandler);
 
         // Initialize Farm
+ccrit << m_FarmSettings.clBin;
         new Farm(m_DevicesCollection, m_FarmSettings);
 
         // Run Miner
@@ -1121,7 +1127,7 @@ private:
     // -- CLI Flow control
     mutex m_climtx;
 
-    bool m_multi = false;
+    bool m_multi;
 
 #if API_CORE
     // -- API and Http interfaces related params
