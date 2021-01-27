@@ -5,7 +5,7 @@ include(EthCheckCXXFlags)
 # C++11 check and activation
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unknown-pragmas -Wextra -Wno-error=parentheses -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wno-unknown-pragmas -Wextra -Wno-error=parentheses -pedantic")
 
     eth_add_cxx_compiler_flag_if_supported(-ffunction-sections)
     eth_add_cxx_compiler_flag_if_supported(-fdata-sections)
@@ -40,7 +40,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # disable unknown pragma warnings (C4068)
     # disable conversion from 'size_t' to 'type', possible loss of data (C4267)
     # disable C++ exception specification ignored except to indicate a function is not __declspec(nothrow) (C4290)
-    add_compile_options(/MP /EHsc /GL /wd4068 /wd4267 /wd4290)
+    add_compile_options(/MP /EHsc /GL /wd4068 /wd4267 /wd4290 /std:c++17)
 
     # enable LTCG for faster builds
     set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /LTCG")
