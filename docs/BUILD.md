@@ -42,6 +42,8 @@ you have to install the OpenGL libraries. E.g. on Ubuntu run:
 sudo apt-get install mesa-common-dev
 ```
 
+These are sufficient for Ubuntu LTS releases. Other packages may be needed depending on your distrubution.
+
 ### Windows
 
 1. [Visual Studio 2017](https://www.visualstudio.com/downloads/); Community Edition works fine. **Make sure you install MSVC 2015 toolkit (v140).**
