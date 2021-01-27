@@ -5,7 +5,7 @@ include(EthCheckCXXFlags)
 # C++11 check and activation
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wno-unknown-pragmas -Wextra -Wno-error=parentheses -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall -Wno-unknown-pragmas -Wextra -Wno-error=parentheses -pedantic -D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING")
 
     eth_add_cxx_compiler_flag_if_supported(-ffunction-sections)
     eth_add_cxx_compiler_flag_if_supported(-fdata-sections)
@@ -32,7 +32,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # declare Windows Vista requirement
     # undefine windows.h MAX & MIN macros because they conflict with std::min & std::max functions
     # disable unsafe CRT Library functions warnings
-    add_definitions(/D_WIN32_WINNT=0x0600 /DNOMINMAX /D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(/D_WIN32_WINNT=0x0600 /DNOMINMAX /D_CRT_SECURE_NO_WARNINGS /D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
 
     # enable parallel compilation
     # specify Exception Handling Model
