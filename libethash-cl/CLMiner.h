@@ -50,7 +50,7 @@ public:
 protected:
     bool initDevice() override;
 
-    void initEpoch() override;
+    bool initEpoch() override;
 
     void kick_miner() override;
 
@@ -58,19 +58,19 @@ private:
     
     void workLoop() override;
 
-    cl::Context* m_context = nullptr;
-    cl::CommandQueue* m_queue = nullptr;
-    cl::CommandQueue* m_abortqueue = nullptr;
     cl::Kernel m_searchKernel;
     cl::Kernel m_dagKernel;
     cl::Device m_device;
 
+    cl::Context* m_context = nullptr;
+    cl::CommandQueue* m_queue = nullptr;
+    cl::CommandQueue* m_abortqueue = nullptr;
     cl::Buffer* m_dag[2] = {nullptr, nullptr};
     cl::Buffer* m_light = nullptr;
     cl::Buffer* m_header = nullptr;
     cl::Buffer* m_searchBuffer = nullptr;
 
-    void clear_buffers()
+    void free_buffers()
     {
         m_abortMutex.lock();
         if (m_dag[0])

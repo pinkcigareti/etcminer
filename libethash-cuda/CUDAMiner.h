@@ -25,18 +25,18 @@ public:
     static int getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
 
-    void search(
-        uint8_t const* header, uint64_t target, uint64_t _startN, const dev::eth::WorkPackage& w);
-
 protected:
     bool initDevice() override;
 
-    void initEpoch() override;
+    bool initEpoch() override;
 
     void kick_miner() override;
 
 private:
     void workLoop() override;
+
+    void search(
+        uint8_t const* header, uint64_t target, uint64_t _startN, const dev::eth::WorkPackage& w);
 
     Search_results* m_search_buf[MAX_STREAMS];
     cudaStream_t m_streams[MAX_STREAMS];

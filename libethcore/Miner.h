@@ -219,7 +219,7 @@ struct TelemetryType
            << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset
            << " ";
 
-        static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
+        const static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
         int magnitude = 0;
         while (hr > 1000.0f && magnitude <= 3)
@@ -271,11 +271,6 @@ struct TelemetryType
 };
 
 
-/**
- * @brief Class for hosting one or more Miners.
- * @warning Must be implemented in a threadsafe manner since it will be called from multiple
- * miner threads.
- */
 class FarmFace
 {
 public:
@@ -298,11 +293,6 @@ private:
     static FarmFace* m_this;
 };
 
-/**
- * @brief A miner - a member and adoptee of the Farm.
- * @warning Not threadsafe. It is assumed Farm will synchronise calls to/from this class.
- */
-
 class Miner : public Worker
 {
 public:
@@ -312,72 +302,27 @@ public:
 
     ~Miner() override = default;
 
-    /**
-     * @brief Gets the device descriptor assigned to this instance
-     */
     DeviceDescriptor getDescriptor();
-
-    /**
-     * @brief Assigns hashing work to this instance
-     */
     void setWork(WorkPackage const& _work);
-
-    /**
-     * @brief Assigns Epoch context to this instance
-     */
     void setEpoch(EpochContext const& _ec) { m_epochContext = _ec; }
-
     unsigned Index() { return m_index; };
-
     HwMonitorInfo hwmonInfo() { return m_hwmoninfo; }
-
     void setHwmonDeviceIndex(int i) { m_hwmoninfo.deviceIndex = i; }
-
-    /**
-     * @brief Kick an asleep miner.
-     */
     virtual void kick_miner() = 0;
-
-    /**
-     * @brief Pauses mining setting a reason flag
-     */
     void pause(MinerPauseEnum what);
-
-    /**
-     * @brief Whether or not this miner is paused for any reason
-     */
     bool paused();
-
-    /**
-     * @brief Checks if the given reason for pausing is currently active
-     */
     bool pauseTest(MinerPauseEnum what);
-
-    /**
-     * @brief Returns the human readable reason for this miner being paused
-     */
     std::string pausedString();
-
-    /**
-     * @brief Cancels a pause flag.
-     * @note Miner can be paused for multiple reasons at a time.
-     */
     void resume(MinerPauseEnum fromwhat);
-
-    /**
-     * @brief Retrieves currrently collected hashrate
-     */
     float RetrieveHashRate() noexcept;
-
     void TriggerHashRateUpdate() noexcept;
-
     std::atomic<bool> m_hung_miner = {false};
-
     bool m_initialized = false;
 
 protected:
     virtual bool initDevice() = 0;
-    virtual void initEpoch() = 0;
+    virtual bool initEpoch() = 0;
+
     WorkPackage work() const;
     void ReportSolution(const h256& header, uint64_t nonce);
     void ReportDAGDone(uint64_t dagSize, uint32_t dagTime);
