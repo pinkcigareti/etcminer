@@ -255,6 +255,9 @@ CLMiner::~CLMiner()
 // ethash.cl
 struct SearchResults
 {
+    uint32_t count;
+    uint32_t hashCount;
+    uint32_t abort;
     struct
     {
         uint32_t gid;
@@ -263,9 +266,6 @@ struct SearchResults
         uint32_t mix[8];
         uint32_t pad[7];  // pad to 16 words for easy indexing
     } rslt[c_maxSearchResults];
-    uint32_t count;
-    uint32_t hashCount;
-    uint32_t abort;
 };
 
 void CLMiner::workLoop()
@@ -727,8 +727,7 @@ bool CLMiner::initEpoch()
            the default kernel if loading fails for whatever reason */
         bool loadedBinary = false;
         string device_name = m_deviceDescriptor.clName;
-
-        if (false /*m_settings.binary*/)
+        if (m_deviceDescriptor.clBin)
         {
             ifstream kernel_file;
             vector<unsigned char> bin_data;

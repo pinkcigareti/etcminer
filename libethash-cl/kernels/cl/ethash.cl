@@ -257,15 +257,15 @@ typedef union
 // NOTE: This struct must match the one defined in CLMiner.cpp
 struct SearchResults
 {
+    uint count;
+    uint hashCount;
+    volatile uint abort;
     struct
     {
         uint gid;
         uint mix[8];
         uint pad[7];  // pad to 16 words for easy indexing
     } rslt[MAX_OUTPUTS];
-    uint count;
-    uint hashCount;
-    volatile uint abort;
 };
 
 __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
