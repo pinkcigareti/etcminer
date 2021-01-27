@@ -68,7 +68,7 @@ inline std::string asString(bytes const& _b)
 /// Converts a string to a byte array containing the string's (byte) data.
 inline bytes asBytes(std::string const& _b)
 {
-    return bytes((byte const*)_b.data(), (byte const*)(_b.data() + _b.size()));
+    return bytes((::byte const*)_b.data(), (::byte const*)(_b.data() + _b.size()));
 }
 
 
@@ -100,8 +100,8 @@ inline T fromBigEndian(_In const& _bytes)
 {
     T ret = (T)0;
     for (auto i : _bytes)
-        ret =
-            (T)((ret << 8) | (byte)(typename std::make_unsigned<typename _In::value_type>::type)i);
+        ret = (T)(
+            (ret << 8) | (::byte)(typename std::make_unsigned<typename _In::value_type>::type)i);
     return ret;
 }
 

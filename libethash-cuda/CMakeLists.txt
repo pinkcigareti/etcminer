@@ -1,6 +1,6 @@
 find_package(CUDA REQUIRED)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--ptxas-options=-v;-use_fast_math)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--ptxas-options=-v;-use_fast_math;--std=c++17;-Wno-deprecated-gpu-targets)
 
 if (NOT MSVC)
 	list(APPEND CUDA_NVCC_FLAGS "--disable-warnings")
@@ -12,19 +12,25 @@ list(APPEND CUDA_NVCC_FLAGS_DEBUG -G)
 if(COMPUTE AND (COMPUTE GREATER 0))
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE}")
 else()
+	# Maxwell
+	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_50,code=sm_50")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_52,code=sm_52")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_53,code=sm_53")
+	# Pascal 
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_60,code=sm_60")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_61,code=sm_61")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_62,code=sm_62")
 	if(NOT CUDA_VERSION VERSION_LESS 9.0)
+		# Volta
 		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_70,code=sm_70")
+		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_70,code=sm_72")
 	endif()
 	if(NOT CUDA_VERSION VERSION_LESS 10.0)
+		# Turing
 		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_75,code=sm_75")
 	endif()
 	if(NOT CUDA_VERSION VERSION_LESS 11.0)
-		# NVIDIA A100 and NVIDIA DGX-A100
+		# Ampere NVIDIA A100 and NVIDIA DGX-A100
 		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_80,code=sm_80")
 	endif()
 	if(NOT CUDA_VERSION VERSION_LESS 11.1)
