@@ -13,7 +13,6 @@ namespace dev
 enum class SecureLevel
 {
     NONE = 0,
-    TLS12,
     TLS
 };
 

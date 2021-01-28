@@ -40,7 +40,7 @@ void EthStratumClient::init_socket()
     if (m_conn->SecLevel() != SecureLevel::NONE)
     {
         boost::asio::ssl::context::method method = boost::asio::ssl::context::tls_client;
-        if (m_conn->SecLevel() == SecureLevel::TLS12)
+        if (m_conn->SecLevel() == SecureLevel::TLS)
             method = boost::asio::ssl::context::tlsv12;
 
         boost::asio::ssl::context ctx(method);
@@ -48,16 +48,10 @@ void EthStratumClient::init_socket()
             make_shared<boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>(m_io_service, ctx);
         m_socket = &m_securesocket->next_layer();
 
-        if (getenv("SSL_NOVERIFY"))
-        {
-            m_securesocket->set_verify_mode(boost::asio::ssl::verify_none);
-        }
-        else
-        {
-            m_securesocket->set_verify_mode(boost::asio::ssl::verify_peer);
-            m_securesocket->set_verify_callback(
-                make_verbose_verification(boost::asio::ssl::rfc2818_verification(m_conn->Host())));
-        }
+        m_securesocket->set_verify_mode(boost::asio::ssl::verify_peer);
+        m_securesocket->set_verify_callback(
+            make_verbose_verification(boost::asio::ssl::rfc2818_verification(m_conn->Host())));
+
 #ifdef _WIN32
         HCERTSTORE hStore = CertOpenSystemStore(0, "ROOT");
         if (hStore == nullptr)

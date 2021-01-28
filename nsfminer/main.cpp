@@ -120,7 +120,11 @@ static void on_help_module(string m)
 #if API_CORE
             "api",
 #endif
-            "con", "test", "misc", "env", "reboot"
+            "con", "test", "misc",
+#ifdef _WIN32
+            "env",
+#endif
+            "reboot"
     });
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
@@ -139,7 +143,11 @@ static void on_help_module(string m)
 #if API_CORE
         "api, "
 #endif
-        "con, test, misc, env, or reboot");
+        "con, test, misc, "
+#ifdef _WIN32
+        "env, "
+#endif
+        "or reboot");
 }
 
 static void on_verbosity(unsigned u)
@@ -384,7 +392,11 @@ public:
 #if API_CORE
                 "api, "
 #endif
-                "misc, env, con, test, or reboot")
+                "misc, "
+#ifdef _WIN32
+		"env, "
+#endif
+		"con, test, or reboot")
 
             ("version,V",
 
@@ -635,8 +647,6 @@ public:
                     << "    getwork    for http getWork mode\n"
                     << "    stratum    for tcp stratum mode\n"
                     << "    stratums   for tcp encrypted stratum mode\n"
-                    << "    stratumss  for tcp encrypted stratum mode with strong TLS 1.2\n"
-                    << "    validation\n\n"
                     << "    Example 1: -P getwork://127.0.0.1:8545\n"
                     << "    Example 2: "
                        "-P "
@@ -688,10 +698,7 @@ public:
                     << "        stratum3    EthereumStratum 2.0.0\n\n"
                     << "    Transport variants :\n\n"
                     << "        tcp         Unencrypted tcp connection\n"
-                    << "        tls         Encrypted tcp connection (including deprecated TLS "
-                       "1.1)\n"
-                    << "        tls12       Encrypted tcp connection with TLS 1.2\n"
-                    << "        ssl         Encrypted tcp connection with TLS 1.2\n\n";
+                    << "        ssl         Encrypted tcp connection\n\n";
             else if (s == "test")  // Simulation
                 cout << endl << test << endl;
 #if ETH_ETHASHCL
@@ -712,21 +719,15 @@ public:
 #endif
             else if (s == "misc")  // miscellaneous
                 cout << endl << misc << endl;
+#ifdef _WIN32
             else if (s == "env")
                 cout << "\nEnvironment variables :\n\n"
                      << "    If you need or do feel more comfortable you can set the following\n"
                      << "    environment variables. Please respect letter casing.\n\n"
-#ifndef _WIN32
                      << "    SSL_CERT_FILE  Set to the full path to of your CA certificates\n"
                      << "                   file if it is not in standard path :\n"
-                     << "                   /etc/ssl/certs/ca-certificates.crt.\n"
+                     << "                   /etc/ssl/certs/ca-certificates.crt.\n\n";
 #endif
-                     << "    SSL_NOVERIFY   set to any value to to disable the verification\n"
-                     << "                   chain for certificates. WARNING ! Disabling\n"
-                     << "                   certificate validation declines every security\n"
-                     << "                   implied in connecting to a secured SSL/TLS\n"
-                     << "                   remote endpoint. USE AT YOU OWN RISK AND ONLY IF\n"
-                     << "                   YOU KNOW WHAT YOU'RE DOING\n\n";
             else if (s == "reboot")
                 cout << "\nMiner reboots:\n\n"
                      << "    The user may create a reboot script that will be invoked\n"
@@ -847,13 +848,6 @@ public:
                 try
                 {
                     shared_ptr<URI> uri = shared_ptr<URI>(new URI(url));
-                    if (uri->SecLevel() != dev::SecureLevel::NONE &&
-                        uri->HostNameType() != dev::UriHostNameType::Dns && !getenv("SSL_NOVERIFY"))
-                    {
-                        warnings.push(
-                            "You have specified host " + uri->Host() + " with encryption enabled.");
-                        warnings.push("Certificate validation will likely fail");
-                    }
                     m_PoolSettings.connections.push_back(uri);
                 }
                 catch (const exception& _ex)

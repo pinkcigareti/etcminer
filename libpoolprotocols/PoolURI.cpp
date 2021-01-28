@@ -27,18 +27,10 @@ static map<string, SchemeAttributes> s_schemes = {
     {"stratum1+tcp", {ProtocolFamily::STRATUM, SecureLevel::NONE, 1}},
     {"stratum2+tcp", {ProtocolFamily::STRATUM, SecureLevel::NONE, 2}},
     {"stratum3+tcp", {ProtocolFamily::STRATUM, SecureLevel::NONE, 3}},
-    {"stratum+tls", {ProtocolFamily::STRATUM, SecureLevel::TLS, 0}},
-    {"stratum1+tls", {ProtocolFamily::STRATUM, SecureLevel::TLS, 1}},
-    {"stratum2+tls", {ProtocolFamily::STRATUM, SecureLevel::TLS, 2}},
-    {"stratum3+tls", {ProtocolFamily::STRATUM, SecureLevel::TLS, 3}},
-    {"stratum+tls12", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 0}},
-    {"stratum1+tls12", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 1}},
-    {"stratum2+tls12", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 2}},
-    {"stratum3+tls12", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 3}},
-    {"stratum+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 0}},
-    {"stratum1+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 1}},
-    {"stratum2+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 2}},
-    {"stratum3+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 3}},
+    {"stratum+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS, 0}},
+    {"stratum1+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS, 1}},
+    {"stratum2+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS, 2}},
+    {"stratum3+ssl", {ProtocolFamily::STRATUM, SecureLevel::TLS, 3}},
     {"http", {ProtocolFamily::GETWORK, SecureLevel::NONE, 0}},
     {"getwork", {ProtocolFamily::GETWORK, SecureLevel::NONE, 0}},
 
@@ -50,7 +42,6 @@ static map<string, SchemeAttributes> s_schemes = {
 
     {"stratum", {ProtocolFamily::STRATUM, SecureLevel::NONE, 999}},
     {"stratums", {ProtocolFamily::STRATUM, SecureLevel::TLS, 999}},
-    {"stratumss", {ProtocolFamily::STRATUM, SecureLevel::TLS12, 999}},
 
     /*
     The following scheme is only meant for simulation operations
