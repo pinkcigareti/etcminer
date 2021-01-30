@@ -903,7 +903,7 @@ public:
         if (should_list)
         {
             cout << setw(4) << " Id ";
-            cout << setiosflags(ios::left) << setw(13) << "Pci Id       ";
+            cout << setiosflags(ios::left) << setw(10) << "Pci Id    ";
             cout << setw(5) << "Type ";
             cout << setw(30) << "Name                          ";
 
@@ -932,7 +932,7 @@ public:
 
             cout << resetiosflags(ios::left) << endl;
             cout << setw(4) << "--- ";
-            cout << setiosflags(ios::left) << setw(13) << "------------ ";
+            cout << setiosflags(ios::left) << setw(10) << "--------- ";
             cout << setw(5) << "---- ";
             cout << setw(30) << "----------------------------- ";
 
@@ -964,7 +964,7 @@ public:
             {
                 auto i = distance(m_DevicesCollection.begin(), it);
                 cout << setw(3) << i << " ";
-                cout << setiosflags(ios::left) << setw(13) << it->first;
+                cout << setiosflags(ios::left) << setw(10) << it->first;
                 cout << setw(5);
                 switch (it->second.type)
                 {
