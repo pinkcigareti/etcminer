@@ -477,7 +477,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                         sizeof(slot_id), &slot_id, NULL) == CL_SUCCESS)
                 {
                     ostringstream s;
-                    s << setfill('0') << setw(2) << hex << bus_id << ":" << setw(2)
+                    s << "????:" << setfill('0') << setw(2) << hex << bus_id << ":" << setw(2)
                       << (unsigned int)(slot_id >> 3) << "." << (unsigned int)(slot_id & 0x7);
                     uniqueId = s.str();
                 }
@@ -490,8 +490,10 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
                 if (clGetDeviceInfo(device.get(), 0x4037 /*CL_DEVICE_TOPOLOGY_AMD*/, sizeof(t), &t,
                         NULL) == CL_SUCCESS)
                 {
+		    // NOTE" Till we can upgrade to opencl 2.x, there's no way to determine
+		    // the bus domain id. So we plug in a 0!
                     ostringstream s;
-                    s << setfill('0') << setw(2) << hex << (unsigned int)(t[21]) << ":" << setw(2)
+                    s << "????:" << setfill('0') << setw(2) << hex << (unsigned int)(t[21]) << ":" << setw(2)
                       << (unsigned int)(t[22]) << "." << (unsigned int)(t[23]);
                     uniqueId = s.str();
                 }
@@ -506,7 +508,7 @@ void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
             else if (clDeviceType == DeviceTypeEnum::Cpu)
             {
                 ostringstream s;
-                s << "CPU:" << setfill('0') << setw(2) << hex << (pIdx + dIdx);
+                s << "CPU " << setfill('0') << setw(2) << hex << (pIdx + dIdx);
                 uniqueId = s.str();
             }
             else
