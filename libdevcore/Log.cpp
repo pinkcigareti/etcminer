@@ -34,8 +34,6 @@ int NoteChannel::severity()
 
 LogOutputStreamBase::LogOutputStreamBase(int severity)
 {
-    static locale logLocl = locale("");
-    m_sstr.imbue(logLocl);
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else
