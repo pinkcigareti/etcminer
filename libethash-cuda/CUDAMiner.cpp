@@ -242,6 +242,7 @@ void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
         {
             size_t freeMem, totalMem;
             CUDA_CALL(cudaGetDeviceProperties(&props, i));
+            CUDA_CALL(cudaSetDevice(i));
             CUDA_CALL(cudaMemGetInfo(&freeMem, &totalMem));
 	    s << "????:" << setfill('0') << hex
               << setw(2) << props.pciBusID << ':'
