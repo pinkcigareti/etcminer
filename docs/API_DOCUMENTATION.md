@@ -187,7 +187,7 @@ and expect back a response like this:
     "connection": {                                     // Current active connection
       "connected": true,
       "switches": 1,
-      "uri": "stratum1+tls12://<ethaddress>.wworker@eu1.ethermine.org:5555"
+      "uri": "stratum1+ssl://<ethaddress>.wworker@eu1.ethermine.org:5555"
     },
     "devices": [                                        // Array subscribed of devices
       {

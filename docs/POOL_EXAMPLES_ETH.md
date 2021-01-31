@@ -72,10 +72,9 @@ The above samples produce the very same result.
 nsfminer supports secure socket communications (where pool implements and offers it) to avoid the risk of a [man-in-the-middle attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)
 To enable it simply replace tcp with either:
 
-* `tls` to enable secure socket communication
-* `ssl` or `tls12` to enable secure socket communication **allowing only TLS 1.2** encryption
+* `ssl` to enable secure socket communication **allowing only TLS 1.2** encryption
 
-thus your connection scheme changes to `-P stratum+tls://[...]` or `-P stratum+tls12://[...]`. Same applies for `stratum1` and `stratum2`.
+thus your connection scheme changes to `-P stratum+tcp://[...]` or `-P stratum+ssl://[...]`. Same applies for `stratum1` and `stratum2`.
 
 ## Special characters in variables
 
