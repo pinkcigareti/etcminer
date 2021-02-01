@@ -20,7 +20,7 @@ namespace eth
 Farm* Farm::m_this = nullptr;
 const int Farm::m_collectInterval;
 
-Farm::Farm(map<string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings)
+Farm::Farm(minerMap& _DevicesCollection, FarmSettings _settings)
   : m_Settings(move(_settings)),
     m_io_strand(g_io_service),
     m_collectTimer(g_io_service),
