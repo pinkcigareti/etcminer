@@ -76,8 +76,9 @@ Farm::Farm(minerMap& _DevicesCollection, FarmSettings _settings)
             {
                 ostringstream oss;
                 string uniqueId;
-                oss << setfill('0') << setw(2) << hex << (unsigned int)sysfsh->sysfs_pci_bus_id[i]
-                    << ":" << setw(2) << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
+                oss << setfill('0') << setw(4) << hex << (unsigned)sysfsh->sysfs_pci_domain_id[i]
+                    << ':' << setw(2) << (unsigned)sysfsh->sysfs_pci_bus_id[i] << ":" << setw(2)
+                    << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
                 uniqueId = oss.str();
                 map_amdsysfs_handle[uniqueId] = i;
             }
@@ -93,9 +94,10 @@ Farm::Farm(minerMap& _DevicesCollection, FarmSettings _settings)
             {
                 ostringstream oss;
                 string uniqueId;
-                oss << setfill('0') << setw(2) << hex
-                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":"
-                    << setw(2)
+                oss << setfill('0') << setw(4) << hex
+                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iDomainNumber << ":"
+                    << setw(2) << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber
+                    << ":" << setw(2)
                     << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber)
                     << ".0";
                 uniqueId = oss.str();
@@ -113,8 +115,9 @@ Farm::Farm(minerMap& _DevicesCollection, FarmSettings _settings)
             {
                 ostringstream oss;
                 string uniqueId;
-                oss << setfill('0') << setw(2) << hex << (unsigned int)nvmlh->nvml_pci_bus_id[i]
-                    << ":" << setw(2) << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
+                oss << setfill('0') << setw(4) << hex << (unsigned)nvmlh->nvml_pci_domain_id[i]
+                    << ':' << setw(2) << hex << (unsigned)nvmlh->nvml_pci_bus_id[i] << ":"
+                    << setw(2) << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
                 uniqueId = oss.str();
                 map_nvml_handle[uniqueId] = i;
             }
