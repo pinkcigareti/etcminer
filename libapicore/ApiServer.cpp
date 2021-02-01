@@ -379,14 +379,10 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         m_password.copy(&password_copy[0], max_length);
         int result = 0;
         for (int i = 0; i < max_length; ++i)
-        {
             result |= input_copy[i] ^ password_copy[i];
-        }
 
         if (result == 0)
-        {
             m_is_authenticated = true;
-        }
         else
         {
             // Use error code like http 401 Unauthorized
@@ -402,7 +398,6 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         return;
     }
 
-    assert(m_is_authenticated);
     cnote << "API : Method " << _method << " requested";
     if (_method == "miner_getstat1")
     {
@@ -614,6 +609,39 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         }
         cnote << "Setting verbosity level to " << verbosity;
         g_logOptions = verbosity;
+        jResponse["result"] = true;
+    }
+
+    else if (_method == "miner_setnonce")
+    {
+        if (!checkApiWriteAccess(m_readonly, jResponse))
+            return;
+
+        Json::Value jRequestParams;
+        if (!getRequestValue("params", jRequestParams, jRequest, false, jResponse))
+            return;
+        if (jRequestParams.isMember("nonce"))
+        {
+            string nonce;
+            if (getRequestValue("nonce", nonce, jRequestParams, false, jResponse))
+            {
+                for (const auto& c : nonce)
+                    if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F'))
+                    {
+                        jResponse["error"]["code"] = -422;
+                        jResponse["error"]["message"] = "Invalid nonce";
+                        return;
+                    }
+                cnote << "API: Setting start nonce to '" << nonce << "'";
+                Farm::f().set_nonce(nonce);
+            }
+            else
+            {
+                jResponse["error"]["code"] = -422;
+                jResponse["error"]["message"] = "Invalid nonce";
+                return;
+            }
+        }
         jResponse["result"] = true;
     }
 

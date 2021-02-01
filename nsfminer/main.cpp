@@ -150,6 +150,13 @@ static void on_help_module(string m)
         "or reboot");
 }
 
+static void on_nonce(string n)
+{
+    for (const auto& c : n)
+        if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F'))
+            throw boost::program_options::error("The --nonce value must be a hex string");
+}
+
 static void on_verbosity(unsigned u)
 {
     if (u < LOG_NEXT)
@@ -394,9 +401,9 @@ public:
 #endif
                 "misc, "
 #ifdef _WIN32
-		"env, "
+                "env, "
 #endif
-		"con, test, or reboot")
+                "con, test, or reboot")
 
             ("version,V",
 
@@ -523,8 +530,16 @@ public:
                 "Resume mining on previously overheated GPU when "
                 "temp drops below this threshold. Implies --HWMON 1. "
                 "Must be lower than --tstart")
+
             ("multi,m",
-		"Use multi-line status display");
+
+                "Use multi-line status display")
+
+            ("nonce,n", value<string>()->default_value("")->notifier(on_nonce),
+
+                "Hex string specifying the upper bits of miner's "
+                "start nonce. Can be used to ensure multiple miners "
+                "are not searching overlapping nonce ranges.");
 #if API_CORE
 
         api.add_options()
@@ -564,9 +579,9 @@ public:
 
                 "Set the work group size, valid values are 64 128 or 256")
 
-	    ("cl-bin",
+            ("cl-bin",
 
-		"Try to load binary kernel");
+                "Try to load binary kernel");
 #endif
         test.add_options()
 
@@ -765,6 +780,7 @@ public:
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
         m_FarmSettings.eval = vm.count("eval");
+        m_FarmSettings.nonce = vm["nonce"].as<string>();
 
 #if ETH_ETHASHCUDA
         m_FarmSettings.cuBlockSize = vm["cu-block"].as<unsigned>();
@@ -773,7 +789,7 @@ public:
 
 #if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
-	m_FarmSettings.clBin = vm.count("cl-bin");
+        m_FarmSettings.clBin = vm.count("cl-bin");
 #endif
 
         m_FarmSettings.tempStop = vm["tstop"].as<unsigned>();

@@ -16,10 +16,9 @@
     * [miner_setactiveconnection](#miner_setactiveconnection)
     * [miner_addconnection](#miner_addconnection)
     * [miner_removeconnection](#miner_removeconnection)
-    * [miner_getscramblerinfo](#miner_getscramblerinfo)
-    * [miner_setscramblerinfo](#miner_setscramblerinfo)
     * [miner_pausegpu](#miner_pausegpu)
     * [miner_setverbosity](#miner_setverbosity)
+    * [miner_setnonce](#miner_setnonce)
 
 ## Introduction
 
@@ -95,9 +94,9 @@ This shows the API interface is live and listening on the configured endpoint.
 | [miner_setactiveconnection](#miner_setactiveconnection) | Instruct nsfminer to immediately connect to the specified connection | Yes
 | [miner_addconnection](#miner_addconnection) | Provides nsfminer with a new connection to use | Yes
 | [miner_removeconnection](#miner_removeconnection) | Removes the given connection from the list of available so it won't be used again | Yes
-| [miner_getscramblerinfo](#miner_getscramblerinfo) | Retrieve information about the nonce segments assigned to each GPU | No
-| [miner_setscramblerinfo](#miner_setscramblerinfo) | Sets information about the nonce segments assigned to each GPU | Yes
 | [miner_pausegpu](#miner_pausegpu) | Pause/Start mining on specific GPU | Yes
+| [miner_setverbosity](#miner_setverbosity) | Set console log verbosity level | Yes
+| [miner_setnonce](#miner_setnonce) | Sets the miner's start nonce | Yes
 
 ### api_authorize
 
@@ -470,70 +469,6 @@ You have to pass the `params` member as an object which has member `index` value
 
 **Please note** that this method changes the runtime behavior only. If you restart nsfminer from a batch file the removed connection will become again again available if provided in the `-P` arguments list.
 
-### miner_getscramblerinfo
-
-When searching for a valid nonce the miner has to find (at least) 1 of possible 2^64 solutions. This would mean that a miner who claims to guarantee to find a solution in the time of 1 block (15 seconds for Ethereum) should produce 1230 PH/s (Peta hashes) which, at the time of writing, is more than 4 thousands times the whole hashing power allocated worldwide for Ethereum.
-This gives you an idea of numbers in play. Luckily a couple of factors come in our help: difficulty and time. We can imagine difficulty as a sort of judge who determines how many of those possible solutions are valid. And the block time which allows the miner to stay longer on a sequence of numbers to find the solution.
-This all said it's however impossible for any miner (no matter if CPU or GPU or even ASIC) to cover the most part of this huge range in reasonable amount of time. So we need to resign to examine and test only a small fraction of this range.
-
-nsfminer, at start, randomly chooses a scramble_nonce, a random number picked in the 2^64 range to start checking nonces from. In addition nsfminer gives each GPU a unique, non overlapping, range of nonces called _segment_. Segments ensure no GPU does the same job of another GPU thus avoiding two GPU find the same result.
-To accomplish this each segment has a range 2^40 nonces by default. If you want to check which is the scramble_nonce and which are the segments assigned to each GPU you can issue this method:
-
-```js
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "method": "miner_getscramblerinfo"
-}
-```
-
-and expect a result like this:
-
-```js
-{
-  "id": 0,
-  "jsonrpc": "2.0",
-  "result": {
-    "device_count": 6,                          // How many devices are mining
-    "device_width": 32,                         // The width (as exponent of 2) of each device segment
-    "start_nonce": "0xd3719cef9dd02322"         // The start nonce of the segment
-  }
-}
-```
-To compute the effective start_nonce assigned to each device you can use this simple math : `start_nonce + ((2^segment_width) * device_index))`
-The information hereby exposed may be used in large mining operations to check whether or not two (or more) rigs may result having overlapping segments. The possibility is very remote ... but is there.
-
-### miner_setscramblerinfo
-
-To approach this method you have to read carefully the method [miner_getscrambleinfo](#miner_getscrambleinfo) and what it reports. By the use of this method you can set a new scramble_nonce and/or set a new segment width:
-
-```js
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "method": "miner_setscramblerinfo",
-  "params": {
-    "noncescrambler": 16704043538687679721,      // At least one of these two members
-    "segmentwidth": 38                           // or both.
-  }
-}
-```
-or, if you prefer the hexadecimal notation,
-```js
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "method": "miner_setscramblerinfo",
-  "params": {
-    "noncescrambler": "0x6f3ab2803cfeea12",      // At least one of these two members
-    "segmentwidth": 38                           // or both.
-  }
-}
-```
-
-This will adjust nonce scrambler and segment width assigned to each GPU. This method is intended only for highly skilled people who do a great job in math to determine the optimal values for large mining operations.
-**Use at your own risk**
-
 ### miner_pausegpu
 
 Pause or (restart) mining on specific GPU.
@@ -575,6 +510,31 @@ Set the verbosity level of nsfminer.
   "method": "miner_setverbosity",
   "params": {
     "verbosity": 9
+  }
+}
+```
+
+and expect a result like this:
+
+```js
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": true
+}
+```
+
+### miner_setnonce
+
+Set the miner's start nonce. Can be useful in avoiding search range overlaps in multi-miner situations.
+
+```js
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "method": "miner_setnonce",
+  "params": {
+    "nonce": "12ab"
   }
 }
 ```
