@@ -227,7 +227,7 @@ int CUDAMiner::getNumDevices()
     return 0;
 }
 
-void CUDAMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
+void CUDAMiner::enumDevices(minerMap& _DevicesCollection)
 {
     int numDevices = getNumDevices();
 

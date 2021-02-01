@@ -47,17 +47,38 @@ struct FarmSettings
     bool clBin;
 };
 
-/**
- * @brief A collective of Miners.
- * Miners ask for work, then submit proofs
- * @threadsafe
- */
+struct compareIds
+{
+    bool operator()(const std::string& a, const std::string& b) const
+    {
+        vector<string> va;
+        vector<string> vb;
+        if ((a.length() < 12) || (b.length() < 12) || (a[4] != ':') || (b[4] != ':'))
+            return a < b;
+        boost::split(va, a, boost::is_any_of(":"));
+        boost::split(vb, b, boost::is_any_of(":"));
+        if ((va.size() < 3) || (vb.size() < 3))
+            return a < b;
+        if ((va[0] == "????") || (vb[0] == "????") || (va[0] == vb[0]))
+        {
+            if (va[1] < vb[1])
+                return true;
+            if (va[1] > vb[1])
+                return false;
+            return va[2] < vb[2];
+        }
+        return va[0] < vb[0];
+    }
+};
+
+typedef std::map<string, DeviceDescriptor, compareIds> minerMap;
+
 class Farm : public FarmFace
 {
 public:
     unsigned tstart = 0, tstop = 0;
 
-    Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings);
+    Farm(minerMap& _DevicesCollection, FarmSettings _settings);
 
     ~Farm();
 
@@ -158,7 +179,7 @@ private:
 #endif
 
     static Farm* m_this;
-    std::map<std::string, DeviceDescriptor>& m_DevicesCollection;
+    minerMap& m_DevicesCollection;
 
     random_device m_engine;
 };

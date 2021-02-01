@@ -416,7 +416,7 @@ void CLMiner::kick_miner()
     m_new_work_signal.notify_one();
 }
 
-void CLMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
+void CLMiner::enumDevices(minerMap& _DevicesCollection)
 {
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();

@@ -45,7 +45,7 @@ public:
     CLMiner(unsigned _index, DeviceDescriptor& _device);
     ~CLMiner() override;
 
-    static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
+    static void enumDevices(minerMap& _DevicesCollection);
 
 protected:
     bool initDevice() override;
