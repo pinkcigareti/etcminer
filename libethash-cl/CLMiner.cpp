@@ -331,25 +331,16 @@ void CLMiner::workLoop()
                     w = work();
                 }
 
-                // Upper 64 bits of the boundary.
-                const uint64_t target = (uint64_t)(u64)((u256)w.boundary >> 192);
-                assert(target > 0);
-
                 startNonce = w.startNonce;
 
                 // Update header constant buffer.
                 m_queue->enqueueWriteBuffer(*m_header, CL_FALSE, 0, w.header.size, w.header.data());
+
                 // zero the result count
                 m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE,
                     offsetof(SearchResults, count), sizeof(zerox3), zerox3);
 
-                m_searchKernel.setArg(0, *m_searchBuffer);  // Supply output buffer to kernel.
-                m_searchKernel.setArg(1, *m_header);        // Supply header buffer to kernel.
-                m_searchKernel.setArg(2, *m_dag[0]);        // Supply DAG buffer to kernel.
-                m_searchKernel.setArg(3, *m_dag[1]);        // Supply DAG buffer to kernel.
-                m_searchKernel.setArg(4, m_dagItems);
-                m_searchKernel.setArg(6, target);
-
+                m_searchKernel.setArg(6, (uint64_t)(u64)((u256)w.boundary >> 192));
 #ifdef DEV_BUILD
                 if (g_logOptions & LOG_SWITCH)
                     cnote << "Switch time: "
@@ -365,11 +356,13 @@ void CLMiner::workLoop()
                 m_block_multiple =
                     uint32_t(hr * CL_TARGET_BATCH_TIME / m_deviceDescriptor.clGroupSize);
 
+            uint32_t batch_blocks = m_deviceDescriptor.clGroupSize * m_block_multiple;
+
             // Run the kernel.
             m_searchKernel.setArg(5, startNonce);
             m_hung_miner.store(false);
-            m_queue->enqueueNDRangeKernel(m_searchKernel, cl::NullRange,
-                m_deviceDescriptor.clGroupSize * m_block_multiple, m_deviceDescriptor.clGroupSize);
+            m_queue->enqueueNDRangeKernel(
+                m_searchKernel, cl::NullRange, batch_blocks, m_deviceDescriptor.clGroupSize);
 
             if (results.count)
             {
@@ -388,7 +381,7 @@ void CLMiner::workLoop()
             current = w;  // kernel now processing newest work
             current.startNonce = startNonce;
             // Increase start nonce for following kernel execution.
-            startNonce += m_deviceDescriptor.clGroupSize * m_block_multiple;
+            startNonce += batch_blocks;
             // Report hash count
             updateHashRate(m_deviceDescriptor.clGroupSize, results.hashCount);
         }
@@ -865,6 +858,12 @@ bool CLMiner::initEpoch()
 
         auto dagTime =
             chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit);
+
+        m_searchKernel.setArg(0, *m_searchBuffer);  // Supply output buffer to kernel.
+        m_searchKernel.setArg(1, *m_header);        // Supply header buffer to kernel.
+        m_searchKernel.setArg(2, *m_dag[0]);        // Supply DAG buffer to kernel.
+        m_searchKernel.setArg(3, *m_dag[1]);        // Supply DAG buffer to kernel.
+        m_searchKernel.setArg(4, m_dagItems);
 
         ReportDAGDone(m_epochContext.dagSize, uint32_t(dagTime.count()));
     }
