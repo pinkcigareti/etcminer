@@ -94,10 +94,9 @@ Farm::Farm(minerMap& _DevicesCollection, FarmSettings _settings)
             {
                 ostringstream oss;
                 string uniqueId;
-                oss << setfill('0') << setw(4) << hex
-                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iDomainNumber << ":"
-                    << setw(2) << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber
-                    << ":" << setw(2)
+                oss << "0000:" << setfill('0') << setw(2) << hex
+                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":"
+                    << setw(2)
                     << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber)
                     << ".0";
                 uniqueId = oss.str();
