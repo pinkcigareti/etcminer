@@ -196,6 +196,7 @@ void CUDAMiner::workLoop()
 void CUDAMiner::kick_miner()
 {
     static const uint32_t one = 1;
+    unique_lock<mutex> l(m_doneMutex);
     if (!m_done)
     {
         m_done = true;
@@ -293,6 +294,7 @@ void CUDAMiner::search(
     uint32_t batch_blocks(m_block_multiple * m_deviceDescriptor.cuBlockSize);
     uint32_t stream_blocks(batch_blocks * m_deviceDescriptor.cuStreamSize);
 
+    m_doneMutex.lock();
     // prime each stream, clear search result buffers and start the search
     for (uint32_t streamIdx = 0; streamIdx < m_deviceDescriptor.cuStreamSize;
          streamIdx++, start_nonce += batch_blocks)
@@ -303,16 +305,20 @@ void CUDAMiner::search(
         run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[streamIdx],
             m_search_buf[streamIdx], start_nonce);
     }
-
     m_done = false;
+    m_doneMutex.unlock();
+
     uint32_t streams_bsy((1 << m_deviceDescriptor.cuStreamSize) - 1);
 
     // process stream batches until we get new work.
 
     while (streams_bsy)
     {
-        if (!m_done)
-            m_done = paused();
+        if (paused())
+        {
+            unique_lock<mutex> l(m_doneMutex);
+            m_done = true;
+        }
 
         uint32_t batchCount(0);
 
@@ -364,7 +370,10 @@ void CUDAMiner::search(
                     ReportSolution(w.header, nonce);
                 }
             if (shouldStop())
+            {
+                unique_lock<mutex> l(m_doneMutex);
                 m_done = true;
+            }
         }
         updateHashRate(m_deviceDescriptor.cuBlockSize, batchCount);
     }

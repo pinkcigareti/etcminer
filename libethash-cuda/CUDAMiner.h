@@ -46,6 +46,7 @@ private:
     size_t m_allocated_memory_light_cache = 0;
 
     volatile bool m_done = true;
+    std::mutex m_doneMutex;
 };
 
 
