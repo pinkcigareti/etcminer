@@ -624,8 +624,19 @@ public:
         variables_map vm;
         try
         {
-            store(parse_command_line(argc, argv, all), vm);
+            parsed_options parsed =
+                command_line_parser(argc, argv).options(all).allow_unregistered().run();
+            store(parsed, vm);
             notify(vm);
+            vector<string> unknown = collect_unrecognized(parsed.options, include_positional);
+            if (unknown.size())
+            {
+                cout << endl << "Error: Unknown parameter(s):";
+                for (const auto& u : unknown)
+                    cout << ' ' << u;
+                cout << endl << endl;
+                return false;
+            }
         }
         catch (boost::program_options::error& e)
         {
