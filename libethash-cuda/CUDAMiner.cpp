@@ -244,12 +244,6 @@ void CUDAMiner::enumDevices(minerMap& _DevicesCollection)
             CUDA_CALL(cudaGetDeviceProperties(&props, i));
             CUDA_CALL(cudaSetDevice(i));
             CUDA_CALL(cudaMemGetInfo(&freeMem, &totalMem));
-	    s << "????:" << setfill('0') << hex
-              << setw(2) << props.pciBusID << ':'
-              << setw(2) << props.pciDeviceID << ".0";
-            if (_DevicesCollection.find(s.str()) != _DevicesCollection.end())
-		_DevicesCollection.erase(s.str());
-	    s.str(""); 
 	    s << setw(4) << setfill('0') << hex << props.pciDomainID << ':'
               << setw(2) << props.pciBusID << ':'
               << setw(2) << props.pciDeviceID << ".0";

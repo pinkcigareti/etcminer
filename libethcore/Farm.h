@@ -47,31 +47,8 @@ struct FarmSettings
     bool clBin;
 };
 
-struct compareIds
-{
-    bool operator()(const std::string& a, const std::string& b) const
-    {
-        vector<string> va;
-        vector<string> vb;
-        if ((a.length() < 12) || (b.length() < 12) || (a[4] != ':') || (b[4] != ':'))
-            return a < b;
-        boost::split(va, a, boost::is_any_of(":"));
-        boost::split(vb, b, boost::is_any_of(":"));
-        if ((va.size() < 3) || (vb.size() < 3))
-            return a < b;
-        if ((va[0] == "????") || (vb[0] == "????") || (va[0] == vb[0]))
-        {
-            if (va[1] < vb[1])
-                return true;
-            if (va[1] > vb[1])
-                return false;
-            return va[2] < vb[2];
-        }
-        return va[0] < vb[0];
-    }
-};
-
-typedef std::map<string, DeviceDescriptor, compareIds> minerMap;
+typedef std::map<string, DeviceDescriptor> minerMap;
+typedef std::map<string, int> telemetryMap;
 
 class Farm : public FarmFace
 {
@@ -168,7 +145,7 @@ private:
 
     // Wrappers for hardware monitoring libraries and their mappers
     wrap_nvml_handle* nvmlh = nullptr;
-    std::map<string, int> map_nvml_handle = {};
+    telemetryMap map_nvml_handle = {};
 
 #if defined(__linux)
     wrap_amdsysfs_handle* sysfsh = nullptr;

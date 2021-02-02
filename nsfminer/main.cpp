@@ -1018,7 +1018,7 @@ public:
                 if (!it->second.cuDetected ||
                     it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
-                unsigned d = distance(m_DevicesCollection.begin(), it);
+                unsigned d = (unsigned)distance(m_DevicesCollection.begin(), it);
                 if (m_devices.empty() ||
                     find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
@@ -1031,7 +1031,7 @@ public:
                 if (!it->second.clDetected ||
                     it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
-                unsigned d = distance(m_DevicesCollection.begin(), it);
+                unsigned d = (unsigned)distance(m_DevicesCollection.begin(), it);
                 if (m_devices.empty() ||
                     find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
