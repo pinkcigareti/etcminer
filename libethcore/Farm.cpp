@@ -13,6 +13,8 @@
 #include <libethash-cpu/CPUMiner.h>
 #endif
 
+#include <libpoolprotocols/PoolManager.h>
+
 namespace dev
 {
 namespace eth
@@ -488,9 +490,10 @@ void Farm::collectData(const boost::system::error_code& ec)
         int minerIdx = miner->Index();
         float hr = (miner->paused() ? 0.0f : miner->RetrieveHashRate());
         farm_hr += hr;
+        double ehr = PoolManager::p().getCurrentDifficulty();
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
-
+        m_telemetry.miners.at(minerIdx).effectiveHashRate = ehr;
 
         if (m_Settings.hwMon)
         {

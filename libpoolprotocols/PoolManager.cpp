@@ -152,6 +152,7 @@ void PoolManager::setClientHandlers()
         }
 
         bool newDiff = (wp.boundary != m_currentWp.boundary);
+        m_currentWp.difficulty = wp.difficulty;
 
         m_currentWp = wp;
 
@@ -522,7 +523,7 @@ double PoolManager::getCurrentDifficulty()
     if (!m_currentWp)
         return 0.0;
 
-    return dev::getHashesToTarget(m_currentWp.boundary.hex(HexPrefix::Add));
+    return m_currentWp.difficulty;
 }
 
 unsigned PoolManager::getConnectionSwitches()

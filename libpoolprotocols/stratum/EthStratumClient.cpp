@@ -1290,7 +1290,6 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                 prmIdx = 1;
             }
 
-
             if (jPrm.isArray() && !jPrm.empty())
             {
                 m_current.job = jPrm.get(Json::Value::ArrayIndex(0), "").asString();
@@ -1404,7 +1403,6 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             m_current.header = h256(header);
             m_current.boundary = h256(m_session->nextWorkBoundary.hex(HexPrefix::Add));
             m_current.epoch = m_session->epoch;
-            m_current.algo = m_session->algo;
             m_current.startNonce = m_session->extraNonce;
             m_current.exSizeBytes = m_session->extraNonceSizeBytes;
             m_current_timestamp = chrono::steady_clock::now();
@@ -1424,6 +1422,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                         max(jPrm.get(Json::Value::ArrayIndex(0), 1).asDouble(), 0.0001);
 
                     m_session->nextWorkBoundary = h256(dev::getTargetFromDiff(nextWorkDifficulty));
+                    m_session->nextWorkDifficulty = nextWorkDifficulty;
                 }
             }
             else
@@ -1482,9 +1481,10 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             {
                 target = "0x" + dev::padLeft(target, 64, '0');
                 m_session->nextWorkBoundary = h256(target);
+                m_session->nextWorkDifficulty =
+                    getHashesToTarget(m_session->nextWorkBoundary.hex(HexPrefix::Add));
             }
 
-            m_session->algo = jPrm.get("algo", "ethash").asString();
             string enonce = jPrm.get("extranonce", "").asString();
             if (!enonce.empty())
                 processExtranonce(enonce);
@@ -1733,7 +1733,10 @@ void EthStratumClient::onRecvSocketDataCompleted(
         // There is a new job - dispatch it
         if (m_newjobprocessed)
             if (m_onWorkReceived)
+            {
+                m_current.difficulty = getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
                 m_onWorkReceived(m_current);
+            }
 
         // Eventually keep reading from socket
         if (isConnected())
