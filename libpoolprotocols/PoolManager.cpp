@@ -518,7 +518,7 @@ int PoolManager::getCurrentEpoch()
     return m_currentWp.epoch;
 }
 
-double PoolManager::getCurrentDifficulty()
+double PoolManager::getPoolDifficulty()
 {
     if (!m_currentWp)
         return 0.0;

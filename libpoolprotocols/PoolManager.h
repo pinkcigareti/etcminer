@@ -52,7 +52,14 @@ public:
     bool isConnected() { return p_client->isConnected(); };
     bool isRunning() { return m_running; };
     int getCurrentEpoch();
-    double getCurrentDifficulty();
+    uint64_t getCurrentClientDuration()
+    {
+        if (p_client && isConnected())
+            return p_client->m_session->usDuration();
+        else
+            return 0;
+    };
+    double getPoolDifficulty();
     unsigned getConnectionSwitches();
     unsigned getEpochChanges();
 

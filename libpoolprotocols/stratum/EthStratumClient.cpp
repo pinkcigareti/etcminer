@@ -1308,6 +1308,11 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                         m_current.exSizeBytes = m_session->extraNonceSizeBytes;
                         m_current_timestamp = chrono::steady_clock::now();
                         m_current.block = -1;
+                        if (m_session->nextWorkDifficulty)
+                            m_current.difficulty = m_session->nextWorkDifficulty;
+                        else
+                            m_current.difficulty =
+                                getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
                         // This will signal to dispatch the job
                         // at the end of the transmission.
@@ -1359,6 +1364,11 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                     m_current.header = h256(sHeaderHash);
                     m_current.boundary = h256(sShareTarget);
                     m_current_timestamp = chrono::steady_clock::now();
+                    if (m_session->nextWorkDifficulty)
+                        m_current.difficulty = m_session->nextWorkDifficulty;
+                    else
+                        m_current.difficulty =
+                            getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
                     // This will signal to dispatch the job
                     // at the end of the transmission.
@@ -1406,6 +1416,10 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             m_current.startNonce = m_session->extraNonce;
             m_current.exSizeBytes = m_session->extraNonceSizeBytes;
             m_current_timestamp = chrono::steady_clock::now();
+            if (m_session->nextWorkDifficulty)
+                m_current.difficulty = m_session->nextWorkDifficulty;
+            else
+                m_current.difficulty = getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
             // This will signal to dispatch the job
             // at the end of the transmission.
@@ -1733,10 +1747,7 @@ void EthStratumClient::onRecvSocketDataCompleted(
         // There is a new job - dispatch it
         if (m_newjobprocessed)
             if (m_onWorkReceived)
-            {
-                m_current.difficulty = getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
                 m_onWorkReceived(m_current);
-            }
 
         // Eventually keep reading from socket
         if (isConnected())

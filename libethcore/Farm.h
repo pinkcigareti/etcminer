@@ -107,8 +107,6 @@ public:
 private:
     std::atomic<bool> m_paused = {false};
 
-    void checkForHungMiners();
-
     // Async submits solution serializing execution
     // in Farm's strand
     void submitProofAsync(Solution const& _s);

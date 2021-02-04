@@ -29,6 +29,11 @@ struct Session
         return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start))
             .count();
     }
+    uint64_t usDuration()
+    {
+        return (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start))
+            .count();
+    }
 
     // EthereumStratum (1 and 2)
 
@@ -101,9 +106,9 @@ public:
     void onConnected(Connected const& _handler) { m_onConnected = _handler; }
     void onWorkReceived(WorkReceived const& _handler) { m_onWorkReceived = _handler; }
 
-protected:
     unique_ptr<Session> m_session = nullptr;
 
+protected:
     std::atomic<bool> m_connected = {false};  // This is related to socket ! Not session
 
     boost::asio::ip::basic_endpoint<boost::asio::ip::tcp> m_endpoint;
