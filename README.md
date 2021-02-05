@@ -11,6 +11,8 @@ This is a direct descendent of the Ethminer project at https://github.com/ethere
 is largely abandoned and unmanaged this personal version is published with the hope that it may continue to be useful. In the spirit
 of open source problem reports and pull requests are welcome, but please use git-clang-format on your requests.
 
+**Project Owner & Developer** @jean-m-cyr ETH 0x2ceCE0c3BeE218Cb78fFE19FD77Fbb3caa0F6e86
+
 ## Features
 
 * OpenCL mining
