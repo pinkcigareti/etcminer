@@ -17,7 +17,7 @@ hunter_add_package(Boost COMPONENTS program_options)
 find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
 
 target_link_libraries(nsfminer PRIVATE
-        ethcore poolprotocols devcore nsfminer-buildinfo Boost::system Boost::thread Boost::program_options)
+        eth pool dev nsfminer-buildinfo Boost::system Boost::thread Boost::program_options)
 
 if(ETHDBUS)
 	find_package(PkgConfig)
@@ -29,7 +29,7 @@ if(ETHDBUS)
 endif()
 
 if(APICORE)
-	target_link_libraries(nsfminer PRIVATE apicore)
+	target_link_libraries(nsfminer PRIVATE api)
 endif()
 
 include(GNUInstallDirs)

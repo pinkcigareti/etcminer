@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <libdevcore/Log.h>
+#include <libdev/Log.h>
 
 #if defined(_WIN32)
 #include <windows.h>

@@ -16,20 +16,20 @@
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
 
-#include <libethcore/Farm.h>
+#include <libeth/Farm.h>
 #if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
+#include <libcl/CLMiner.h>
 #endif
 #if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
+#include <libcuda/CUDAMiner.h>
 #endif
 #if ETH_ETHASHCPU
-#include <libethash-cpu/CPUMiner.h>
+#include <libcpu/CPUMiner.h>
 #endif
-#include <libpoolprotocols/PoolManager.h>
+#include <libpool/PoolManager.h>
 
 #if API_CORE
-#include <libapicore/ApiServer.h>
+#include <libapi/ApiServer.h>
 #include <regex>
 #endif
 
