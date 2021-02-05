@@ -150,13 +150,6 @@ static void on_help_module(string m)
         "or reboot");
 }
 
-static void on_donation_percent(float p)
-{
-    if ((p < 0.0) || (p > 3.0))
-        throw boost::program_options::error(
-            "The --donation-percent value must be  between 0 and 3");
-}
-
 static void on_nonce(string n)
 {
     for (const auto& c : n)
@@ -550,18 +543,7 @@ public:
 
             ("devices", value<vector<unsigned>>()->multitoken(),
 
-                "List of space separated device numbers to be used")
-
-            ("donation-percent", value<float>()->default_value(0)->notifier(on_donation_percent),
-
-                "Percentage of mining time allocate to optional "
-                "fee recipient. This being the nsfminer, the default "
-                "value is 0.")
-
-            ("donation-address", value<string>(),
-
-                "Fee recipient address, using the same format you "
-                "would for a pool (-P) parameter.");
+                "List of space separated device numbers to be used");
 #if API_CORE
 
         api.add_options()
