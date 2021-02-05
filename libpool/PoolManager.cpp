@@ -159,6 +159,7 @@ void PoolManager::setClientHandlers()
         }
 
         bool newDiff = (wp.boundary != m_currentWp.boundary);
+        m_currentWp.difficulty = wp.difficulty;
 
         m_currentWp = wp;
 
@@ -523,12 +524,12 @@ int PoolManager::getCurrentEpoch()
     return m_currentWp.epoch;
 }
 
-double PoolManager::getCurrentDifficulty()
+double PoolManager::getPoolDifficulty()
 {
     if (!m_currentWp)
         return 0.0;
 
-    return dev::getHashesToTarget(m_currentWp.boundary.hex(HexPrefix::Add));
+    return m_currentWp.difficulty;
 }
 
 unsigned PoolManager::getConnectionSwitches()
