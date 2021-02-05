@@ -13,6 +13,8 @@
 #include <libcpu/CPUMiner.h>
 #endif
 
+#include <libpool/PoolManager.h>
+
 namespace dev
 {
 namespace eth
@@ -357,38 +359,28 @@ bool Farm::reboot(const vector<string>& args)
  */
 void Farm::accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting)
 {
+    m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
     if (_accounting == SolutionAccountingEnum::Accepted)
     {
         m_telemetry.farm.solutions.accepted++;
-        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.accepted++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
-        return;
     }
-    if (_accounting == SolutionAccountingEnum::Wasted)
+    else if (_accounting == SolutionAccountingEnum::Wasted)
     {
         m_telemetry.farm.solutions.wasted++;
-        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.wasted++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
-        return;
     }
-    if (_accounting == SolutionAccountingEnum::Rejected)
+    else if (_accounting == SolutionAccountingEnum::Rejected)
     {
         m_telemetry.farm.solutions.rejected++;
-        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.rejected++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
-        return;
     }
-    if (_accounting == SolutionAccountingEnum::Failed)
+    else if (_accounting == SolutionAccountingEnum::Failed)
     {
         m_telemetry.farm.solutions.failed++;
-        m_telemetry.farm.solutions.tstamp = chrono::steady_clock::now();
         m_telemetry.miners.at(_minerIdx).solutions.failed++;
-        m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
-        return;
     }
+    m_telemetry.miners.at(_minerIdx).solutions.tstamp = chrono::steady_clock::now();
 }
 
 /**
@@ -453,9 +445,13 @@ void Farm::submitProofAsync(Solution const& _s)
 #endif
 }
 
-void Farm::checkForHungMiners()
+// Collects data about hashing and hardware status
+void Farm::collectData(const boost::system::error_code& ec)
 {
-    // Process miners
+    if (ec)
+        return;
+
+    // check for hung miners
     for (auto const& miner : m_miners)
         if (!miner->paused() && miner->m_initialized)
         {
@@ -469,18 +465,11 @@ void Farm::checkForHungMiners()
             }
             miner->m_hung_miner.store(true);
         }
-}
-
-// Collects data about hashing and hardware status
-void Farm::collectData(const boost::system::error_code& ec)
-{
-    if (ec)
-        return;
-
-    checkForHungMiners();
 
     // Reset hashrate (it will accumulate from miners)
     float farm_hr = 0.0f;
+    double t(PoolManager::p().getCurrentClientDuration() / 1e6);
+    double difficulty(PoolManager::p().getPoolDifficulty());
 
     // Process miners
     for (auto const& miner : m_miners)
@@ -488,9 +477,13 @@ void Farm::collectData(const boost::system::error_code& ec)
         int minerIdx = miner->Index();
         float hr = (miner->paused() ? 0.0f : miner->RetrieveHashRate());
         farm_hr += hr;
+        uint32_t accepted = m_telemetry.miners.at(minerIdx).solutions.accepted;
+        double ehr = 0;
+        if (accepted)
+            ehr = difficulty / (t / accepted);
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
-
+        m_telemetry.miners.at(minerIdx).effectiveHashRate = ehr;
 
         if (m_Settings.hwMon)
         {

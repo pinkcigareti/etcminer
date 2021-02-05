@@ -1289,7 +1289,6 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                 prmIdx = 1;
             }
 
-
             if (jPrm.isArray() && !jPrm.empty())
             {
                 m_current.job = jPrm.get(Json::Value::ArrayIndex(0), "").asString();
@@ -1308,6 +1307,11 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                         m_current.exSizeBytes = m_session->extraNonceSizeBytes;
                         m_current_timestamp = chrono::steady_clock::now();
                         m_current.block = -1;
+                        if (m_session->nextWorkDifficulty)
+                            m_current.difficulty = m_session->nextWorkDifficulty;
+                        else
+                            m_current.difficulty =
+                                getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
                         // This will signal to dispatch the job
                         // at the end of the transmission.
@@ -1359,6 +1363,11 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                     m_current.header = h256(sHeaderHash);
                     m_current.boundary = h256(sShareTarget);
                     m_current_timestamp = chrono::steady_clock::now();
+                    if (m_session->nextWorkDifficulty)
+                        m_current.difficulty = m_session->nextWorkDifficulty;
+                    else
+                        m_current.difficulty =
+                            getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
                     // This will signal to dispatch the job
                     // at the end of the transmission.
@@ -1403,10 +1412,13 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             m_current.header = h256(header);
             m_current.boundary = h256(m_session->nextWorkBoundary.hex(HexPrefix::Add));
             m_current.epoch = m_session->epoch;
-            m_current.algo = m_session->algo;
             m_current.startNonce = m_session->extraNonce;
             m_current.exSizeBytes = m_session->extraNonceSizeBytes;
             m_current_timestamp = chrono::steady_clock::now();
+            if (m_session->nextWorkDifficulty)
+                m_current.difficulty = m_session->nextWorkDifficulty;
+            else
+                m_current.difficulty = getHashesToTarget(m_current.boundary.hex(HexPrefix::Add));
 
             // This will signal to dispatch the job
             // at the end of the transmission.
@@ -1423,6 +1435,7 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
                         max(jPrm.get(Json::Value::ArrayIndex(0), 1).asDouble(), 0.0001);
 
                     m_session->nextWorkBoundary = h256(dev::getTargetFromDiff(nextWorkDifficulty));
+                    m_session->nextWorkDifficulty = nextWorkDifficulty;
                 }
             }
             else
@@ -1481,9 +1494,10 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             {
                 target = "0x" + dev::padLeft(target, 64, '0');
                 m_session->nextWorkBoundary = h256(target);
+                m_session->nextWorkDifficulty =
+                    getHashesToTarget(m_session->nextWorkBoundary.hex(HexPrefix::Add));
             }
 
-            m_session->algo = jPrm.get("algo", "ethash").asString();
             string enonce = jPrm.get("extranonce", "").asString();
             if (!enonce.empty())
                 processExtranonce(enonce);

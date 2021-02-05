@@ -110,15 +110,6 @@ struct HwSensorsType
     };
 };
 
-struct TelemetryAccountType
-{
-    string prefix = "";
-    float hashrate = 0.0f;
-    bool paused = false;
-    HwSensorsType sensors;
-    SolutionAccountType solutions;
-};
-
 struct DeviceDescriptor
 {
     DeviceTypeEnum type = DeviceTypeEnum::Unknown;
@@ -179,6 +170,16 @@ enum MinerPauseEnum
     Pause_MAX  // Must always be last as a placeholder of max count
 };
 
+struct TelemetryAccountType
+{
+    string prefix = "";
+    float hashrate = 0.0f;
+    bool paused = false;
+    HwSensorsType sensors;
+    SolutionAccountType solutions;
+    double effectiveHashRate = 0;
+};
+
 /// Keeps track of progress for farm and miners
 struct TelemetryType
 {
@@ -187,6 +188,7 @@ struct TelemetryType
 
     TelemetryAccountType farm;
     std::vector<TelemetryAccountType> miners;
+
     void strvec(std::list<string>& telemetry)
     {
         std::stringstream ss;
@@ -222,6 +224,7 @@ struct TelemetryType
 
         const static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
+        float ehr;
         int magnitude = 0;
         while (hr > 1000.0f && magnitude <= 3)
         {
@@ -239,11 +242,19 @@ struct TelemetryType
             ss.str("");
             i++;
             hr = miner.hashrate;
+            ehr = miner.effectiveHashRate;
+            int mag = 0;
+            while (ehr > 1000.0f && mag <= 3)
+            {
+                ehr /= 1000.0f;
+                mag++;
+            }
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
             ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
-               << EthTeal << std::fixed << std::setprecision(2) << hr << EthReset;
+               << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed << ehr
+               << ' ' << suffixes[mag] << ")" EthReset;
 
             if (hwmon)
                 ss << " " << EthTeal << miner.sensors.str() << EthReset;
@@ -317,6 +328,7 @@ public:
     void resume(MinerPauseEnum fromwhat);
     float RetrieveHashRate() noexcept;
     void TriggerHashRateUpdate() noexcept;
+
     std::atomic<bool> m_hung_miner = {false};
     bool m_initialized = false;
 
