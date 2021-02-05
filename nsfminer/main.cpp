@@ -16,20 +16,20 @@
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #endif
 
-#include <libethcore/Farm.h>
+#include <libeth/Farm.h>
 #if ETH_ETHASHCL
-#include <libethash-cl/CLMiner.h>
+#include <libcl/CLMiner.h>
 #endif
 #if ETH_ETHASHCUDA
-#include <libethash-cuda/CUDAMiner.h>
+#include <libcuda/CUDAMiner.h>
 #endif
 #if ETH_ETHASHCPU
-#include <libethash-cpu/CPUMiner.h>
+#include <libcpu/CPUMiner.h>
 #endif
-#include <libpoolprotocols/PoolManager.h>
+#include <libpool/PoolManager.h>
 
 #if API_CORE
-#include <libapicore/ApiServer.h>
+#include <libapi/ApiServer.h>
 #include <regex>
 #endif
 
@@ -148,6 +148,13 @@ static void on_help_module(string m)
         "env, "
 #endif
         "or reboot");
+}
+
+static void on_donation_percent(float p)
+{
+    if ((p < 0.0) || (p > 3.0))
+        throw boost::program_options::error(
+            "The --donation-percent value must be  between 0 and 3");
 }
 
 static void on_nonce(string n)
@@ -543,7 +550,18 @@ public:
 
             ("devices", value<vector<unsigned>>()->multitoken(),
 
-                "List of space separated device numbers to be used");
+                "List of space separated device numbers to be used")
+
+            ("donation-percent", value<float>()->default_value(0)->notifier(on_donation_percent),
+
+                "Percentage of mining time allocate to optional "
+                "fee recipient. This being the nsfminer, the default "
+                "value is 0.")
+
+            ("donation-address", value<string>(),
+
+                "Fee recipient address, using the same format you "
+                "would for a pool (-P) parameter.");
 #if API_CORE
 
         api.add_options()
