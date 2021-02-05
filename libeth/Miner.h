@@ -243,18 +243,14 @@ struct TelemetryType
             i++;
             hr = miner.hashrate;
             ehr = miner.effectiveHashRate;
-            int mag = 0;
-            while (ehr > 1000.0f && mag <= 3)
-            {
+            while (ehr > 1000.0)
                 ehr /= 1000.0f;
-                mag++;
-            }
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
             ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
                << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed << ehr
-               << ' ' << suffixes[mag] << ")" EthReset;
+               << ")" EthReset;
 
             if (hwmon)
                 ss << " " << EthTeal << miner.sensors.str() << EthReset;
