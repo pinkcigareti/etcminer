@@ -170,9 +170,11 @@ void EthGetworkClient::handle_connect(const boost::system::error_code& ec)
                     // The payload
                     os << *line;
 
+#ifdef DEV_BUILD
                     // Out received message only for debug purpouses
                     if (g_logOptions & LOG_JSON)
                         cnote << " >> " << *line;
+#endif
 
                     delete line;
 
@@ -305,9 +307,11 @@ void EthGetworkClient::handle_read(const boost::system::error_code& ec, size_t b
             // Body
             if (!isHeader)
             {
+#ifdef DEV_BUILD
                 // Out received message only for debug purpouses
                 if (g_logOptions & LOG_JSON)
                     cnote << " << " << line;
+#endif
 
                 // Test validity of chunk and process
                 Json::Value jRes;

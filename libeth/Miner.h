@@ -250,15 +250,22 @@ struct TelemetryType
             ss.str("");
             i++;
             hr = miner.hashrate;
-            ehr = miner.effectiveHashRate;
-            while (ehr > 1000.0)
-                ehr /= 1000.0f;
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
-            ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
-               << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed << ehr
-               << ")" EthReset;
+            if (g_logOptions & LOG_EFFECTIVE)
+            {
+                ehr = miner.effectiveHashRate;
+                while (ehr > 1000.0)
+                    ehr /= 1000.0f;
+
+                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
+                   << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed
+                   << ehr << ")" EthReset;
+            }
+            else
+                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
+                   << EthTeal << std::fixed << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
                 ss << " " << EthTeal << miner.sensors.str() << EthReset;

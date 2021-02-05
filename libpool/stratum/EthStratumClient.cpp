@@ -1719,9 +1719,11 @@ void EthStratumClient::onRecvSocketDataCompleted(
 
                 if (!line.empty())
                 {
+#ifdef DEV_BUILD
                     // Out received message only for debug purpouses
                     if (g_logOptions & LOG_JSON)
                         cnote << " << " << line;
+#endif
 
                     // Test validity of chunk and process
                     Json::Value jMsg;
@@ -1814,9 +1816,11 @@ void EthStratumClient::sendSocketData()
     while (m_txQueue.pop(line))
     {
         os << *line << endl;
+#ifdef DEV_BUILD
         // Out received message only for debug purpouses
         if (g_logOptions & LOG_JSON)
             cnote << " >> " << *line;
+#endif
 
         delete line;
     }

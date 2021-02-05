@@ -128,7 +128,7 @@ static void on_help_module(string m)
 #if API_CORE
             "api",
 #endif
-            "con", "test", "misc",
+            "con", "test", "misc", "exp",
 #ifdef _WIN32
             "env",
 #endif
@@ -151,7 +151,7 @@ static void on_help_module(string m)
 #if API_CORE
         "api, "
 #endif
-        "con, test, misc, "
+        "con, test, misc, exp, "
 #ifdef _WIN32
         "env, "
 #endif
@@ -249,7 +249,7 @@ public:
     {
         if (!ec && g_running)
         {
-            if (m_multi)
+            if (g_logOptions & LOG_MULTI)
             {
                 list<string> vs;
                 Farm::f().Telemetry().strvec(vs);
@@ -447,8 +447,17 @@ public:
                 value<unsigned>()->default_value(0)->notifier(on_verbosity),
 
                 "Set output verbosity level. Use the sum of :\n"
-                "1 - to log stratum json messages\n"
-                "2 - to log found solutions per GPU")
+                "1 - log per GPU status lines\n"
+                "2 - log per GPU solutions\n"
+                "4 - log per GPU calculated effective hash rate\n"
+                "    (Experimental, see -H exp)"
+#ifdef DEV_BUILD
+                "\n16 - log stratum messages\n"
+                "32 - log connection events\n"
+                "64 - log job switch times\n"
+                "128 - log share submit times"
+#endif
+            )
 
             ("farm-recheck", value<unsigned>()->default_value(500),
 
@@ -541,6 +550,7 @@ public:
 
             ("multi,m",
 
+                "[DEPRECATED] Use --verbosity instead.\n"
                 "Use multi-line status display")
 
             ("nonce,n", value<string>()->default_value("")->notifier(on_nonce),
@@ -777,6 +787,15 @@ public:
                      << "    the search path.\n\n"
                      << "    For Linux:   reboot.sh\n\n"
                      << "    For Windows: reboot.bat\n\n";
+            else if (s == "exp")
+                cout << "\nMiner experimental features:\n\n"
+                     << "    The 'log effective hash rate' verbosity option enables\n"
+                     << "    the calculation and per GPU display of the effective hash rate\n"
+                     << "    based on shares accepted over time. NOTE: At this time this\n"
+                     << "    only works for pools with constant difficulty and the reported\n"
+                     << "    effective hash rates will only become statistically significant\n"
+                     << "    after many hours. These results are meaningless for pools\n"
+                     << "    that use the variable difficulty stratum2 protocol (nicehash).\n\n";
             return false;
         }
 
@@ -799,7 +818,9 @@ public:
 
         m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
         should_list = m_shouldListDevices = vm.count("list-devices");
-        m_multi = vm.count("multi");
+        if (vm.count("multi"))
+            g_logOptions |= LOG_MULTI;
+
         if (vm.count("devices"))
             for (auto& d : vm["devices"].as<vector<unsigned>>())
                 m_devices.push_back(d);
@@ -1152,7 +1173,6 @@ private:
     // -- CLI Flow control
     mutex m_climtx;
 
-    bool m_multi;
     vector<unsigned> m_devices;
 
 #if API_CORE
