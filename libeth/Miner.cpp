@@ -15,7 +15,6 @@ namespace dev
 {
 namespace eth
 {
-FarmFace* FarmFace::m_this = nullptr;
 
 DeviceDescriptor Miner::getDescriptor()
 {

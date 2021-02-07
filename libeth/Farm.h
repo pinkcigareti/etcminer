@@ -58,7 +58,7 @@ struct FarmSettings
 typedef std::map<string, DeviceDescriptor> minerMap;
 typedef std::map<string, int> telemetryMap;
 
-class Farm : public FarmFace
+class Farm
 {
 public:
     unsigned tstart = 0, tstop = 0;
@@ -96,7 +96,7 @@ public:
         }
     }
 
-    void accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting) override;
+    void accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting);
     SolutionAccountType getSolutions();
     SolutionAccountType getSolutions(unsigned _minerIdx);
 
@@ -107,9 +107,9 @@ public:
     void onMinerRestart(MinerRestart const& _handler) { m_onMinerRestart = _handler; }
 
     void setTStartTStop(unsigned tstart, unsigned tstop);
-    unsigned get_tstart() override { return m_Settings.tempStart; }
-    unsigned get_tstop() override { return m_Settings.tempStop; }
-    void submitProof(Solution const& _s) override;
+    unsigned get_tstart() { return m_Settings.tempStart; }
+    unsigned get_tstop() { return m_Settings.tempStop; }
+    void submitProof(Solution const& _s);
     void set_nonce(std::string nonce) { m_Settings.nonce = nonce; }
 
 private:

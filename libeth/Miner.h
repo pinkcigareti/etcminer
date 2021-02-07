@@ -294,28 +294,6 @@ struct TelemetryType
 };
 
 
-class FarmFace
-{
-public:
-    FarmFace() { m_this = this; }
-    static FarmFace& f() { return *m_this; };
-
-    virtual ~FarmFace() = default;
-    virtual unsigned get_tstart() = 0;
-    virtual unsigned get_tstop() = 0;
-
-    /**
-     * @brief Called from a Miner to note a WorkPackage has a solution.
-     * @param _p The solution.
-     * @return true iff the solution was good (implying that mining should be .
-     */
-    virtual void submitProof(Solution const& _p) = 0;
-    virtual void accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting) = 0;
-
-private:
-    static FarmFace* m_this;
-};
-
 class Miner : public Worker
 {
 public:
