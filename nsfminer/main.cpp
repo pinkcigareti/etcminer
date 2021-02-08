@@ -459,19 +459,20 @@ public:
 #endif
             )
 
-            ("farm-recheck", value<unsigned>()->default_value(500),
+            ("getwork-recheck", value<unsigned>()->default_value(500),
 
                 "Set polling interval for new work in getWork mode. "
                 "Value expressed in milliseconds. "
                 "It has no meaning in stratum mode")
 
-            ("farm-retries", value<unsigned>()->default_value(3),
-
-                "Set number of reconnection retries to same pool")
-
             ("retry-delay", value<unsigned>()->default_value(0),
 
                 "Delay in seconds before reconnection retry")
+
+            ("retry-max", value<unsigned>()->default_value(3),
+
+                "Set number of reconnection retries to same pool. "
+                "Set to 0 for infinite retries.")
 
             ("work-timeout", value<unsigned>()->default_value(180),
 
@@ -799,8 +800,8 @@ public:
         g_logSyslog = vm.count("syslog");
         g_exitOnError = vm.count("exit");
 
-        m_PoolSettings.getWorkPollInterval = vm["farm-recheck"].as<unsigned>();
-        m_PoolSettings.connectionMaxRetries = vm["farm-retries"].as<unsigned>();
+        m_PoolSettings.getWorkPollInterval = vm["getwork-recheck"].as<unsigned>();
+        m_PoolSettings.connectionMaxRetries = vm["retry-max"].as<unsigned>();
         m_PoolSettings.delayBeforeRetry = vm["retry-delay"].as<unsigned>();
         m_PoolSettings.noWorkTimeout = vm["work-timeout"].as<unsigned>();
         m_PoolSettings.noResponseTimeout = vm["response-timeout"].as<unsigned>();
