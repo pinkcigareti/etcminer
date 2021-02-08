@@ -268,10 +268,11 @@ struct SearchResults
     uint32_t gid[c_maxSearchResults];
 };
 
+const static uint32_t zerox3[3] = {0, 0, 0};
+
 void CLMiner::workLoop()
 {
     // Memory for zero-ing buffers. Cannot be static or const because crashes on macOS.
-    static uint32_t zerox3[3] = {0, 0, 0};
 
     uint64_t startNonce = 0;
 
@@ -281,8 +282,6 @@ void CLMiner::workLoop()
 
     if (!initDevice())
         return;
-
-    m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE, 0, sizeof(zerox3), zerox3);
 
     try
     {
@@ -811,6 +810,8 @@ bool CLMiner::initEpoch()
 
         // create mining buffers
         m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
+        m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE, 0, sizeof(zerox3), zerox3);
+
 
         m_dagKernel.setArg(1, *m_light);
         m_dagKernel.setArg(2, *m_dag[0]);
