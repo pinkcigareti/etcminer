@@ -247,9 +247,7 @@ typedef union
         buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size; \
         uint idx = buffer[lane_idx];                                                 \
         __global hash128_t const* g_dag;                                             \
-        g_dag = (__global hash128_t const*)_g_dag0;                                  \
-        if (idx & 1)                                                                 \
-            g_dag = (__global hash128_t const*)_g_dag1;                              \
+        g_dag = (__global hash128_t const*)_g_dag2[idx & 1];                         \
         mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]);                           \
         mem_fence(CLK_LOCAL_MEM_FENCE);                                              \
     } while (0)
@@ -279,6 +277,7 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
     const uint thread_id = get_local_id(0) % 4;
     const uint hash_id = get_local_id(0) / 4;
     const uint gid = get_global_id(0);
+    __global const ulong8* _g_dag2[2] = {_g_dag0, _g_dag1};
 
     __local compute_hash_share sharebuf[WORKSIZE / 4];
     __local uint buffer[WORKSIZE];
