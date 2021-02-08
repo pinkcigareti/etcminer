@@ -459,19 +459,20 @@ public:
 #endif
             )
 
-            ("farm-recheck", value<unsigned>()->default_value(500),
+            ("getwork-recheck", value<unsigned>()->default_value(500),
 
                 "Set polling interval for new work in getWork mode. "
                 "Value expressed in milliseconds. "
                 "It has no meaning in stratum mode")
 
-            ("farm-retries", value<unsigned>()->default_value(3),
-
-                "Set number of reconnection retries to same pool")
-
             ("retry-delay", value<unsigned>()->default_value(0),
 
                 "Delay in seconds before reconnection retry")
+
+            ("retry-max", value<unsigned>()->default_value(3),
+
+                "Set number of reconnection retries to same pool. "
+                "Set to 0 for infinite retries.")
 
             ("work-timeout", value<unsigned>()->default_value(180),
 
@@ -531,11 +532,6 @@ public:
                 "Lists the detected OpenCL/CUDA devices and "
                 "exits. Can be combined with -G or -U flags")
 #endif
-            ("eval",
-                "Enable host software re-evaluation of GPUs "
-                "found nonces. Trims some ms. from submission "
-                "time but it may increase rejected solution rate.")
-
             ("tstop", value<unsigned>()->default_value(0),
 
                 "Suspend mining on GPU which temperature is above "
@@ -804,8 +800,8 @@ public:
         g_logSyslog = vm.count("syslog");
         g_exitOnError = vm.count("exit");
 
-        m_PoolSettings.getWorkPollInterval = vm["farm-recheck"].as<unsigned>();
-        m_PoolSettings.connectionMaxRetries = vm["farm-retries"].as<unsigned>();
+        m_PoolSettings.getWorkPollInterval = vm["getwork-recheck"].as<unsigned>();
+        m_PoolSettings.connectionMaxRetries = vm["retry-max"].as<unsigned>();
         m_PoolSettings.delayBeforeRetry = vm["retry-delay"].as<unsigned>();
         m_PoolSettings.noWorkTimeout = vm["work-timeout"].as<unsigned>();
         m_PoolSettings.noResponseTimeout = vm["response-timeout"].as<unsigned>();
@@ -826,7 +822,6 @@ public:
                 m_devices.push_back(d);
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
-        m_FarmSettings.eval = vm.count("eval");
         m_FarmSettings.nonce = vm["nonce"].as<string>();
 
 #if ETH_ETHASHCUDA

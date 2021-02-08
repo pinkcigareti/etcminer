@@ -305,8 +305,7 @@ void CUDAMiner::search(
     for (uint32_t streamIdx = 0; streamIdx < m_deviceDescriptor.cuStreamSize;
          streamIdx++, start_nonce += batch_blocks)
     {
-        HostToDevice((uint8_t*)m_search_buf[streamIdx] + offsetof(Search_results, done), zero3,
-            sizeof(zero3));
+        HostToDevice(m_search_buf[streamIdx], zero3, sizeof(zero3));
         m_hung_miner.store(false);
         run_ethash_search(m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[streamIdx],
             m_search_buf[streamIdx], start_nonce);
@@ -344,17 +343,10 @@ void CUDAMiner::search(
 
             Search_results r;
 
-            DeviceToHost(&r.counts, buffer + offsetof(Search_results, counts), sizeof(r.counts));
+            DeviceToHost(&r, buffer, sizeof(r));
 
             // clear solution count, hash count and done
-            HostToDevice(buffer + offsetof(Search_results, done), zero3, sizeof(zero3));
-
-            r.counts.solCount = min(r.counts.solCount, MAX_SEARCH_RESULTS);
-            batchCount += r.counts.hashCount;
-
-            if (r.counts.solCount)
-                DeviceToHost(&r.results, buffer + offsetof(Search_results, results),
-                    r.counts.solCount * sizeof(Search_Result));
+            HostToDevice(buffer, zero3, sizeof(zero3));
 
             if (m_done)
                 streams_bsy &= ~stream_mask;
@@ -365,16 +357,18 @@ void CUDAMiner::search(
                     (Search_results*)buffer, start_nonce);
             }
 
-            if (r.counts.solCount)
-                for (uint32_t i = 0; i < r.counts.solCount; i++)
-                {
-                    uint64_t nonce(start_nonce - stream_blocks + r.results[i].gid);
-                    h256 mix((::byte*)&r.results[i].mix, h256::ConstructFromPointer);
+            if (r.solCount > MAX_SEARCH_RESULTS)
+		r.solCount = MAX_SEARCH_RESULTS;
+            batchCount += r.hashCount;
 
-                    Farm::f().submitProof(
-                        Solution{nonce, mix, w, chrono::steady_clock::now(), m_index});
-                    ReportSolution(w.header, nonce);
-                }
+            for (uint32_t i = 0; i < r.solCount; i++)
+            {
+                uint64_t nonce(start_nonce - stream_blocks + r.gid[i]);
+                Farm::f().submitProof(
+                    Solution{nonce, h256(), w, chrono::steady_clock::now(), m_index});
+                ReportSolution(w.header, nonce);
+            }
+
             if (shouldStop())
             {
                 unique_lock<mutex> l(m_doneMutex);

@@ -378,23 +378,24 @@ void PoolManager::rotateConnect()
             m_activeConnectionIdx = 0;
         m_connectionSwitches.fetch_add(1, memory_order_relaxed);
     }
-    else if (m_connectionAttempt >= m_Settings.connectionMaxRetries)
+    else if (m_Settings.connections.size() == 1)
     {
         // If this is the only connection we can't rotate
         // forever
-        if (m_Settings.connections.size() == 1)
+        if (m_Settings.connectionMaxRetries &&
+            (m_connectionAttempt >= m_Settings.connectionMaxRetries))
         {
             m_Settings.connections.erase(m_Settings.connections.begin() + m_activeConnectionIdx);
         }
-        // Rotate connections if above max attempts threshold
-        else
-        {
-            m_connectionAttempt = 0;
-            m_activeConnectionIdx++;
-            if (m_activeConnectionIdx >= m_Settings.connections.size())
-                m_activeConnectionIdx = 0;
-            m_connectionSwitches.fetch_add(1, memory_order_relaxed);
-        }
+    }
+    // Rotate connections if above max attempts threshold
+    else
+    {
+        m_connectionAttempt = 0;
+        m_activeConnectionIdx++;
+        if (m_activeConnectionIdx >= m_Settings.connections.size())
+            m_activeConnectionIdx = 0;
+        m_connectionSwitches.fetch_add(1, memory_order_relaxed);
     }
 
     if (!m_Settings.connections.empty() &&
