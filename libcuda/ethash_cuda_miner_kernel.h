@@ -21,25 +21,12 @@
 // Leave room for up to 4 results. A power
 // of 2 here will yield better CUDA optimization
 #define MAX_SEARCH_RESULTS 4U
-
-struct Search_Result
-{
-    // One word for gid and 8 for mix hash
-    uint32_t gid;
-    uint32_t mix[8];
-    uint32_t pad[7];  // pad to size power of 2
-};
-
-struct count_pair
-{
-    uint32_t solCount, hashCount;
-};
-
 struct Search_results
 {
+    uint32_t solCount;
+    uint32_t hashCount;
     volatile uint32_t done;
-    struct count_pair counts;
-    Search_Result results[MAX_SEARCH_RESULTS];
+    uint32_t gid[MAX_SEARCH_RESULTS];
 };
 
 #define ACCESSES 64

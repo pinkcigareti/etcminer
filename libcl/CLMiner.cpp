@@ -265,14 +265,7 @@ struct SearchResults
     uint32_t count;
     uint32_t hashCount;
     uint32_t abort;
-    struct
-    {
-        uint32_t gid;
-        // Can't use h256 data type here since h256 contains
-        // more than raw data. Kernel returns raw mix hash.
-        uint32_t mix[8];
-        uint32_t pad[7];  // pad to 16 words for easy indexing
-    } rslt[c_maxSearchResults];
+    uint32_t gid[c_maxSearchResults];
 };
 
 void CLMiner::workLoop()
@@ -289,6 +282,8 @@ void CLMiner::workLoop()
     if (!initDevice())
         return;
 
+    m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE, 0, sizeof(zerox3), zerox3);
+
     try
     {
         while (!shouldStop())
@@ -298,22 +293,11 @@ void CLMiner::workLoop()
 
             if (m_queue)
             {
-                // no need to read the abort flag.
-                m_queue->enqueueReadBuffer(*m_searchBuffer, CL_TRUE, offsetof(SearchResults, count),
-                    2 * sizeof(results.count), (void*)&results.count);
-                if (results.count)
-                {
-                    if (results.count > c_maxSearchResults)
-                    {
-                        results.count = c_maxSearchResults;
-                    }
-
-                    m_queue->enqueueReadBuffer(*m_searchBuffer, CL_TRUE, 0,
-                        results.count * sizeof(results.rslt[0]), (void*)&results);
-                }
-                // clean the solution count, hash count, and abort flag
-                m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE,
-                    offsetof(SearchResults, count), sizeof(zerox3), zerox3);
+                // synchronize and read the results.
+                m_queue->enqueueReadBuffer(
+                    *m_searchBuffer, CL_TRUE, 0, sizeof(results), (void*)&results);
+                // clear the solution count, hash count, and abort flag
+                m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE, 0, sizeof(zerox3), zerox3);
             }
             else
                 results.count = 0;
@@ -370,18 +354,15 @@ void CLMiner::workLoop()
             m_queue->enqueueNDRangeKernel(
                 m_searchKernel, cl::NullRange, batch_blocks, m_deviceDescriptor.clGroupSize);
 
-            if (results.count)
+            // Report results while the kernel is running.
+            if (results.count > c_maxSearchResults)
+                results.count = c_maxSearchResults;
+            for (uint32_t i = 0; i < results.count; i++)
             {
-                // Report results while the kernel is running.
-                for (uint32_t i = 0; i < results.count; i++)
-                {
-                    uint64_t nonce = current.startNonce + results.rslt[i].gid;
-                    h256 mix((::byte*)&results.rslt[i].mix, h256::ConstructFromPointer);
-
-                    Farm::f().submitProof(
-                        Solution{nonce, mix, current, chrono::steady_clock::now(), m_index});
-                    ReportSolution(current.header, nonce);
-                }
+                uint64_t nonce = current.startNonce + results.gid[i];
+                Farm::f().submitProof(
+                    Solution{nonce, h256(), current, chrono::steady_clock::now(), m_index});
+                ReportSolution(current.header, nonce);
             }
 
             current = w;  // kernel now processing newest work

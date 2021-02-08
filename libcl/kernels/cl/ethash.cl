@@ -258,12 +258,7 @@ struct SearchResults
     uint count;
     uint hashCount;
     volatile uint abort;
-    struct
-    {
-        uint gid;
-        uint mix[8];
-        uint pad[7];  // pad to 16 words for easy indexing
-    } rslt[MAX_OUTPUTS];
+    uint gid[MAX_OUTPUTS];
 };
 
 __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
@@ -310,8 +305,6 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
     state[22] = (uint2)(0);
     state[23] = (uint2)(0);
     state[24] = (uint2)(0);
-
-    uint2 mixhash[4];
 
     for (int pass = 0; pass < 2; ++pass)
     {
@@ -369,11 +362,6 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
             barrier(CLK_LOCAL_MEM_FENCE);
         }
 
-        mixhash[0] = state[8];
-        mixhash[1] = state[9];
-        mixhash[2] = state[10];
-        mixhash[3] = state[11];
-
         state[12] = as_uint2(0x0000000000000001UL);
         state[13] = (uint2)(0);
         state[14] = (uint2)(0);
@@ -396,15 +384,7 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
     {
         atomic_inc(&g_output->abort);
         uint slot = min(MAX_OUTPUTS - 1u, atomic_inc(&g_output->count));
-        g_output->rslt[slot].gid = gid;
-        g_output->rslt[slot].mix[0] = mixhash[0].s0;
-        g_output->rslt[slot].mix[1] = mixhash[0].s1;
-        g_output->rslt[slot].mix[2] = mixhash[1].s0;
-        g_output->rslt[slot].mix[3] = mixhash[1].s1;
-        g_output->rslt[slot].mix[4] = mixhash[2].s0;
-        g_output->rslt[slot].mix[5] = mixhash[2].s1;
-        g_output->rslt[slot].mix[6] = mixhash[3].s0;
-        g_output->rslt[slot].mix[7] = mixhash[3].s1;
+        g_output->gid[slot] = gid;
     }
 }
 

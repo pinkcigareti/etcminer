@@ -531,11 +531,6 @@ public:
                 "Lists the detected OpenCL/CUDA devices and "
                 "exits. Can be combined with -G or -U flags")
 #endif
-            ("eval",
-                "Enable host software re-evaluation of GPUs "
-                "found nonces. Trims some ms. from submission "
-                "time but it may increase rejected solution rate.")
-
             ("tstop", value<unsigned>()->default_value(0),
 
                 "Suspend mining on GPU which temperature is above "
@@ -826,7 +821,6 @@ public:
                 m_devices.push_back(d);
 
         m_FarmSettings.hwMon = vm["HWMON"].as<unsigned>();
-        m_FarmSettings.eval = vm.count("eval");
         m_FarmSettings.nonce = vm["nonce"].as<string>();
 
 #if ETH_ETHASHCUDA
