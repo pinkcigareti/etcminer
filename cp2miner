@@ -1,2 +1,2 @@
 #!/bin/bash
-scp nsfminer/nsfminer jcyr@miner0:
+scp nsfminer/nsfminer miner@miner0:

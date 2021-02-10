@@ -944,7 +944,10 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(
 
     /* Hardware Info */
     Json::Value hwinfo;
-    hwinfo["pci"] = minerDescriptor.uniqueId;
+    if (minerDescriptor.uniqueId.substr(0, 5) == "0000:")
+	hwinfo["pci"] = minerDescriptor.uniqueId.substr(5);
+    else
+        hwinfo["pci"] = minerDescriptor.uniqueId;
     hwinfo["type"] =
         (minerDescriptor.type == DeviceTypeEnum::Gpu ?
                 "GPU" :
