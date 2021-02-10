@@ -58,9 +58,10 @@ __global__ void ethash_calculate_dag_item(uint32_t start)
     uint32_t const node_index = start + blockIdx.x * blockDim.x + threadIdx.x;
     if (((node_index >> 1) & (~1)) >= d_dag_size)
         return;
-    union {
-       hash128_t dag_node;
-       uint2 sha3_buf[25];
+    union
+    {
+        hash128_t dag_node;
+        uint2 sha3_buf[25];
     };
     copy(dag_node.uint4s, d_light[node_index % d_light_size].uint4s, 4);
     dag_node.words[0] ^= node_index;

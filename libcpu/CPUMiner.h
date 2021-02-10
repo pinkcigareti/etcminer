@@ -32,7 +32,7 @@ public:
 
 protected:
     bool initDevice() override;
-    void initEpoch() override;
+    bool initEpoch() override;
     void kick_miner() override;
 
 private:

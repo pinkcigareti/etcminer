@@ -163,9 +163,10 @@ bool CPUMiner::initDevice()
  * to check again dag sizes. They're changed for sure
  * We've all related infos in m_epochContext (.dagSize, .dagNumItems, .lightSize, .lightNumItems)
  */
-void CPUMiner::initEpoch()
+bool CPUMiner::initEpoch()
 {
     m_initialized = true;
+    return true;
 }
 
 
@@ -244,31 +245,24 @@ void CPUMiner::workLoop()
             continue;
         }
 
-        if (w.algo == "ethash")
+        // Epoch change ?
+        if (current.epoch != w.epoch)
         {
-            // Epoch change ?
-            if (current.epoch != w.epoch)
-            {
-                initEpoch();
+            initEpoch();
 
-                // As DAG generation takes a while we need to
-                // ensure we're on latest job, not on the one
-                // which triggered the epoch change
-                current = w;
-                continue;
-            }
-
-            // Persist most recent job.
-            // Job's differences should be handled at higher level
+            // As DAG generation takes a while we need to
+            // ensure we're on latest job, not on the one
+            // which triggered the epoch change
             current = w;
+            continue;
+        }
 
-            // Start searching
-            search(w);
-        }
-        else
-        {
-            throw runtime_error("Algo : " + w.algo + " not yet implemented");
-        }
+        // Persist most recent job.
+        // Job's differences should be handled at higher level
+        current = w;
+
+        // Start searching
+        search(w);
     }
 }
 
