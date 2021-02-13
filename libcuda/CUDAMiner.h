@@ -50,9 +50,6 @@ private:
     cudaStream_t m_streams[MAX_STREAMS];
     uint64_t m_current_target = 0;
 
-    uint64_t m_allocated_memory_dag = 0;  // dag_size is a uint64_t in EpochContext struct
-    size_t m_allocated_memory_light_cache = 0;
-
     volatile bool m_done = true;
     std::mutex m_doneMutex;
 };

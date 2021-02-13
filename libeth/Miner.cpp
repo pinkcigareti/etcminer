@@ -56,11 +56,12 @@ void Miner::ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMem
           << dev::getFormattedMemory(float(totalMemory)) << " GPU memory";
 }
 
-void Miner::ReportGPUNoMemoryAndPause(uint64_t requiredMemory, uint64_t totalMemory)
+void Miner::ReportGPUNoMemoryAndPause(string mem, uint64_t requiredMemory, uint64_t totalMemory)
 {
     cwarn << "Epoch " << m_epochContext.epochNumber << " requires "
-          << dev::getFormattedMemory((double)requiredMemory) << " memory. Only "
-          << dev::getFormattedMemory((double)totalMemory) << " available on device.";
+          << dev::getFormattedMemory((double)requiredMemory) << " of " << mem
+          << " memory from total of " << dev::getFormattedMemory((double)totalMemory)
+          << " available on device.";
     pause(MinerPauseEnum::PauseDueToInsufficientMemory);
 }
 

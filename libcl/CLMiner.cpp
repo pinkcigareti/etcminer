@@ -633,7 +633,7 @@ bool CLMiner::initEpoch()
     // Check whether the current device has sufficient memory every time we recreate the dag
     if (m_deviceDescriptor.totalMemory < RequiredMemory)
     {
-        ReportGPUNoMemoryAndPause(RequiredMemory, m_deviceDescriptor.totalMemory);
+        ReportGPUNoMemoryAndPause("total", RequiredMemory, m_deviceDescriptor.totalMemory);
         return false;  // This will prevent to exit the thread and
                        // Eventually resume mining when changing coin or epoch (NiceHash)
     }

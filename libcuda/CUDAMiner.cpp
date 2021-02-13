@@ -67,49 +67,69 @@ bool CUDAMiner::initEpoch()
     auto startInit = chrono::steady_clock::now();
     size_t RequiredTotalMemory = (m_epochContext.dagSize + m_epochContext.lightSize);
 
-    // Release the pause flag if any
-    resume(MinerPauseEnum::PauseDueToInsufficientMemory);
-    resume(MinerPauseEnum::PauseDueToInitEpochError);
-
     try
     {
         hash128_t* dag;
         hash64_t* light;
 
-        // If we have already enough memory allocated, we just have to
-        // copy light_cache and regenerate the DAG
-        if (m_allocated_memory_dag < m_epochContext.dagSize ||
-            m_allocated_memory_light_cache < m_epochContext.lightSize)
-        {
-            // We need to reset the device and (re)create the dag
-            // cudaDeviceReset() frees all previous allocated memory
-            CUDA_CALL(cudaDeviceReset());
-            CUDA_CALL(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
-            CUDA_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+        // Allocate GPU buffers
+        // We need to reset the device and (re)create the dag
+        // cudaDeviceReset() frees all previous allocated memory
+        CUDA_CALL(cudaDeviceReset());
+        CUDA_CALL(cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync));
+        CUDA_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
-            // Check whether the current device has sufficient memory every time we recreate the dag
-            if (m_deviceDescriptor.totalMemory < RequiredTotalMemory)
-            {
-                ReportGPUNoMemoryAndPause(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
-                return false;  // This will prevent to exit the thread and
-                               // Eventually resume mining when changing coin or epoch (NiceHash)
-            }
+        // Check whether the current device has sufficient memory every time we recreate the dag
+        if (m_deviceDescriptor.totalMemory < RequiredTotalMemory)
+        {
+            ReportGPUNoMemoryAndPause(
+                "required", RequiredTotalMemory, m_deviceDescriptor.totalMemory);
+            return false;  // This will prevent to exit the thread and
+                           // Eventually resume mining when changing coin or epoch (NiceHash)
+        }
 
             // create buffer for cache
+        try
+        {
             CUDA_CALL(cudaMalloc((void**)&light, m_epochContext.lightSize));
-            m_allocated_memory_light_cache = m_epochContext.lightSize;
+        }
+        catch (...)
+        {
+            ReportGPUNoMemoryAndPause(
+                "light cache", m_epochContext.lightSize, m_deviceDescriptor.totalMemory);
+            return false;  // This will prevent to exit the thread and
+        }
+        try
+        {
             CUDA_CALL(cudaMalloc((void**)&dag, m_epochContext.dagSize));
-            m_allocated_memory_dag = m_epochContext.dagSize;
+        }
+        catch (...)
+        {
+            ReportGPUNoMemoryAndPause(
+                "DAG", m_epochContext.dagSize, m_deviceDescriptor.totalMemory);
+            return false;  // This will prevent to exit the thread and
+        }
 
-            // create mining buffers
-            for (unsigned i = 0; i < m_deviceDescriptor.cuStreamSize; ++i)
+        // create mining buffers
+        for (unsigned i = 0; i < m_deviceDescriptor.cuStreamSize; ++i)
+        {
+            try
             {
                 CUDA_CALL(cudaMalloc(&m_search_buf[i], sizeof(Search_results)));
-                CUDA_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
             }
+            catch (...)
+            {
+                ReportGPUNoMemoryAndPause(
+                    "mining buffer", sizeof(Search_results), m_deviceDescriptor.totalMemory);
+                return false;  // This will prevent to exit the thread and
+            }
+            CUDA_CALL(cudaStreamCreateWithFlags(&m_streams[i], cudaStreamNonBlocking));
         }
-        else
-            get_constants(&dag, NULL, &light, NULL);
+
+        // Release the pause flag if any
+        resume(MinerPauseEnum::PauseDueToInsufficientMemory);
+        resume(MinerPauseEnum::PauseDueToInitEpochError);
+
 
         ReportGPUMemoryUsage(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
 
@@ -122,9 +142,10 @@ bool CUDAMiner::initEpoch()
         ethash_generate_dag(
             m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
-        ReportDAGDone(m_allocated_memory_dag, uint32_t(chrono::duration_cast<chrono::milliseconds>(
-                                                  chrono::steady_clock::now() - startInit)
-                                                           .count()));
+        ReportDAGDone(m_deviceDescriptor.totalMemory,
+            uint32_t(
+                chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit)
+                    .count()));
     }
     catch (const cuda_runtime_error& ec)
     {

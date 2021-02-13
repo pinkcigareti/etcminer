@@ -255,7 +255,7 @@ struct TelemetryType
 
             if (g_logOptions & LOG_EFFECTIVE)
             {
-                ehr = miner.effectiveHashRate;
+                ehr = float(miner.effectiveHashRate);
                 while (ehr > 1000.0)
                     ehr /= 1000.0f;
 
@@ -329,7 +329,8 @@ protected:
     void ReportSolution(const h256& header, uint64_t nonce);
     void ReportDAGDone(uint64_t dagSize, uint32_t dagTime);
     void ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMemory);
-    void ReportGPUNoMemoryAndPause(uint64_t requiredTotalMemory, uint64_t totalMemory);
+    void ReportGPUNoMemoryAndPause(
+        std::string mem, uint64_t requiredTotalMemory, uint64_t totalMemory);
     void updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept;
 
     const unsigned m_index = 0;           // Ordinal index of the Instance (not the device)
