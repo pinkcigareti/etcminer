@@ -603,12 +603,12 @@ public:
 #endif
         test.add_options()
 
-            ("benchmark,M", value<unsigned>()->default_value(0),
+            ("benchmark,M", value<unsigned>(),
 
                 "Mining test. Used to test hashing speed. "
                 "Specify the block number to test on.")
 
-            ("simulate,Z", value<unsigned>()->default_value(0),
+            ("simulate,Z", value<unsigned>(),
 
                 "Mining test. Used to test hashing speed. "
                 "Specify the block number to test on.");
@@ -807,7 +807,7 @@ public:
         m_PoolSettings.noResponseTimeout = vm["response-timeout"].as<unsigned>();
         m_PoolSettings.reportHashrate = vm.count("report-hashrate");
         m_PoolSettings.poolFailoverTimeout = vm["failover-timeout"].as<unsigned>();
-        if (vm.count("simulation"))
+        if (vm.count("simulate"))
             m_PoolSettings.benchmarkBlock = vm["simulate"].as<unsigned>();
         if (vm.count("benchmark"))
             m_PoolSettings.benchmarkBlock = vm["benchmark"].as<unsigned>();
@@ -886,7 +886,7 @@ public:
         else
             m_mode = OperationMode::Mining;
 
-        if (!m_shouldListDevices && m_mode != OperationMode::Simulation)
+        if (!m_shouldListDevices && (m_mode != OperationMode::Simulation))
         {
             if (!pools.size())
                 throw invalid_argument("At least one pool definition required. See -P argument.");
