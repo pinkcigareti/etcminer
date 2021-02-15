@@ -248,6 +248,7 @@ void CPUMiner::workLoop()
         // Epoch change ?
         if (current.epoch != w.epoch)
         {
+            setEpoch(w);
             initEpoch();
 
             // As DAG generation takes a while we need to

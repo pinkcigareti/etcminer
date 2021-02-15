@@ -167,21 +167,6 @@ void Farm::setWork(WorkPackage const& _newWp)
     // Set work to each miner giving it's own starting nonce
     unique_lock<mutex> l(farmWorkMutex);
 
-    // Retrieve appropriate EpochContext
-    if (m_currentWp.epoch != _newWp.epoch)
-    {
-        ethash::epoch_context _ec = ethash::get_global_epoch_context(_newWp.epoch);
-        m_currentEc.epochNumber = _newWp.epoch;
-        m_currentEc.lightNumItems = _ec.light_cache_num_items;
-        m_currentEc.lightSize = ethash::get_light_cache_size(_ec.light_cache_num_items);
-        m_currentEc.dagNumItems = _ec.full_dataset_num_items;
-        m_currentEc.dagSize = ethash::get_full_dataset_size(_ec.full_dataset_num_items);
-        m_currentEc.lightCache = _ec.light_cache;
-
-        for (auto const& miner : m_miners)
-            miner->setEpoch(m_currentEc);
-    }
-
     m_currentWp = _newWp;
 
     // Get the randomly selected nonce

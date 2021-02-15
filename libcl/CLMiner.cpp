@@ -315,6 +315,7 @@ void CLMiner::workLoop()
             {
                 if (current.epoch != w.epoch)
                 {
+                    setEpoch(w);
                     if (!initEpoch())
                         break;
                     w = work();

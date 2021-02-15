@@ -166,6 +166,16 @@ void Miner::updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept
     m_groupCount = 0;
 }
 
+void Miner::setEpoch(WorkPackage const& w)
+{
+    ethash::epoch_context ec = ethash::get_global_epoch_context(w.epoch);
+    m_epochContext.epochNumber = w.epoch;
+    m_epochContext.lightNumItems = ec.light_cache_num_items;
+    m_epochContext.lightSize = ethash::get_light_cache_size(ec.light_cache_num_items);
+    m_epochContext.dagNumItems = ec.full_dataset_num_items;
+    m_epochContext.dagSize = ethash::get_full_dataset_size(ec.full_dataset_num_items);
+    m_epochContext.lightCache = ec.light_cache;
+}
 
 }  // namespace eth
 }  // namespace dev

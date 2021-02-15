@@ -161,8 +161,8 @@ bool CUDAMiner::initEpoch()
 
 void CUDAMiner::workLoop()
 {
-    WorkPackage current;
-    current.header = h256();
+    WorkPackage last;
+    last.header = h256();
 
     if (!initDevice())
         return;
@@ -171,8 +171,8 @@ void CUDAMiner::workLoop()
     {
         while (!shouldStop())
         {
-            const WorkPackage w(work());
-            if (!w)
+            const WorkPackage current(work());
+            if (!current)
             {
                 m_hung_miner.store(false);
                 unique_lock<mutex> l(miner_work_mutex);
@@ -181,21 +181,22 @@ void CUDAMiner::workLoop()
             }
 
             // Epoch change ?
-            if (current.epoch != w.epoch)
+            if (current.epoch != last.epoch)
             {
+                setEpoch(current);
                 if (!initEpoch())
                     break;
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one
                 // which triggered the epoch change
-                current = w;
+                last = current;
                 continue;
             }
 
             // Persist most recent job.
             // Job's differences should be handled at higher level
-            current = w;
+            last = current;
 
             uint64_t upper64OfBoundary((uint64_t)(u64)((u256)current.boundary >> 192));
 
@@ -207,7 +208,7 @@ void CUDAMiner::workLoop()
                              (m_deviceDescriptor.cuStreamSize * m_deviceDescriptor.cuBlockSize));
 
             // Eventually start searching
-            search(current.header.data(), upper64OfBoundary, current.startNonce, w);
+            search(current.header.data(), upper64OfBoundary, current.startNonce, current);
         }
 
         // Reset miner and stop working
