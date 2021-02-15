@@ -65,7 +65,7 @@ bool CUDAMiner::initEpoch()
     // to check again dag sizes. They're changed for sure
     m_current_target = 0;
     auto startInit = chrono::steady_clock::now();
-    size_t RequiredTotalMemory = (m_epochContext.dagSize + m_epochContext.lightSize);
+    size_t RequiredTotalMemory(m_epochContext.dagSize + m_epochContext.lightSize);
 
     try
     {
@@ -142,10 +142,9 @@ bool CUDAMiner::initEpoch()
         ethash_generate_dag(
             m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
-        ReportDAGDone(m_deviceDescriptor.totalMemory,
-            uint32_t(
-                chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit)
-                    .count()));
+        ReportDAGDone(m_epochContext.dagSize, uint32_t(chrono::duration_cast<chrono::milliseconds>(
+                                                  chrono::steady_clock::now() - startInit)
+                                                           .count()));
     }
     catch (const cuda_runtime_error& ec)
     {
@@ -172,7 +171,7 @@ void CUDAMiner::workLoop()
     {
         while (!shouldStop())
         {
-            const WorkPackage w = work();
+            const WorkPackage w(work());
             if (!w)
             {
                 m_hung_miner.store(false);
@@ -198,7 +197,7 @@ void CUDAMiner::workLoop()
             // Job's differences should be handled at higher level
             current = w;
 
-            uint64_t upper64OfBoundary = (uint64_t)(u64)((u256)current.boundary >> 192);
+            uint64_t upper64OfBoundary((uint64_t)(u64)((u256)current.boundary >> 192));
 
             // adjust work multiplier
             float hr = RetrieveHashRate();
@@ -224,7 +223,7 @@ void CUDAMiner::workLoop()
 
 void CUDAMiner::kick_miner()
 {
-    static const uint32_t one = 1;
+    static const uint32_t one(1);
     unique_lock<mutex> l(m_doneMutex);
     if (!m_done)
     {
@@ -238,13 +237,13 @@ void CUDAMiner::kick_miner()
 int CUDAMiner::getNumDevices()
 {
     int deviceCount;
-    cudaError_t err = cudaGetDeviceCount(&deviceCount);
+    cudaError_t err(cudaGetDeviceCount(&deviceCount));
     if (err == cudaSuccess)
         return deviceCount;
 
     if (err == cudaErrorInsufficientDriver)
     {
-        int driverVersion = 0;
+        int driverVersion(0);
         cudaDriverGetVersion(&driverVersion);
         if (driverVersion == 0)
             cwarn << "No CUDA driver found";
@@ -259,7 +258,7 @@ int CUDAMiner::getNumDevices()
 
 void CUDAMiner::enumDevices(minerMap& _DevicesCollection)
 {
-    int numDevices = getNumDevices();
+    int numDevices(getNumDevices());
 
     for (int i = 0; i < numDevices; i++)
     {
@@ -379,7 +378,7 @@ void CUDAMiner::search(
             }
 
             if (r.solCount > MAX_SEARCH_RESULTS)
-		r.solCount = MAX_SEARCH_RESULTS;
+                r.solCount = MAX_SEARCH_RESULTS;
             batchCount += r.hashCount;
 
             for (uint32_t i = 0; i < r.solCount; i++)
