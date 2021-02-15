@@ -36,7 +36,7 @@ struct EpochContext
     int epochNumber;
     int lightNumItems;
     size_t lightSize;
-    const ethash_hash512* lightCache;
+    ethash_hash512* lightCache = nullptr;
     int dagNumItems;
     uint64_t dagSize;
 };
