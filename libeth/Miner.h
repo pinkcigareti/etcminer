@@ -301,7 +301,7 @@ public:
       : Worker(_name + std::to_string(_index)), m_index(_index)
     {}
 
-    ~Miner() override = default;
+    ~Miner() override;
 
     DeviceDescriptor getDescriptor();
     void setWork(WorkPackage const& _work);
