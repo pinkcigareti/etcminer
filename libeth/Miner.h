@@ -305,7 +305,6 @@ public:
 
     DeviceDescriptor getDescriptor();
     void setWork(WorkPackage const& _work);
-    void setEpoch(EpochContext const& _ec) { m_epochContext = _ec; }
     unsigned Index() { return m_index; };
     HwMonitorInfo hwmonInfo() { return m_hwmoninfo; }
     void setHwmonDeviceIndex(int i) { m_hwmoninfo.deviceIndex = i; }
@@ -324,6 +323,8 @@ public:
 protected:
     virtual bool initDevice() = 0;
     virtual bool initEpoch() = 0;
+    void setEpoch(WorkPackage const& _newWp);
+
 
     WorkPackage work() const;
     void ReportSolution(const h256& header, uint64_t nonce);
