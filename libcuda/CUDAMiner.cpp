@@ -65,8 +65,10 @@ bool CUDAMiner::initEpoch()
     // to check again dag sizes. They're changed for sure
     m_current_target = 0;
     auto startInit = chrono::steady_clock::now();
-    size_t RequiredTotalMemory(m_epochContext.dagSize + m_epochContext.lightSize);
-
+    size_t RequiredTotalMemory(m_epochContext.dagSize + m_epochContext.lightSize +
+                               m_deviceDescriptor.cuStreamSize * sizeof(Search_results));
+    ReportGPUMemoryRequired(m_epochContext.lightSize, m_epochContext.dagSize,
+        m_deviceDescriptor.cuStreamSize * sizeof(Search_results));
     try
     {
         hash128_t* dag;
@@ -88,7 +90,7 @@ bool CUDAMiner::initEpoch()
                            // Eventually resume mining when changing coin or epoch (NiceHash)
         }
 
-            // create buffer for cache
+        // create buffer for cache
         try
         {
             CUDA_CALL(cudaMalloc((void**)&light, m_epochContext.lightSize));
@@ -129,10 +131,6 @@ bool CUDAMiner::initEpoch()
         // Release the pause flag if any
         resume(MinerPauseEnum::PauseDueToInsufficientMemory);
         resume(MinerPauseEnum::PauseDueToInitEpochError);
-
-
-        ReportGPUMemoryUsage(RequiredTotalMemory, m_deviceDescriptor.totalMemory);
-
 
         HostToDevice(light, m_epochContext.lightCache, m_epochContext.lightSize);
 
@@ -186,6 +184,7 @@ void CUDAMiner::workLoop()
                 setEpoch(current);
                 if (!initEpoch())
                     break;
+                freeCache();
 
                 // As DAG generation takes a while we need to
                 // ensure we're on latest job, not on the one

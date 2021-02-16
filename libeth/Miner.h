@@ -301,7 +301,7 @@ public:
       : Worker(_name + std::to_string(_index)), m_index(_index)
     {}
 
-    ~Miner() override;
+    ~Miner() override = default;
 
     DeviceDescriptor getDescriptor();
     void setWork(WorkPackage const& _work);
@@ -324,14 +324,15 @@ protected:
     virtual bool initDevice() = 0;
     virtual bool initEpoch() = 0;
     void setEpoch(WorkPackage const& _newWp);
+    void freeCache();
 
 
     WorkPackage work() const;
     void ReportSolution(const h256& header, uint64_t nonce);
     void ReportDAGDone(uint64_t dagSize, uint32_t dagTime);
-    void ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMemory);
     void ReportGPUNoMemoryAndPause(
         std::string mem, uint64_t requiredTotalMemory, uint64_t totalMemory);
+    void ReportGPUMemoryRequired(uint32_t lightSize, uint64_t dagSize, uint32_t misc);
     void updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept;
 
     const unsigned m_index = 0;           // Ordinal index of the Instance (not the device)

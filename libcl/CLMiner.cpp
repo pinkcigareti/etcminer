@@ -318,6 +318,7 @@ void CLMiner::workLoop()
                     setEpoch(w);
                     if (!initEpoch())
                         break;
+                    freeCache();
                     w = work();
                 }
 
@@ -629,7 +630,11 @@ bool CLMiner::initEpoch()
 {
     m_initialized = false;
     auto startInit = chrono::steady_clock::now();
-    size_t RequiredMemory = m_epochContext.dagSize + m_epochContext.lightSize;
+    size_t RequiredMemory =
+        m_epochContext.dagSize + m_epochContext.lightSize + sizeof(SearchResults) + 32;
+
+    ReportGPUMemoryRequired(
+        m_epochContext.lightSize, m_epochContext.dagSize, sizeof(SearchResults) + 32);
 
     // Check whether the current device has sufficient memory every time we recreate the dag
     if (m_deviceDescriptor.totalMemory < RequiredMemory)
@@ -642,8 +647,6 @@ bool CLMiner::initEpoch()
     // Release the pause flag if any
     resume(MinerPauseEnum::PauseDueToInsufficientMemory);
     resume(MinerPauseEnum::PauseDueToInitEpochError);
-
-    ReportGPUMemoryUsage(RequiredMemory, m_deviceDescriptor.totalMemory);
 
     try
     {

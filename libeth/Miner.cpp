@@ -21,12 +21,6 @@ DeviceDescriptor Miner::getDescriptor()
     return m_deviceDescriptor;
 }
 
-Miner::~Miner()
-{
-    if (m_epochContext.lightCache)
-        delete[] m_epochContext.lightCache;
-}
-
 void Miner::setWork(WorkPackage const& _work)
 {
     {
@@ -56,10 +50,13 @@ void Miner::ReportDAGDone(uint64_t dagSize, uint32_t dagTime)
           << setprecision(1) << dagTime / 1000.0f << " seconds";
 }
 
-void Miner::ReportGPUMemoryUsage(uint64_t requiredTotalMemory, uint64_t totalMemory)
+void Miner::ReportGPUMemoryRequired(uint32_t lightSize, uint64_t dagSize, uint32_t misc)
 {
-    cnote << "Using " << dev::getFormattedMemory(float(requiredTotalMemory)) << " out of "
-          << dev::getFormattedMemory(float(totalMemory)) << " GPU memory";
+    cnote << "Required GPU mem: Total "
+          << dev::getFormattedMemory(float(lightSize + dagSize + misc)) << ", Cache "
+          << dev::getFormattedMemory(float(lightSize)) << ", DAG "
+          << dev::getFormattedMemory(float(dagSize)) << ", Miscellaneous "
+          << dev::getFormattedMemory(float(misc));
 }
 
 void Miner::ReportGPUNoMemoryAndPause(string mem, uint64_t requiredMemory, uint64_t totalMemory)
@@ -180,10 +177,13 @@ void Miner::setEpoch(WorkPackage const& w)
     m_epochContext.lightSize = ethash::get_light_cache_size(ec.light_cache_num_items);
     m_epochContext.dagNumItems = ec.full_dataset_num_items;
     m_epochContext.dagSize = ethash::get_full_dataset_size(ec.full_dataset_num_items);
-    if (m_epochContext.lightCache)
-        delete[] m_epochContext.lightCache;
     m_epochContext.lightCache = new ethash_hash512[m_epochContext.lightNumItems];
     memcpy(m_epochContext.lightCache, ec.light_cache, m_epochContext.lightSize);
+}
+
+void Miner::freeCache()
+{
+    delete[] m_epochContext.lightCache;
 }
 
 }  // namespace eth
