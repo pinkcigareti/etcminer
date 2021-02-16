@@ -51,7 +51,7 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 ### Master branch build status
 
-[![CircleCI](https://circleci.com/gh/no-fee-ethereum-mining/nsfminer.svg?style=svg)](https://circleci.com/gh/no-fee-ethereum-mining/fminer)
+[![CircleCI](https://circleci.com/gh/no-fee-ethereum-mining/nsfminer.svg?style=svg)](https://circleci.com/gh/no-fee-ethereum-mining/nsfminer)
 
 ### Building from source
 
