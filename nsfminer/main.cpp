@@ -1205,6 +1205,9 @@ int main(int argc, char** argv)
         if (GetConsoleMode(hOut, &dwMode))
             SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
     }
+
+    // prevent system sleep
+    SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED);
 #endif
 
     if (argc < 2)
