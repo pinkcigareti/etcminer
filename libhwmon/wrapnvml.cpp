@@ -28,7 +28,7 @@ wrap_nvml_handle* wrap_nvml_create()
      */
 #if defined(_WIN32)
     /* Windows */
-#define libnvidia_ml "%PROGRAMFILES%/NVIDIA Corporation/NVSMI/nvml.dll"
+#define libnvidia_ml "nvml.dll"
 #elif defined(__linux) && (defined(__i386__) || defined(__ARM_ARCH_7A__))
 /* In rpm based linux distributions link name is with extension .1 */
     /* 32-bit linux assumed */
@@ -52,11 +52,11 @@ wrap_nvml_handle* wrap_nvml_create()
     void* nvml_dll = wrap_dlopen(tmp);
     if (nvml_dll == nullptr)
     {
-        cwarn << "Failed to obtain all required NVML function pointers";
+        cwarn << "Failed to load NVML library";
         cwarn << "NVIDIA hardware monitoring disabled";
         return nullptr;
     }
-        
+
     nvmlh = (wrap_nvml_handle*)calloc(1, sizeof(wrap_nvml_handle));
 
     nvmlh->nvml_dll = nvml_dll;
