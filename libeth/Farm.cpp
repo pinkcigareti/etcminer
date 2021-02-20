@@ -248,14 +248,12 @@ bool Farm::start()
             m_miners.back()->startWorking();
         }
 
-        m_isMining.store(true, memory_order_relaxed);
     }
     else
-    {
         for (auto const& miner : m_miners)
             miner->startWorking();
-        m_isMining.store(true, memory_order_relaxed);
-    }
+
+    m_isMining.store(true, memory_order_relaxed);
 
     return m_isMining.load(memory_order_relaxed);
 }
@@ -277,6 +275,7 @@ void Farm::stop()
                 miner->kick_miner();
             }
             m_miners.clear();
+            m_telemetry.miners.clear();
             m_isMining.store(false, memory_order_relaxed);
         }
     }

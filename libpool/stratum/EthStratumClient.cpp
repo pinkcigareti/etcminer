@@ -436,6 +436,7 @@ void EthStratumClient::workloop_timer_elapsed(const boost::system::error_code& e
                     clear_response_pleas();
                     m_io_service.post(m_io_strand.wrap(
                         boost::bind(&EthStratumClient::processResponse, this, jRes)));
+                    return;
                 }
                 else
                 {
