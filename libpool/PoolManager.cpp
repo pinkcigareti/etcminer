@@ -384,12 +384,10 @@ void PoolManager::rotateConnect()
         // forever
         if (m_Settings.connectionMaxRetries &&
             (m_connectionAttempt >= m_Settings.connectionMaxRetries))
-        {
             m_Settings.connections.erase(m_Settings.connections.begin() + m_activeConnectionIdx);
-        }
     }
     // Rotate connections if above max attempts threshold
-    else
+    else if (m_connectionAttempt >= m_Settings.connectionMaxRetries)
     {
         m_connectionAttempt = 0;
         m_activeConnectionIdx++;
@@ -436,9 +434,7 @@ void PoolManager::rotateConnect()
                 &PoolManager::reconnecttimer_elapsed, this, boost::asio::placeholders::error)));
         }
         else
-        {
             p_client->connect();
-        }
     }
     else
     {
