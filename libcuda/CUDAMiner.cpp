@@ -34,7 +34,7 @@ CUDAMiner::~CUDAMiner()
 
 bool CUDAMiner::initDevice()
 {
-    cnote << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.cuName
+    cnote << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.boardName
           << " (Compute " + m_deviceDescriptor.cuCompute + ") Memory : "
           << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
@@ -282,13 +282,12 @@ void CUDAMiner::enumDevices(minerMap& _DevicesCollection)
             else
                 deviceDescriptor = DeviceDescriptor();
 
-            deviceDescriptor.name = string(props.name);
+            deviceDescriptor.boardName = string(props.name);
             deviceDescriptor.cuDetected = true;
             deviceDescriptor.uniqueId = uniqueId;
             deviceDescriptor.type = DeviceTypeEnum::Gpu;
             deviceDescriptor.cuDeviceIndex = i;
             deviceDescriptor.cuDeviceOrdinal = i;
-            deviceDescriptor.cuName = string(props.name);
             deviceDescriptor.totalMemory = totalMem;
             deviceDescriptor.cuCompute = (to_string(props.major) + "." + to_string(props.minor));
             deviceDescriptor.cuComputeMajor = props.major;

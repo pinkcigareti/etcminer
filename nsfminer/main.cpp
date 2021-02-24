@@ -1022,7 +1022,7 @@ public:
                 default:
                     break;
                 }
-                cout << setw(30) << (it->second.name).substr(0, 28);
+                cout << setw(30) << (it->second.boardName).substr(0, 28);
 #if ETH_ETHASHCUDA
                 if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
                 {

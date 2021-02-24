@@ -125,12 +125,11 @@ struct DeviceDescriptor
 
     string uniqueId;     // For GPUs this is the PCI ID
     size_t totalMemory;  // Total memory available by device
-    string name;         // Device Name
+    string boardName;
 
     int cpCpuNumer;  // For CPU
 
     bool cuDetected;  // For CUDA detected devices
-    string cuName;
     unsigned int cuDeviceOrdinal;
     unsigned int cuDeviceIndex;
     string cuCompute;
@@ -148,11 +147,10 @@ struct DeviceDescriptor
     string clDeviceVersion;
     unsigned int clDeviceVersionMajor;
     unsigned int clDeviceVersionMinor;
-    string clBoardName;
     string clNvCompute;
+    string clArch;
     unsigned int clNvComputeMajor;
     unsigned int clNvComputeMinor;
-    string clName;
     unsigned int clPlatformId;
     string clPlatformName;
     ClPlatformTypeEnum clPlatformType = ClPlatformTypeEnum::Unknown;
