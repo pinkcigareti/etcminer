@@ -787,11 +787,9 @@ public:
                 cout << "\nMiner experimental features:\n\n"
                      << "    The 'log effective hash rate' verbosity option enables\n"
                      << "    the calculation and per GPU display of the effective hash rate\n"
-                     << "    based on shares accepted over time. NOTE: At this time this\n"
-                     << "    only works for pools with constant difficulty and the reported\n"
-                     << "    effective hash rates will only become statistically significant\n"
-                     << "    after many hours. These results are meaningless for pools\n"
-                     << "    that use the variable difficulty stratum2 protocol (nicehash).\n\n";
+                     << "    based on shares accepted over time.\n"
+                     << "    Effective hash rates will only become statistically significant\n"
+                     << "    after many hours.\n\n";
             return false;
         }
 
