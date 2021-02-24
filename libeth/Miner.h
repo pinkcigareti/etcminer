@@ -17,6 +17,7 @@
 #include <string>
 
 #include "EthashAux.h"
+
 #include <libdev/Common.h>
 #include <libdev/Log.h>
 #include <libdev/Worker.h>
@@ -90,6 +91,7 @@ struct SolutionAccountType
     unsigned rejected = 0;
     unsigned wasted = 0;
     unsigned failed = 0;
+    unsigned collectAcceptd = 0;
     std::chrono::steady_clock::time_point tstamp = std::chrono::steady_clock::now();
     string str()
     {
@@ -183,7 +185,7 @@ struct TelemetryAccountType
     bool paused = false;
     HwSensorsType sensors;
     SolutionAccountType solutions;
-    double effectiveHashRate = 0;
+    double effectiveShares = 0;
 };
 
 /// Keeps track of progress for farm and miners
@@ -238,25 +240,28 @@ struct TelemetryType
             magnitude++;
         }
 
-        ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude]
-           << EthReset << " - ";
+        double t(std::chrono::duration_cast<std::chrono::microseconds>(duration).count() / 1e6);
+        if (g_logOptions & LOG_EFFECTIVE)
+        {
+            ehr = (farm.effectiveShares / t) / pow(1000.0f, magnitude);
+            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
+               << suffixes[magnitude] << EthReset "(" << ehr << ')' << " - ";
+        }
+        else
+            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
+               << suffixes[magnitude] << EthReset << " - ";
         telemetry.push_back(ss.str());
 
         int i = -1;  // Current miner index
-        for (TelemetryAccountType miner : miners)
+        for (TelemetryAccountType& miner : miners)
         {
             ss.str("");
             i++;
-            hr = miner.hashrate;
-            if (hr > 0.0f)
-                hr /= pow(1000.0f, magnitude);
+            hr = miner.hashrate / pow(1000.0f, magnitude);
 
             if (g_logOptions & LOG_EFFECTIVE)
             {
-                ehr = float(miner.effectiveHashRate);
-                while (ehr > 1000.0)
-                    ehr /= 1000.0f;
-
+                ehr = (miner.effectiveShares / t) / pow(1000.0f, magnitude);
                 ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
                    << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed
                    << ehr << ")" EthReset;
