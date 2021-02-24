@@ -1433,18 +1433,6 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
             // at the end of the transmission.
             m_newjobprocessed = true;
         }
-        else if (_method == "mining.set_target")
-        {
-            string target;
-            jPrm = responseObject.get("params", Json::Value::null);
-            if (jPrm.isArray())
-            {
-                target = jPrm[0].asString();
-                target = dev::padLeft(target, 64, '0');
-                target = "0x" + target;
-                m_session->nextWorkBoundary = h256(target);
-            }
-        }
         else if (_method == "mining.set_difficulty" && m_conn->StratumMode() == ETHEREUMSTRATUM)
         {
             if (m_conn->StratumMode() == EthStratumClient::ETHEREUMSTRATUM)
@@ -1457,15 +1445,6 @@ void EthStratumClient::processResponse(Json::Value& responseObject)
 
                     m_session->nextWorkBoundary = h256(dev::getTargetFromDiff(nextWorkDifficulty));
                     m_session->nextWorkDifficulty = nextWorkDifficulty;
-                }
-            }
-            else if (m_conn->StratumMode() == EthStratumClient::STRATUM)
-            {
-                jPrm = responseObject.get("params", Json::Value::null);
-                if (jPrm.isArray())
-                {
-                    double nextWorkDifficulty = max(jPrm[0].asDouble(), 0.0001);
-                    m_session->nextWorkBoundary = h256(dev::getTargetFromDiff(nextWorkDifficulty));
                 }
             }
             else
