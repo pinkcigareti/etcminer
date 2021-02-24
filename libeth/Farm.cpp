@@ -355,7 +355,10 @@ void Farm::accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accountin
     if (_accounting == SolutionAccountingEnum::Accepted)
     {
         m_telemetry.farm.solutions.accepted++;
+        atomic_fetch_add((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 1);
         m_telemetry.miners.at(_minerIdx).solutions.accepted++;
+        atomic_fetch_add(
+            (atomic<unsigned>*)&m_telemetry.miners.at(_minerIdx).solutions.collectAcceptd, 1);
     }
     else if (_accounting == SolutionAccountingEnum::Wasted)
     {
@@ -379,7 +382,7 @@ void Farm::accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accountin
  * @brief Gets the solutions account for the whole farm
  */
 
-SolutionAccountType Farm::getSolutions()
+SolutionAccountType& Farm::getSolutions()
 {
     return m_telemetry.farm.solutions;
 }
@@ -387,15 +390,16 @@ SolutionAccountType Farm::getSolutions()
 /**
  * @brief Gets the solutions account for single miner
  */
-SolutionAccountType Farm::getSolutions(unsigned _minerIdx)
+SolutionAccountType& Farm::getSolutions(unsigned _minerIdx)
 {
+    static SolutionAccountType nullSolAccount;
     try
     {
         return m_telemetry.miners.at(_minerIdx).solutions;
     }
     catch (const exception&)
     {
-        return SolutionAccountType();
+        return nullSolAccount;
     }
 }
 
@@ -455,7 +459,6 @@ void Farm::collectData(const boost::system::error_code& ec)
 
     // Reset hashrate (it will accumulate from miners)
     float farm_hr = 0.0f;
-    double t(PoolManager::p().getCurrentClientDuration() / 1e6);
     double difficulty(PoolManager::p().getPoolDifficulty());
 
     // Process miners
@@ -464,13 +467,14 @@ void Farm::collectData(const boost::system::error_code& ec)
         int minerIdx = miner->Index();
         float hr = (miner->paused() ? 0.0f : miner->RetrieveHashRate());
         farm_hr += hr;
-        uint32_t accepted = m_telemetry.miners.at(minerIdx).solutions.accepted;
-        double ehr = 0;
-        if (accepted)
-            ehr = difficulty / (t / accepted);
+        unsigned colAccepted = atomic_exchange(
+            (atomic<unsigned>*)&m_telemetry.miners.at(minerIdx).solutions.collectAcceptd, 0);
+        m_telemetry.miners.at(minerIdx).effective += difficulty * colAccepted;
+        colAccepted =
+            atomic_exchange((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 0);
+        m_telemetry.farm.effective += difficulty * colAccepted;
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
-        m_telemetry.miners.at(minerIdx).effectiveHashRate = ehr;
 
         if (m_Settings.hwMon)
         {
