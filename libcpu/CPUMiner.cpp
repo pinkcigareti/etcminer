@@ -123,7 +123,7 @@ CPUMiner::~CPUMiner()
  */
 bool CPUMiner::initDevice()
 {
-    cnote << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.name
+    cnote << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.boardName
           << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
 #if defined(__linux__)
@@ -289,7 +289,7 @@ void CPUMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
         s.clear();
         s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
           << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
-        deviceDescriptor.name = s.str();
+        deviceDescriptor.boardName = s.str();
         deviceDescriptor.uniqueId = uniqueId;
         deviceDescriptor.type = DeviceTypeEnum::Cpu;
         deviceDescriptor.totalMemory = getTotalPhysAvailableMemory();

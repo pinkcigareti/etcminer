@@ -505,7 +505,6 @@ void CLMiner::enumDevices(minerMap& _DevicesCollection)
                 deviceDescriptor = DeviceDescriptor();
 
             // Fill the blanks by OpenCL means
-            deviceDescriptor.name = device.getInfo<CL_DEVICE_NAME>();
             deviceDescriptor.type = clDeviceType;
             deviceDescriptor.uniqueId = uniqueId;
             deviceDescriptor.clDetected = true;
@@ -516,8 +515,6 @@ void CLMiner::enumDevices(minerMap& _DevicesCollection)
             deviceDescriptor.clPlatformVersionMajor = platformVersionMajor;
             deviceDescriptor.clPlatformVersionMinor = platformVersionMinor;
             deviceDescriptor.clDeviceOrdinal = dIdx;
-
-            deviceDescriptor.clName = deviceDescriptor.name;
             deviceDescriptor.clDeviceVersion = device.getInfo<CL_DEVICE_VERSION>();
             deviceDescriptor.clDeviceVersionMajor =
                 stoi(deviceDescriptor.clDeviceVersion.substr(7, 1));
@@ -538,6 +535,17 @@ void CLMiner::enumDevices(minerMap& _DevicesCollection)
                     &siz);
                 deviceDescriptor.clNvCompute = to_string(deviceDescriptor.clNvComputeMajor) + "." +
                                                to_string(deviceDescriptor.clNvComputeMinor);
+                deviceDescriptor.boardName = device.getInfo<CL_DEVICE_NAME>();
+            }
+            // AMD GPU
+            else
+            {
+                deviceDescriptor.clArch = device.getInfo<CL_DEVICE_NAME>();
+                size_t s1;
+                char s[256];
+#define CL_DEVICE_BOARD_NAME_AMD 0x4038
+                clGetDeviceInfo(device.get(), CL_DEVICE_BOARD_NAME_AMD, sizeof(s), s, &s1);
+                deviceDescriptor.boardName = s;
             }
 
             // Upsert Devices Collection
@@ -613,7 +621,7 @@ bool CLMiner::initDevice()
     }
 
     ostringstream s;
-    s << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.clName;
+    s << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.boardName;
 
     if (!m_deviceDescriptor.clNvCompute.empty())
         s << " (Compute " + m_deviceDescriptor.clNvCompute + ")";
@@ -707,7 +715,7 @@ bool CLMiner::initEpoch()
            that way, we can use the dag generate opencl code and fall back on
            the default kernel if loading fails for whatever reason */
         bool loadedBinary = false;
-        string device_name = m_deviceDescriptor.clName;
+        string device_name = m_deviceDescriptor.clArch;
         if (m_deviceDescriptor.clBin)
         {
             ifstream kernel_file;
