@@ -652,10 +652,6 @@ bool CLMiner::initEpoch()
                        // Eventually resume mining when changing coin or epoch (NiceHash)
     }
 
-    // Release the pause flag if any
-    resume(MinerPauseEnum::PauseDueToInsufficientMemory);
-    resume(MinerPauseEnum::PauseDueToInitEpochError);
-
     try
     {
         char options[256] = {0};
@@ -679,6 +675,52 @@ bool CLMiner::initEpoch()
 
         m_dagItems = m_epochContext.dagNumItems;
 
+        bool dagOk = true;
+        // create buffer for dag
+        try
+        {
+            // Create mining buffers
+            m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
+            m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
+            m_light = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
+#if 0
+	    try
+	    {
+                m_dag[0] =
+                    new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize);
+                m_dag[1] = nullptr;
+	    }
+	    catch (cl::Error const&)
+#endif
+            {
+                dagOk = false;
+            };
+            if (!dagOk)
+            {
+                unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
+                m_dag[0] = new cl::Buffer(
+                    *m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + delta);
+                m_dag[1] = new cl::Buffer(
+                    *m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - delta);
+            }
+        }
+        catch (cl::Error const& err)
+        {
+            if ((err.err() == CL_OUT_OF_RESOURCES) || (err.err() == CL_OUT_OF_HOST_MEMORY))
+            {
+                cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
+                pause(MinerPauseEnum::PauseDueToInitEpochError);
+                free_buffers();
+                return false;
+            }
+            else
+                throw;
+        }
+
+        // Release the pause flag if any
+        resume(MinerPauseEnum::PauseDueToInsufficientMemory);
+        resume(MinerPauseEnum::PauseDueToInitEpochError);
+
         // patch source code
         // note: The kernels here are simply compiled version of the respective .cl kernels
         // into a byte array by bin2h.cmake. There is no need to load the file by hand in runtime
@@ -693,6 +735,8 @@ bool CLMiner::initEpoch()
         addDefinition(code, "MAX_OUTPUTS", c_maxSearchResults);
         addDefinition(code, "PLATFORM", static_cast<unsigned>(m_deviceDescriptor.clPlatformType));
         addDefinition(code, "COMPUTE", computeCapability);
+        if (!dagOk)
+            addDefinition(code, "SPLIT_DAG", 1);
 
         // create miner OpenCL program
         cl::Program::Sources sources{{code.data(), code.size()}};
@@ -771,28 +815,8 @@ bool CLMiner::initEpoch()
             }
         }
 
-        // create buffer for dag
         try
         {
-            unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
-            m_dag[0] =
-                new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 + delta);
-            m_dag[1] =
-                new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize / 2 - delta);
-            try
-            {
-                m_light = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
-            }
-            catch (cl::Error const& err)
-            {
-                if ((err.err() == CL_OUT_OF_RESOURCES) || (err.err() == CL_OUT_OF_HOST_MEMORY))
-                {
-                    // Ok, no room for light cache on GPU. Try allocating on host
-                    ccrit << "No room on GPU";
-                    throw;
-                }
-            }
-
             // If we have a binary kernel to use, let's try it
             // otherwise just do a normal opencl load
             if (loadedBinary)
@@ -807,21 +831,18 @@ bool CLMiner::initEpoch()
         }
         catch (cl::Error const& err)
         {
-            cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
+            cwarn << ethCLErrorHelper("Creating opencl failed", err);
             pause(MinerPauseEnum::PauseDueToInitEpochError);
             free_buffers();
             return false;
         }
         // create buffer for header
-        m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
 
         m_searchKernel.setArg(1, m_header[0]);
         m_searchKernel.setArg(2, *m_dag[0]);
         m_searchKernel.setArg(3, *m_dag[1]);
         m_searchKernel.setArg(4, m_dagItems);
 
-        // create mining buffers
-        m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
         m_queue->enqueueWriteBuffer(*m_searchBuffer, CL_FALSE, 0, sizeof(zerox3), zerox3);
 
 
@@ -861,7 +882,7 @@ bool CLMiner::initEpoch()
         m_searchKernel.setArg(3, *m_dag[1]);        // Supply DAG buffer to kernel.
         m_searchKernel.setArg(4, m_dagItems);
 
-        ReportDAGDone(m_epochContext.dagSize, uint32_t(dagTime.count()));
+        ReportDAGDone(m_epochContext.dagSize, uint32_t(dagTime.count()), dagOk);
     }
     catch (cl::Error const& err)
     {
