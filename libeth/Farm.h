@@ -96,8 +96,8 @@ public:
     }
 
     void accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accounting);
-    SolutionAccountType getSolutions();
-    SolutionAccountType getSolutions(unsigned _minerIdx);
+    SolutionAccountType& getSolutions();
+    SolutionAccountType& getSolutions(unsigned _minerIdx);
 
     using SolutionFound = std::function<void(const Solution&)>;
     using MinerRestart = std::function<void()>;
