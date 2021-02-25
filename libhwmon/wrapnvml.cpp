@@ -27,29 +27,48 @@ wrap_nvml_handle* wrap_nvml_create()
      * I used turned up nothing, so for now it's not going to work on OSX.
      */
 #if defined(_WIN32)
-    /* Windows */
-#define libnvidia_ml "nvml.dll"
+
+/* Windows */
+#define libnvidia_ml1 "nvml.dll"
+#define libnvidia_ml2 "%WINDIR%/system32/nvml.dll"
+#define libnvidia_ml3 "%PROGRAMFILES%/NVIDIA Corporation/NVSMI/nvml.dll"
+
 #elif defined(__linux) && (defined(__i386__) || defined(__ARM_ARCH_7A__))
+
 /* In rpm based linux distributions link name is with extension .1 */
-    /* 32-bit linux assumed */
+/* 32-bit linux assumed */
 #define libnvidia_ml "libnvidia-ml.so.1"
 #elif defined(__linux)
-    /* 64-bit linux assumed */
+/* 64-bit linux assumed */
 #define libnvidia_ml "libnvidia-ml.so.1"
+
 #else
+
 #define libnvidia_ml ""
 #warning "Unrecognized platform: need NVML DLL path for this platform..."
     return nullptr;
+
 #endif
+
+    void* nvml_dll = nullptr;
+    char tmp[512] = libnvidia_ml;
 
 #ifdef _WIN32
-    char tmp[512];
-    ExpandEnvironmentStringsA(libnvidia_ml, tmp, sizeof(tmp));
+    ExpandEnvironmentStringsA(libnvidia_ml1, tmp, sizeof(tmp));
+    nvml_dll = wrap_dlopen(tmp);
+    if (nvml_dll == nullptr)
+    {
+        ExpandEnvironmentStringsA(libnvidia_ml2, tmp, sizeof(tmp));
+        nvml_dll = wrap_dlopen(tmp);
+        if (nvml_dll == nullptr)
+        {
+            ExpandEnvironmentStringsA(libnvidia_ml3, tmp, sizeof(tmp));
+            nvml_dll = wrap_dlopen(tmp);
+        }
+    }
 #else
-    char tmp[512] = libnvidia_ml;
+    nvml_dll = wrap_dlopen(tmp);
 #endif
-
-    void* nvml_dll = wrap_dlopen(tmp);
     if (nvml_dll == nullptr)
     {
         cwarn << "Failed to load NVML library";
