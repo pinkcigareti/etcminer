@@ -243,7 +243,7 @@ struct TelemetryType
         double t(std::chrono::duration_cast<std::chrono::microseconds>(duration).count() / 1e6);
         if (g_logOptions & LOG_EFFECTIVE)
         {
-            ehr = (farm.effectiveShares / t) / pow(1000.0f, magnitude);
+            ehr = float((farm.effectiveShares / t) / pow(1000.0f, magnitude));
             ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
                << suffixes[magnitude] << EthReset "(" << ehr << ')' << " - ";
         }
@@ -261,7 +261,7 @@ struct TelemetryType
 
             if (g_logOptions & LOG_EFFECTIVE)
             {
-                ehr = (miner.effectiveShares / t) / pow(1000.0f, magnitude);
+                ehr = float((miner.effectiveShares / t) / pow(1000.0f, magnitude));
                 ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
                    << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed
                    << ehr << ")" EthReset;
