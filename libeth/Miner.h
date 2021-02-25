@@ -332,7 +332,7 @@ protected:
 
     WorkPackage work() const;
     void ReportSolution(const h256& header, uint64_t nonce);
-    void ReportDAGDone(uint64_t dagSize, uint32_t dagTime);
+    void ReportDAGDone(uint64_t dagSize, uint32_t dagTime, bool notSplit);
     void ReportGPUNoMemoryAndPause(
         std::string mem, uint64_t requiredTotalMemory, uint64_t totalMemory);
     void ReportGPUMemoryRequired(uint32_t lightSize, uint64_t dagSize, uint32_t misc);

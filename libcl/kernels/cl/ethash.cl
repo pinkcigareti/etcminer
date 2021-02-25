@@ -241,16 +241,28 @@ typedef union
     uint uints[16];
 } compute_hash_share;
 
+#ifdef SPLIT_DAG
 #define MIX(x)                                                                       \
     do                                                                               \
     {                                                                                \
         buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size; \
         uint idx = buffer[lane_idx];                                                 \
-        __global hash128_t const* g_dag;                                             \
-        g_dag = (__global hash128_t const*)_g_dag2[idx & 1];                         \
+        __global hash128_t const* g_dag =                                            \
+            (__global hash128_t const*)_g_dag2[idx & 1];                             \
         mix = fnv(mix, g_dag[idx >> 1].uint8s[thread_id]);                           \
         mem_fence(CLK_LOCAL_MEM_FENCE);                                              \
     } while (0)
+#else
+#define MIX(x)                                                                       \
+    do                                                                               \
+    {                                                                                \
+        buffer[get_local_id(0)] = fnv(init0 ^ (a + x), ((uint*)&mix)[x]) % dag_size; \
+        uint idx = buffer[lane_idx];                                                 \
+        __global hash128_t const* g_dag = (__global hash128_t const*)_g_dag0;        \
+        mix = fnv(mix, g_dag[idx].uint8s[thread_id]);                                \
+        mem_fence(CLK_LOCAL_MEM_FENCE);                                              \
+    } while (0)
+#endif
 
 // NOTE: This struct must match the one defined in CLMiner.cpp
 struct SearchResults
@@ -272,7 +284,9 @@ __attribute__((reqd_work_group_size(WORKSIZE, 1, 1))) __kernel void search(
     const uint thread_id = get_local_id(0) % 4;
     const uint hash_id = get_local_id(0) / 4;
     const uint gid = get_global_id(0);
+#ifdef SPLIT_DAG
     __global const ulong8* _g_dag2[2] = {_g_dag0, _g_dag1};
+#endif
 
     __local compute_hash_share sharebuf[WORKSIZE / 4];
     __local uint buffer[WORKSIZE];
@@ -455,6 +469,7 @@ __kernel void GenerateDAG(uint start, __global const uint16* _Cache, __global ui
     SHA3_512(DAGNode.qwords);
 
     __global Node* DAG;
+#ifdef SPLIT_DAG
     if (NodeIdx & 2)
         DAG = (__global Node*)_DAG1;
     else
@@ -462,4 +477,8 @@ __kernel void GenerateDAG(uint start, __global const uint16* _Cache, __global ui
     NodeIdx &= ~2;
     // if (NodeIdx < DAG_SIZE)
     DAG[(NodeIdx / 2) | (NodeIdx & 1)] = DAGNode;
+#else
+    DAG = (__global Node *) _DAG0;
+    DAG[NodeIdx] = DAGNode; 
+#endif
 }

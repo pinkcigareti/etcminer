@@ -140,9 +140,11 @@ bool CUDAMiner::initEpoch()
         ethash_generate_dag(
             m_epochContext.dagSize, m_block_multiple, m_deviceDescriptor.cuBlockSize, m_streams[0]);
 
-        ReportDAGDone(m_epochContext.dagSize, uint32_t(chrono::duration_cast<chrono::milliseconds>(
-                                                  chrono::steady_clock::now() - startInit)
-                                                           .count()));
+        ReportDAGDone(m_epochContext.dagSize,
+            uint32_t(
+                chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - startInit)
+                    .count()),
+            true);
     }
     catch (const cuda_runtime_error& ec)
     {
