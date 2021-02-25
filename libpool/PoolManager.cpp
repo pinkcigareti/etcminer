@@ -387,7 +387,7 @@ void PoolManager::rotateConnect()
             m_Settings.connections.erase(m_Settings.connections.begin() + m_activeConnectionIdx);
     }
     // Rotate connections if above max attempts threshold
-    else if (m_connectionAttempt >= m_Settings.connectionMaxRetries)
+    if (!m_Settings.connections.empty() && (m_connectionAttempt >= m_Settings.connectionMaxRetries))
     {
         m_connectionAttempt = 0;
         m_activeConnectionIdx++;
@@ -397,7 +397,7 @@ void PoolManager::rotateConnect()
     }
 
     if (!m_Settings.connections.empty() &&
-        m_Settings.connections.at(m_activeConnectionIdx)->Host() != "exit")
+        (m_Settings.connections.at(m_activeConnectionIdx)->Host() != "exit"))
     {
         if (p_client)
             p_client = nullptr;
@@ -423,7 +423,6 @@ void PoolManager::rotateConnect()
                          to_string(m_Settings.connections.at(m_activeConnectionIdx)->Port());
         p_client->setConnection(m_Settings.connections.at(m_activeConnectionIdx));
         cnote << "Selected pool " << m_selectedHost;
-
 
         if ((m_connectionAttempt > 1) && (m_Settings.delayBeforeRetry > 0))
         {
