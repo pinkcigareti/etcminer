@@ -240,7 +240,8 @@ struct TelemetryType
             magnitude++;
         }
 
-        double t(std::chrono::duration_cast<std::chrono::microseconds>(duration).count() / 1e6);
+        double t(
+            std::chrono::duration_cast<std::chrono::microseconds>(duration + hours).count() / 1e6);
         if (g_logOptions & LOG_EFFECTIVE)
         {
             ehr = float((farm.effectiveShares / t) / pow(1000.0f, magnitude));
