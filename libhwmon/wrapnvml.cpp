@@ -51,9 +51,9 @@ wrap_nvml_handle* wrap_nvml_create()
 #endif
 
     void* nvml_dll = nullptr;
-    char tmp[512] = libnvidia_ml;
 
 #ifdef _WIN32
+    char tmp[512];
     ExpandEnvironmentStringsA(libnvidia_ml1, tmp, sizeof(tmp));
     nvml_dll = wrap_dlopen(tmp);
     if (nvml_dll == nullptr)
@@ -67,7 +67,7 @@ wrap_nvml_handle* wrap_nvml_create()
         }
     }
 #else
-    nvml_dll = wrap_dlopen(tmp);
+    nvml_dll = wrap_dlopen(libnvidia_ml);
 #endif
     if (nvml_dll == nullptr)
     {
