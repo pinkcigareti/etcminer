@@ -67,8 +67,6 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 To meet the community, ask general questions and chat about the miner join [the ethminer channel on Gitter][Gitter].
 
-All bug reports, pull requests and code reviews are very much welcome.
-
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
