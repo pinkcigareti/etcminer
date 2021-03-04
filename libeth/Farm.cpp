@@ -355,10 +355,10 @@ void Farm::accountSolution(unsigned _minerIdx, SolutionAccountingEnum _accountin
     if (_accounting == SolutionAccountingEnum::Accepted)
     {
         m_telemetry.farm.solutions.accepted++;
-        atomic_fetch_add((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 1);
+        atomic_fetch_add((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 1u);
         m_telemetry.miners.at(_minerIdx).solutions.accepted++;
         atomic_fetch_add(
-            (atomic<unsigned>*)&m_telemetry.miners.at(_minerIdx).solutions.collectAcceptd, 1);
+            (atomic<unsigned>*)&m_telemetry.miners.at(_minerIdx).solutions.collectAcceptd, 1u);
     }
     else if (_accounting == SolutionAccountingEnum::Wasted)
     {
@@ -461,7 +461,7 @@ void Farm::collectData(const boost::system::error_code& ec)
     float farm_hr = 0.0f;
     double difficulty(PoolManager::p().getPoolDifficulty());
     unsigned colAccepted =
-        atomic_exchange((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 0);
+        atomic_exchange((atomic<unsigned>*)&m_telemetry.farm.solutions.collectAcceptd, 0u);
     m_telemetry.farm.effectiveShares += difficulty * colAccepted;
 
     // Process miners
@@ -471,7 +471,7 @@ void Farm::collectData(const boost::system::error_code& ec)
         float hr = (miner->paused() ? 0.0f : miner->RetrieveHashRate());
         farm_hr += hr;
         colAccepted = atomic_exchange(
-            (atomic<unsigned>*)&m_telemetry.miners.at(minerIdx).solutions.collectAcceptd, 0);
+            (atomic<unsigned>*)&m_telemetry.miners.at(minerIdx).solutions.collectAcceptd, 0u);
         m_telemetry.miners.at(minerIdx).effectiveShares += difficulty * colAccepted;
         m_telemetry.miners.at(minerIdx).hashrate = hr;
         m_telemetry.miners.at(minerIdx).paused = miner->paused();
