@@ -71,7 +71,10 @@ string dev::getThreadName()
     buffer[127] = 0;
     return buffer;
 #else
-    return ThreadLocalLogName::name ? ThreadLocalLogName::name : "<unknown>";
+    if (ThreadLocalLogName::name)
+        return ThreadLocalLogName::name;
+    setThreadName("miner");
+    return "miner";
 #endif
 }
 
