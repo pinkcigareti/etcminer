@@ -19,6 +19,7 @@
     * [miner_pausegpu](#miner_pausegpu)
     * [miner_setverbosity](#miner_setverbosity)
     * [miner_setnonce](#miner_setnonce)
+    * [miner_getnonce](#miner_getnonce)
 
 ## Introduction
 
@@ -97,6 +98,7 @@ This shows the API interface is live and listening on the configured endpoint.
 | [miner_pausegpu](#miner_pausegpu) | Pause/Start mining on specific GPU | Yes
 | [miner_setverbosity](#miner_setverbosity) | Set console log verbosity level | Yes
 | [miner_setnonce](#miner_setnonce) | Sets the miner's start nonce | Yes
+| [miner_getnonce](#miner_getnonce) | Gets miner's start nonce | no
 
 ### api_authorize
 
@@ -546,5 +548,27 @@ and expect a result like this:
   "id": 1,
   "jsonrpc": "2.0",
   "result": true
+}
+```
+
+### miner_getnonce
+
+Set the miner's start nonce. Can be useful in avoiding search range overlaps in multi-miner situations.
+
+```js
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "method": "miner_getnonce"
+}
+```
+
+and expect a result like this:
+
+```js
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": "123"
 }
 ```

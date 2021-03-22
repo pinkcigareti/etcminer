@@ -110,6 +110,7 @@ public:
     unsigned get_tstop() { return m_Settings.tempStop; }
     void submitProof(Solution const& _s);
     void set_nonce(std::string nonce) { m_Settings.nonce = nonce; }
+    std::string get_nonce() { return m_Settings.nonce; }
 
 private:
     std::atomic<bool> m_paused = {false};

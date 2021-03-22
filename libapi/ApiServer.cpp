@@ -653,6 +653,11 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         jResponse["result"] = true;
     }
 
+    else if (_method == "miner_getnonce")
+    {
+        jResponse["result"] = Farm::f().get_nonce();
+    }
+
     else
     {
         // Any other method not found
