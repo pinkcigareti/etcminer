@@ -184,7 +184,11 @@ void Miner::setEpoch(WorkPackage const& w)
 
 void Miner::freeCache()
 {
-    delete[] m_epochContext.lightCache;
+    if (m_epochContext.lightCache)
+    {
+        delete[] m_epochContext.lightCache;
+        m_epochContext.lightCache = nullptr;
+    }
 }
 
 }  // namespace eth
