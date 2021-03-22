@@ -184,7 +184,12 @@ void CUDAMiner::workLoop()
             if (current.epoch != last.epoch)
             {
                 setEpoch(current);
-                if (!initEpoch())
+                if (g_seqDAG)
+                    g_seqDAGMutex.lock();
+                bool b = initEpoch();
+                if (g_seqDAG)
+                    g_seqDAGMutex.unlock();
+                if (!b)
                     break;
                 freeCache();
 

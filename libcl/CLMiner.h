@@ -59,12 +59,11 @@ public:
 protected:
     bool initDevice() override;
 
-    bool initEpoch() override;
-
     void kick_miner() override;
 
 private:
     void workLoop() override;
+    bool initEpoch();
 
     cl::Kernel m_searchKernel;
     cl::Kernel m_dagKernel;

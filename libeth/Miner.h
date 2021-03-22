@@ -26,6 +26,9 @@
 
 using namespace std;
 
+extern mutex g_seqDAGMutex;
+extern bool g_seqDAG;
+
 namespace dev
 {
 namespace eth

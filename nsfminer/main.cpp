@@ -51,7 +51,9 @@ using namespace boost::program_options;
 
 // Global vars
 bool g_running = false;
+bool g_seqDAG = false;
 bool g_exitOnError = false;  // Whether or not miner should exit on mining threads errors
+mutex g_seqDAGMutex;
 
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service;  // The IO service itself
@@ -557,7 +559,12 @@ public:
 
             ("devices", value<vector<unsigned>>()->multitoken(),
 
-                "List of space separated device numbers to be used");
+                "List of space separated device numbers to be used")
+
+            ("seq",
+
+                "Generate DAG sequentially, one GPU at a time.");
+
 #if API_CORE
 
         api.add_options()
@@ -797,6 +804,7 @@ public:
         g_logNoColor = vm.count("nocolor");
         g_logSyslog = vm.count("syslog");
         g_exitOnError = vm.count("exit");
+        g_seqDAG = vm.count("seq");
 
         m_PoolSettings.getWorkPollInterval = vm["getwork-recheck"].as<unsigned>();
         m_PoolSettings.connectionMaxRetries = vm["retry-max"].as<unsigned>();

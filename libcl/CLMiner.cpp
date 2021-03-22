@@ -316,7 +316,12 @@ void CLMiner::workLoop()
                 if (current.epoch != w.epoch)
                 {
                     setEpoch(w);
-                    if (!initEpoch())
+                    if (g_seqDAG)
+                        g_seqDAGMutex.lock();
+                    bool b = initEpoch();
+                    if (g_seqDAG)
+                        g_seqDAGMutex.unlock();
+                    if (!b)
                         break;
                     freeCache();
                     w = work();
