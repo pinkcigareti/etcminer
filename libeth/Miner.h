@@ -285,7 +285,7 @@ struct TelemetryType
         }
     };
 
-    std::string str1()
+    std::string str()
     {
         std::list<string> vs;
         strvec(vs);
