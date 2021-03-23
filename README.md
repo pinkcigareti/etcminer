@@ -63,12 +63,12 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 ## Contribute
 
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
+[![Gitter](https://img.shields.io/gitter/room/no-fee-ethereum-mining/nsfminer.svg)][Gitter]
 
-To meet the community, ask general questions and chat about the miner join [the ethminer channel on Gitter][Gitter].
+To meet the community, ask general questions and chat about the miner join [the nsfminer channel on Gitter][Gitter].
 
 ## License
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
 
-[Gitter]: https://gitter.im/ethereum-mining/ethminer
+[Gitter]: https://gitter.im/no-fee-ethereum-mining/nsfminer
