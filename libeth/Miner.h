@@ -285,20 +285,19 @@ struct TelemetryType
         }
     };
 
-    std::string str()
+    std::string str1()
     {
         std::list<string> vs;
         strvec(vs);
-	if (vs.empty()) return "";
-	if (vs.size() == 1) return vs.front();
-        std::string s(vs.front());
-        vs.pop_front();
-        while (vs.size() != 1)
+        std::string s;
+        while (!vs.empty())
         {
-            s += vs.front() + ", ";
+            s += vs.front();
             vs.pop_front();
+            if (!vs.empty())
+                s += ", ";
         }
-        return s + vs.front();
+        return s;
     }
 };
 
