@@ -289,6 +289,8 @@ struct TelemetryType
     {
         std::list<string> vs;
         strvec(vs);
+	if (vs.empty()) return "";
+	if (vs.size() == 1) return vs.front();
         std::string s(vs.front());
         vs.pop_front();
         while (vs.size() != 1)
