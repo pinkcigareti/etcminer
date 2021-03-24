@@ -387,7 +387,9 @@ void PoolManager::rotateConnect()
             m_Settings.connections.erase(m_Settings.connections.begin() + m_activeConnectionIdx);
     }
     // Rotate connections if above max attempts threshold
-    if (!m_Settings.connections.empty() && (m_connectionAttempt >= m_Settings.connectionMaxRetries))
+    if (!m_Settings.connections.empty() &&
+        m_Settings.connectionMaxRetries != 0 &&
+        (m_connectionAttempt >= m_Settings.connectionMaxRetries))
     {
         m_connectionAttempt = 0;
         m_activeConnectionIdx++;
