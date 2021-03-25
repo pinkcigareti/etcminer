@@ -688,7 +688,6 @@ bool CLMiner::initEpoch()
             m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
             m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
             m_light = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
-#if 0
 	    try
 	    {
                 m_dag[0] =
@@ -696,10 +695,10 @@ bool CLMiner::initEpoch()
                 m_dag[1] = nullptr;
 	    }
 	    catch (cl::Error const&)
-#endif
             {
                 dagOk = false;
-            };
+            }
+
             if (!dagOk)
             {
                 unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;
