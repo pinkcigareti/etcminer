@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -19,8 +20,7 @@
 using namespace dev;
 using namespace std;
 
-struct SchemeAttributes
-{
+struct SchemeAttributes {
     ProtocolFamily family;
     SecureLevel secure;
     unsigned version;
@@ -58,39 +58,26 @@ static map<string, SchemeAttributes> s_schemes = {
 
     {"simulation", {ProtocolFamily::SIMULATION, SecureLevel::NONE, 999}}};
 
-static bool url_decode(const string& in, string& out)
-{
+static bool url_decode(const string& in, string& out) {
     out.clear();
     out.reserve(in.size());
-    for (size_t i = 0; i < in.size(); ++i)
-    {
-        if (in[i] == '%')
-        {
-            if (i + 3 <= in.size())
-            {
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (in[i] == '%') {
+            if (i + 3 <= in.size()) {
                 int value = 0;
                 istringstream is(in.substr(i + 1, 2));
-                if (is >> hex >> value)
-                {
+                if (is >> hex >> value) {
                     out += static_cast<char>(value);
                     i += 2;
-                }
-                else
-                {
+                } else {
                     return false;
                 }
-            }
-            else
-            {
+            } else {
                 return false;
             }
-        }
-        else if (in[i] == '+')
-        {
+        } else if (in[i] == '+') {
             out += ' ';
-        }
-        else
-        {
+        } else {
             out += in[i];
         }
     }
@@ -102,8 +89,7 @@ static bool url_decode(const string& in, string& out)
   refer to https://cpp-netlib.org/0.10.1/in_depth/uri.html
 */
 
-URI::URI(string uri, bool _sim) : m_uri{move(uri)}
-{
+URI::URI(string uri, bool _sim) : m_uri{move(uri)} {
     regex sch_auth("^([a-zA-Z0-9\\+]{1,})\\:\\/\\/(.*)$");
     smatch matches;
     if (!regex_search(m_uri, matches, sch_auth, regex_constants::match_default))
@@ -127,15 +113,12 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
     if ((s_schemes.find(m_scheme) == s_schemes.end()))
         throw runtime_error("Invalid scheme");
 
-
     // Now let's see if authority part can be split into userinfo and "the rest"
     regex usr_url("^(.*)\\@(.*)$");
-    if (regex_search(m_authority, matches, usr_url, regex_constants::match_default))
-    {
+    if (regex_search(m_authority, matches, usr_url, regex_constants::match_default)) {
         m_userinfo = matches[1].str();
         m_urlinfo = matches[2].str();
-    }
-    else
+    } else
         m_urlinfo = m_authority;
 
     /*
@@ -149,8 +132,7 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
       the beginning of password
 
     */
-    if (!m_userinfo.empty())
-    {
+    if (!m_userinfo.empty()) {
         // Save all parts enclosed in backticks into a dictionary
         // and replace them with tokens in the authority
         regex btick("`((?:[^`])*)`");
@@ -158,14 +140,12 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
         auto btick_blocks_begin = sregex_iterator(m_authority.begin(), m_authority.end(), btick);
         auto btick_blocks_end = sregex_iterator();
         int i = 0;
-        for (sregex_iterator it = btick_blocks_begin; it != btick_blocks_end; ++it)
-        {
+        for (sregex_iterator it = btick_blocks_begin; it != btick_blocks_end; ++it) {
             smatch match = *it;
             string match_str = match[1].str();
             btick_blocks["_" + to_string(i++)] = match[1].str();
         }
-        if (btick_blocks.size())
-        {
+        if (btick_blocks.size()) {
             map<string, string>::iterator it;
             for (it = btick_blocks.begin(); it != btick_blocks.end(); it++)
                 boost::replace_all(m_userinfo, "`" + it->second + "`", "`" + it->first + "`");
@@ -176,14 +156,10 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
         usr_patterns.push_back(regex("^(.*)\\:(.*)$"));
         usr_patterns.push_back(regex("^(.*)\\.(.*)$"));
         bool usrMatchFound = false;
-        for (size_t i = 0; i < usr_patterns.size() && !usrMatchFound; i++)
-        {
-            if (regex_search(
-                    m_userinfo, matches, usr_patterns.at(i), regex_constants::match_default))
-            {
+        for (size_t i = 0; i < usr_patterns.size() && !usrMatchFound; i++) {
+            if (regex_search(m_userinfo, matches, usr_patterns.at(i), regex_constants::match_default)) {
                 usrMatchFound = true;
-                switch (i)
-                {
+                switch (i) {
                 case 0:
                     m_user = matches[1].str();
                     m_worker = matches[2].str();
@@ -208,11 +184,9 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
             m_user = m_userinfo;
 
         // Replace all tokens with their respective values
-        if (btick_blocks.size())
-        {
+        if (btick_blocks.size()) {
             map<string, string>::iterator it;
-            for (it = btick_blocks.begin(); it != btick_blocks.end(); it++)
-            {
+            for (it = btick_blocks.begin(); it != btick_blocks.end(); it++) {
                 boost::replace_all(m_userinfo, "`" + it->first + "`", it->second);
                 boost::replace_all(m_user, "`" + it->first + "`", it->second);
                 boost::replace_all(m_worker, "`" + it->first + "`", it->second);
@@ -233,24 +207,18 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
       - host:port/path
     */
     size_t offset = m_urlinfo.find('/');
-    if (offset != string::npos)
-    {
+    if (offset != string::npos) {
         m_hostinfo = m_urlinfo.substr(0, offset);
         m_pathinfo = m_urlinfo.substr(offset);
-    }
-    else
-    {
+    } else {
         m_hostinfo = m_urlinfo;
     }
-    boost::algorithm::to_lower(m_hostinfo);  // needed to ensure we properly hit "exit" as host
+    boost::algorithm::to_lower(m_hostinfo); // needed to ensure we properly hit "exit" as host
     regex host_pattern("^(.*)\\:([0-9]{1,5})$");
-    if (regex_search(m_hostinfo, matches, host_pattern, regex_constants::match_default))
-    {
+    if (regex_search(m_hostinfo, matches, host_pattern, regex_constants::match_default)) {
         m_host = matches[1].str();
         m_port = boost::lexical_cast<uint16_t>(matches[2].str());
-    }
-    else
-    {
+    } else {
         m_host = m_hostinfo;
     }
 
@@ -261,8 +229,7 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
     /*
       Eventually split path info into path query fragment
     */
-    if (!m_pathinfo.empty())
-    {
+    if (!m_pathinfo.empty()) {
         // Url Decode Path
 
         vector<regex> path_patterns;
@@ -270,14 +237,10 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
         path_patterns.push_back(regex("(\\/.*)\\#(.*)$"));
         path_patterns.push_back(regex("(\\/.*)\\?(.*)$"));
         bool pathMatchFound = false;
-        for (size_t i = 0; i < path_patterns.size() && !pathMatchFound; i++)
-        {
-            if (regex_search(
-                    m_pathinfo, matches, path_patterns.at(i), regex_constants::match_default))
-            {
+        for (size_t i = 0; i < path_patterns.size() && !pathMatchFound; i++) {
+            if (regex_search(m_pathinfo, matches, path_patterns.at(i), regex_constants::match_default)) {
                 pathMatchFound = true;
-                switch (i)
-                {
+                switch (i) {
                 case 0:
                     m_path = matches[1].str();
                     m_query = matches[2].str();
@@ -305,8 +268,7 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
     // Determine host type
     boost::system::error_code ec;
     boost::asio::ip::address address = boost::asio::ip::address::from_string(m_host, ec);
-    if (!ec)
-    {
+    if (!ec) {
         // This is a valid Ip Address
         if (address.is_v4())
             m_hostType = UriHostNameType::IPV4;
@@ -314,13 +276,10 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
             m_hostType = UriHostNameType::IPV6;
 
         m_isLoopBack = address.is_loopback();
-    }
-    else
-    {
+    } else {
         // Check if valid DNS hostname
-        regex hostNamePattern(
-            "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-"
-            "Za-z0-9\\-]*[A-Za-z0-9])$");
+        regex hostNamePattern("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-"
+                              "Za-z0-9\\-]*[A-Za-z0-9])$");
         if (regex_match(m_host, hostNamePattern))
             m_hostType = UriHostNameType::Dns;
         else
@@ -359,44 +318,26 @@ URI::URI(string uri, bool _sim) : m_uri{move(uri)}
         m_worker = tmpStr;
 }
 
-ProtocolFamily URI::Family() const
-{
-    return s_schemes[m_scheme].family;
-}
+ProtocolFamily URI::Family() const { return s_schemes[m_scheme].family; }
 
-unsigned URI::Version() const
-{
-    return s_schemes[m_scheme].version;
-}
+unsigned URI::Version() const { return s_schemes[m_scheme].version; }
 
-string URI::UserDotWorker() const
-{
+string URI::UserDotWorker() const {
     string _ret = m_user;
     if (!m_worker.empty())
         _ret.append("." + m_worker);
     return _ret;
 }
 
-SecureLevel URI::SecLevel() const
-{
-    return s_schemes[m_scheme].secure;
-}
+SecureLevel URI::SecLevel() const { return s_schemes[m_scheme].secure; }
 
-UriHostNameType URI::HostNameType() const
-{
-    return m_hostType;
-}
+UriHostNameType URI::HostNameType() const { return m_hostType; }
 
-bool URI::IsLoopBack() const
-{
-    return m_isLoopBack;
-}
+bool URI::IsLoopBack() const { return m_isLoopBack; }
 
-string URI::KnownSchemes(ProtocolFamily family)
-{
+string URI::KnownSchemes(ProtocolFamily family) {
     string schemes;
-    for (const auto& s : s_schemes)
-    {
+    for (const auto& s : s_schemes) {
         if ((s.second.family == family) && (s.second.version != 999))
             schemes += s.first + " ";
     }

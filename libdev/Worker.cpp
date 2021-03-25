@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -16,39 +17,30 @@
 using namespace std;
 using namespace dev;
 
-void Worker::startWorking()
-{
+void Worker::startWorking() {
     //	cnote << "startWorking for thread" << m_name;
     unique_lock<mutex> l(workerWorkMutex);
 
-    if (m_work)
-    {
+    if (m_work) {
         WorkerState ex = WorkerState::Stopped;
         m_state.compare_exchange_strong(ex, WorkerState::Starting);
-    }
-    else
-    {
+    } else {
         m_state = WorkerState::Starting;
         m_work.reset(new thread([&]() {
             setThreadName(m_name.c_str());
             //			cnote << "Thread begins";
-            while (m_state != WorkerState::Killing)
-            {
+            while (m_state != WorkerState::Killing) {
                 WorkerState ex = WorkerState::Starting;
                 bool ok = m_state.compare_exchange_strong(ex, WorkerState::Started);
                 //				cnote << "Trying to set Started: Thread was" << (unsigned)ex << "; "
                 //<< ok;
                 (void)ok;
 
-                try
-                {
+                try {
                     workLoop();
-                }
-                catch (exception const& _e)
-                {
+                } catch (exception const& _e) {
                     ccrit << "Exception thrown in Worker thread: " << _e.what();
-                    if (g_exitOnError)
-                    {
+                    if (g_exitOnError) {
                         ccrit << "Terminating due to --exit";
                         raise(SIGTERM);
                     }
@@ -72,21 +64,17 @@ void Worker::startWorking()
         this_thread::sleep_for(chrono::microseconds(20));
 }
 
-void Worker::triggerStopWorking()
-{
+void Worker::triggerStopWorking() {
     unique_lock<mutex> l(workerWorkMutex);
-    if (m_work)
-    {
+    if (m_work) {
         WorkerState ex = WorkerState::Started;
         m_state.compare_exchange_strong(ex, WorkerState::Stopping);
     }
 }
 
-void Worker::stopWorking()
-{
+void Worker::stopWorking() {
     unique_lock<mutex> l(workerWorkMutex);
-    if (m_work)
-    {
+    if (m_work) {
         WorkerState ex = WorkerState::Started;
         m_state.compare_exchange_strong(ex, WorkerState::Stopping);
 
@@ -95,11 +83,9 @@ void Worker::stopWorking()
     }
 }
 
-Worker::~Worker()
-{
+Worker::~Worker() {
     unique_lock<mutex> l(workerWorkMutex);
-    if (m_work)
-    {
+    if (m_work) {
         m_state.exchange(WorkerState::Killing);
         m_work->join();
         m_work.reset();

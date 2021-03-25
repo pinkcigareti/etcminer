@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -11,18 +12,11 @@
 
 #if defined(_WIN32)
 
-void* wrap_dlopen(const char* filename)
-{
-    return (void*)LoadLibrary(filename);
-}
+void* wrap_dlopen(const char* filename) { return (void*)LoadLibrary(filename); }
 
-void* wrap_dlsym(void* h, const char* sym)
-{
-    return (void*)GetProcAddress((HINSTANCE)h, sym);
-}
+void* wrap_dlsym(void* h, const char* sym) { return (void*)GetProcAddress((HINSTANCE)h, sym); }
 
-int wrap_dlclose(void* h)
-{
+int wrap_dlclose(void* h) {
     /* FreeLibrary returns non-zero on success */
     return (!FreeLibrary((HINSTANCE)h));
 }
@@ -30,19 +24,10 @@ int wrap_dlclose(void* h)
 #else
 
 /* assume we can use dlopen itself... */
-void* wrap_dlopen(const char* filename)
-{
-    return dlopen(filename, RTLD_NOW);
-}
+void* wrap_dlopen(const char* filename) { return dlopen(filename, RTLD_NOW); }
 
-void* wrap_dlsym(void* h, const char* sym)
-{
-    return dlsym(h, sym);
-}
+void* wrap_dlsym(void* h, const char* sym) { return dlsym(h, sym); }
 
-int wrap_dlclose(void* h)
-{
-    return dlclose(h);
-}
+int wrap_dlclose(void* h) { return dlclose(h); }
 
 #endif

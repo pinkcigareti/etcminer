@@ -20,12 +20,9 @@ extern boost::asio::io_service g_io_service;
 
 using namespace std;
 
-namespace dev
-{
-namespace eth
-{
-struct Session
-{
+namespace dev {
+namespace eth {
+struct Session {
     // Tstamp of sessio start
     chrono::steady_clock::time_point start = chrono::steady_clock::now();
     // Whether or not worker is subscribed
@@ -33,15 +30,11 @@ struct Session
     // Whether or not worker is authorized
     atomic<bool> authorized = {false};
     // Total duration of session in minutes
-    unsigned long duration()
-    {
-        return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start))
-            .count();
+    unsigned long duration() {
+        return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start)).count();
     }
-    uint64_t usDuration()
-    {
-        return (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start))
-            .count();
+    uint64_t usDuration() {
+        return (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start)).count();
     }
 
     // EthereumStratum (1 and 2)
@@ -51,27 +44,24 @@ struct Session
     // Length of extranonce in bytes
     unsigned int extraNonceSizeBytes = 0;
     // Next work target
-    h256 nextWorkBoundary =
-        h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
+    h256 nextWorkBoundary = h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
     double nextWorkDifficulty = 0;
 
     // EthereumStratum (2 only)
     bool firstMiningSet = false;
-    unsigned int timeout = 30;  // Default to 30 seconds
+    unsigned int timeout = 30; // Default to 30 seconds
     string sessionId = "";
     string workerId = "";
     unsigned int epoch = 0;
     chrono::steady_clock::time_point lastTxStamp = chrono::steady_clock::now();
 };
 
-class PoolClient
-{
-public:
+class PoolClient {
+  public:
     virtual ~PoolClient() noexcept = default;
 
     // Sets the connection definition to be used by the client
-    void setConnection(std::shared_ptr<URI> _conn)
-    {
+    void setConnection(std::shared_ptr<URI> _conn) {
         m_conn = _conn;
         m_conn->Responds(false);
     }
@@ -89,17 +79,10 @@ public:
     virtual bool isConnected() { return m_connected.load(memory_order_relaxed); }
     virtual bool isPendingState() { return false; }
 
-    virtual bool isSubscribed()
-    {
-        return (m_session ? m_session->subscribed.load(memory_order_relaxed) : false);
-    }
-    virtual bool isAuthorized()
-    {
-        return (m_session ? m_session->authorized.load(memory_order_relaxed) : false);
-    }
+    virtual bool isSubscribed() { return (m_session ? m_session->subscribed.load(memory_order_relaxed) : false); }
+    virtual bool isAuthorized() { return (m_session ? m_session->authorized.load(memory_order_relaxed) : false); }
 
-    virtual string ActiveEndPoint()
-    {
+    virtual string ActiveEndPoint() {
         return (m_connected.load(memory_order_relaxed) ? " [" + toString(m_endpoint) + "]" : "");
     }
 
@@ -117,8 +100,8 @@ public:
 
     unique_ptr<Session> m_session = nullptr;
 
-protected:
-    std::atomic<bool> m_connected = {false};  // This is related to socket ! Not session
+  protected:
+    std::atomic<bool> m_connected = {false}; // This is related to socket ! Not session
 
     boost::asio::ip::basic_endpoint<boost::asio::ip::tcp> m_endpoint;
 
@@ -130,5 +113,5 @@ protected:
     Connected m_onConnected;
     WorkReceived m_onWorkReceived;
 };
-}  // namespace eth
-}  // namespace dev
+} // namespace eth
+} // namespace dev

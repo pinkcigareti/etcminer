@@ -42,26 +42,23 @@
 #define CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV 0x4001
 #endif
 
-#define CL_TARGET_BATCH_TIME 0.3F  // seconds
+#define CL_TARGET_BATCH_TIME 0.3F // seconds
 
-namespace dev
-{
-namespace eth
-{
-class CLMiner : public Miner
-{
-public:
+namespace dev {
+namespace eth {
+class CLMiner : public Miner {
+  public:
     CLMiner(unsigned _index, DeviceDescriptor& _device);
     ~CLMiner() override;
 
     static void enumDevices(minerMap& _DevicesCollection);
 
-protected:
+  protected:
     bool initDevice() override;
 
     void kick_miner() override;
 
-private:
+  private:
     void workLoop() override;
     bool initEpoch();
 
@@ -77,46 +74,37 @@ private:
     cl::Buffer* m_header = nullptr;
     cl::Buffer* m_searchBuffer = nullptr;
 
-    void free_buffers()
-    {
+    void free_buffers() {
         m_abortMutex.lock();
-        if (m_dag[0])
-        {
+        if (m_dag[0]) {
             delete m_dag[0];
             m_dag[0] = nullptr;
         }
-        if (m_dag[1])
-        {
+        if (m_dag[1]) {
             delete m_dag[1];
             m_dag[1] = nullptr;
         }
-        if (m_light)
-        {
+        if (m_light) {
             delete m_light;
             m_light = nullptr;
         }
-        if (m_header)
-        {
+        if (m_header) {
             delete m_header;
             m_header = nullptr;
         }
-        if (m_searchBuffer)
-        {
+        if (m_searchBuffer) {
             delete m_searchBuffer;
             m_searchBuffer = nullptr;
         }
-        if (m_queue)
-        {
+        if (m_queue) {
             delete m_queue;
             m_queue = nullptr;
         }
-        if (m_abortqueue)
-        {
+        if (m_abortqueue) {
             delete m_abortqueue;
             m_abortqueue = nullptr;
         }
-        if (m_context)
-        {
+        if (m_context) {
             delete m_context;
             m_context = nullptr;
         }
@@ -126,5 +114,5 @@ private:
     std::mutex m_abortMutex;
 };
 
-}  // namespace eth
-}  // namespace dev
+} // namespace eth
+} // namespace dev

@@ -28,9 +28,8 @@ using namespace std::chrono;
 using boost::asio::ip::tcp;
 using namespace boost::placeholders;
 
-class ApiConnection
-{
-public:
+class ApiConnection {
+  public:
     ApiConnection(boost::asio::io_service::strand& _strand, int id, bool readonly, string password);
 
     ~ApiConnection() = default;
@@ -46,12 +45,11 @@ public:
 
     tcp::socket& socket() { return m_socket; }
 
-private:
+  private:
     void disconnect();
     void processRequest(Json::Value& jRequest, Json::Value& jResponse);
     void recvSocketData();
-    void onRecvSocketDataCompleted(
-        const boost::system::error_code& ec, std::size_t bytes_transferred);
+    void onRecvSocketDataCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void sendSocketData(Json::Value const& jReq, bool _disconnect = false);
     void sendSocketData(std::string const& _s, bool _disconnect = false);
     void onSendSocketDataCompleted(const boost::system::error_code& ec, bool _disconnect = false);
@@ -71,7 +69,7 @@ private:
     boost::asio::streambuf m_recvBuffer;
     Json::StreamWriterBuilder m_jSwBuilder;
 
-    std::string m_message;  // The internal message string buffer
+    std::string m_message; // The internal message string buffer
 
     bool m_readonly = false;
     std::string m_password = "";
@@ -79,16 +77,14 @@ private:
     bool m_is_authenticated = true;
 };
 
-
-class ApiServer
-{
-public:
+class ApiServer {
+  public:
     ApiServer(string address, int portnum, string password);
     bool isRunning() { return m_running.load(std::memory_order_relaxed); };
     void start();
     void stop();
 
-private:
+  private:
     void begin_accept();
     void handle_accept(std::shared_ptr<ApiConnection> session, boost::system::error_code ec);
 

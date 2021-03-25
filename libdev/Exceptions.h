@@ -17,33 +17,27 @@
 #include "CommonData.h"
 #include "FixedHash.h"
 
-namespace dev
-{
+namespace dev {
 /// Base class for all exceptions.
-struct Exception : virtual std::exception, virtual boost::exception
-{
+struct Exception : virtual std::exception, virtual boost::exception {
     Exception(const std::string& _message = std::string()) : m_message(std::move(_message)) {}
-    const char* what() const noexcept override
-    {
+    const char* what() const noexcept override {
         return m_message.empty() ? std::exception::what() : m_message.c_str();
     }
 
-private:
+  private:
     std::string m_message;
 };
 
-#define DEV_SIMPLE_EXCEPTION(X)                                   \
-    struct X : virtual Exception                                  \
-    {                                                             \
-        const char* what() const noexcept override { return #X; } \
+#define DEV_SIMPLE_EXCEPTION(X)                                                                                        \
+    struct X : virtual Exception {                                                                                     \
+        const char* what() const noexcept override { return #X; }                                                      \
     }
-
 
 DEV_SIMPLE_EXCEPTION(BadHexCharacter);
 
-struct ExternalFunctionFailure : virtual Exception
-{
-public:
+struct ExternalFunctionFailure : virtual Exception {
+  public:
     ExternalFunctionFailure(const std::string& _f) : Exception("Function " + _f + "() failed.") {}
 };
 
@@ -54,4 +48,4 @@ using errinfo_required = boost::error_info<struct tag_required, bigint>;
 using errinfo_got = boost::error_info<struct tag_got, bigint>;
 using RequirementError = boost::tuple<errinfo_required, errinfo_got>;
 
-}  // namespace dev
+} // namespace dev

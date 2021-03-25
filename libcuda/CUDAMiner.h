@@ -18,33 +18,29 @@
 #include <functional>
 
 #define MAX_STREAMS 4
-#define CU_TARGET_BATCH_TIME 0.9F  // seconds
+#define CU_TARGET_BATCH_TIME 0.9F // seconds
 
-namespace dev
-{
-namespace eth
-{
-class CUDAMiner : public Miner
-{
-public:
+namespace dev {
+namespace eth {
+class CUDAMiner : public Miner {
+  public:
     CUDAMiner(unsigned _index, DeviceDescriptor& _device);
     ~CUDAMiner() override;
 
     static int getNumDevices();
     static void enumDevices(minerMap& _DevicesCollection);
 
-protected:
+  protected:
     bool initDevice() override;
 
     bool initEpoch() override;
 
     void kick_miner() override;
 
-private:
+  private:
     void workLoop() override;
 
-    void search(
-        uint8_t const* header, uint64_t target, uint64_t _startN, const dev::eth::WorkPackage& w);
+    void search(uint8_t const* header, uint64_t target, uint64_t _startN, const dev::eth::WorkPackage& w);
 
     Search_results* m_search_buf[MAX_STREAMS];
     cudaStream_t m_streams[MAX_STREAMS];
@@ -54,6 +50,5 @@ private:
     std::mutex m_doneMutex;
 };
 
-
-}  // namespace eth
-}  // namespace dev
+} // namespace eth
+} // namespace dev

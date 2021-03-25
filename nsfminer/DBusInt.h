@@ -13,26 +13,22 @@
 
 using namespace std;
 
-class DBusInt
-{
-public:
-    DBusInt()
-    {
+class DBusInt {
+  public:
+    DBusInt() {
         dbus_error_init(&err);
         conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
         if (!conn)
             ccrit << "DBus error " << err.name << ": " << err.message;
         dbus_bus_request_name(conn, "eth.miner", DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
-        if (dbus_error_is_set(&err))
-        {
+        if (dbus_error_is_set(&err)) {
             cnote << "DBus error " << err.name << ": " << err.message;
             dbus_connection_close(conn);
         }
         cnote << "DBus initialized!";
     }
 
-    void send(const char* hash)
-    {
+    void send(const char* hash) {
         DBusMessage* msg;
         msg = dbus_message_new_signal("/eth/miner/hash", "eth.miner.monitor", "Hash");
         if (msg == nullptr)
@@ -43,7 +39,7 @@ public:
         dbus_message_unref(msg);
     }
 
-private:
+  private:
     DBusError err;
     DBusConnection* conn;
 };

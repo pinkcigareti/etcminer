@@ -29,20 +29,11 @@ using namespace std;
 extern mutex g_seqDAGMutex;
 extern bool g_seqDAG;
 
-namespace dev
-{
-namespace eth
-{
-enum class DeviceTypeEnum
-{
-    Unknown,
-    Cpu,
-    Gpu,
-    Accelerator
-};
+namespace dev {
+namespace eth {
+enum class DeviceTypeEnum { Unknown, Cpu, Gpu, Accelerator };
 
-enum class DeviceSubscriptionTypeEnum
-{
+enum class DeviceSubscriptionTypeEnum {
     None,
     OpenCL,
     Cuda,
@@ -50,54 +41,26 @@ enum class DeviceSubscriptionTypeEnum
 
 };
 
-enum class MinerType
-{
-    Mixed,
-    CL,
-    CUDA,
-    CPU
-};
+enum class MinerType { Mixed, CL, CUDA, CPU };
 
-enum class HwMonitorInfoType
-{
-    UNKNOWN,
-    NVIDIA,
-    AMD,
-    CPU
-};
+enum class HwMonitorInfoType { UNKNOWN, NVIDIA, AMD, CPU };
 
-enum class ClPlatformTypeEnum
-{
-    Unknown,
-    Amd,
-    Clover,
-    Nvidia,
-    Intel
-};
+enum class ClPlatformTypeEnum { Unknown, Amd, Clover, Nvidia, Intel };
 
-enum class SolutionAccountingEnum
-{
-    Accepted,
-    Rejected,
-    Wasted,
-    Failed
-};
+enum class SolutionAccountingEnum { Accepted, Rejected, Wasted, Failed };
 
-struct MinerSettings
-{
+struct MinerSettings {
     vector<unsigned> devices;
 };
 
-struct SolutionAccountType
-{
+struct SolutionAccountType {
     unsigned accepted = 0;
     unsigned rejected = 0;
     unsigned wasted = 0;
     unsigned failed = 0;
     unsigned collectAcceptd = 0;
     std::chrono::steady_clock::time_point tstamp = std::chrono::steady_clock::now();
-    string str()
-    {
+    string str() {
         string _ret = "A" + to_string(accepted);
         if (wasted)
             _ret.append(":W" + to_string(wasted));
@@ -109,13 +72,11 @@ struct SolutionAccountType
     };
 };
 
-struct HwSensorsType
-{
+struct HwSensorsType {
     int tempC = 0;
     int fanP = 0;
     double powerW = 0.0;
-    string str()
-    {
+    string str() {
         string _ret = to_string(tempC) + "C " + to_string(fanP) + "%";
         if (powerW)
             _ret.append(" " + boost::str(boost::format("%0.2f") % powerW) + "W");
@@ -123,18 +84,17 @@ struct HwSensorsType
     };
 };
 
-struct DeviceDescriptor
-{
+struct DeviceDescriptor {
     DeviceTypeEnum type = DeviceTypeEnum::Unknown;
     DeviceSubscriptionTypeEnum subscriptionType = DeviceSubscriptionTypeEnum::None;
 
-    string uniqueId;     // For GPUs this is the PCI ID
-    size_t totalMemory;  // Total memory available by device
+    string uniqueId;    // For GPUs this is the PCI ID
+    size_t totalMemory; // Total memory available by device
     string boardName;
 
-    int cpCpuNumer;  // For CPU
+    int cpCpuNumer; // For CPU
 
-    bool cuDetected;  // For CUDA detected devices
+    bool cuDetected; // For CUDA detected devices
     unsigned int cuDeviceOrdinal;
     unsigned int cuDeviceIndex;
     string cuCompute;
@@ -143,7 +103,7 @@ struct DeviceDescriptor
     unsigned int cuBlockSize;
     unsigned int cuStreamSize;
 
-    bool clDetected;  // For OpenCL detected devices
+    bool clDetected; // For OpenCL detected devices
     string clPlatformVersion;
     unsigned int clPlatformVersionMajor;
     unsigned int clPlatformVersionMinor;
@@ -163,26 +123,23 @@ struct DeviceDescriptor
     bool clBin;
 };
 
-struct HwMonitorInfo
-{
+struct HwMonitorInfo {
     HwMonitorInfoType deviceType = HwMonitorInfoType::UNKNOWN;
     string devicePciId;
     int deviceIndex = -1;
 };
 
 /// Pause mining
-enum MinerPauseEnum
-{
+enum MinerPauseEnum {
     PauseDueToOverHeating,
     PauseDueToAPIRequest,
     PauseDueToFarmPaused,
     PauseDueToInsufficientMemory,
     PauseDueToInitEpochError,
-    Pause_MAX  // Must always be last as a placeholder of max count
+    Pause_MAX // Must always be last as a placeholder of max count
 };
 
-struct TelemetryAccountType
-{
+struct TelemetryAccountType {
     string prefix = "";
     float hashrate = 0.0f;
     bool paused = false;
@@ -192,16 +149,14 @@ struct TelemetryAccountType
 };
 
 /// Keeps track of progress for farm and miners
-struct TelemetryType
-{
+struct TelemetryType {
     bool hwmon = false;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     TelemetryAccountType farm;
     std::vector<TelemetryAccountType> miners;
 
-    void strvec(std::list<string>& telemetry)
-    {
+    void strvec(std::list<string>& telemetry) {
         std::stringstream ss;
 
         /*
@@ -229,51 +184,42 @@ struct TelemetryType
         int hoursSize = (hours.count() > 9 ? (hours.count() > 99 ? 3 : 2) : 1);
         duration -= hours;
         auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
-        ss << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2)
-           << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset
-           << " ";
+        ss << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2) << minutes.count()
+           << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset << " ";
 
         const static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
         float ehr;
         int magnitude = 0;
-        while (hr > 1000.0f && magnitude <= 3)
-        {
+        while (hr > 1000.0f && magnitude <= 3) {
             hr /= 1000.0f;
             magnitude++;
         }
 
-        double t(
-            std::chrono::duration_cast<std::chrono::microseconds>(duration + hours).count() / 1e6);
+        double t(std::chrono::duration_cast<std::chrono::microseconds>(duration + hours).count() / 1e6);
 
-        if (g_logOptions & LOG_EFFECTIVE)
-        {
+        if (g_logOptions & LOG_EFFECTIVE) {
             ehr = float((farm.effectiveShares / t) / pow(1000.0f, magnitude));
-            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
-               << suffixes[magnitude] << EthReset "(" << ehr << ')' << " - ";
-        }
-        else
-            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
-               << suffixes[magnitude] << EthReset << " - ";
+            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset "("
+               << ehr << ')' << " - ";
+        } else
+            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset
+               << " - ";
         telemetry.push_back(ss.str());
 
-        int i = -1;  // Current miner index
-        for (TelemetryAccountType& miner : miners)
-        {
+        int i = -1; // Current miner index
+        for (TelemetryAccountType& miner : miners) {
             ss.str("");
             i++;
             hr = miner.hashrate / pow(1000.0f, magnitude);
 
-            if (g_logOptions & LOG_EFFECTIVE)
-            {
+            if (g_logOptions & LOG_EFFECTIVE) {
                 ehr = float((miner.effectiveShares / t) / pow(1000.0f, magnitude));
-                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
-                   << EthTeal << std::fixed << std::setprecision(2) << hr << '(' << std::fixed
-                   << ehr << ")" EthReset;
-            }
-            else
-                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " "
-                   << EthTeal << std::fixed << std::setprecision(2) << hr << EthReset;
+                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " " << EthTeal << std::fixed
+                   << std::setprecision(2) << hr << '(' << std::fixed << ehr << ")" EthReset;
+            } else
+                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " " << EthTeal << std::fixed
+                   << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
                 ss << " " << EthTeal << miner.sensors.str() << EthReset;
@@ -286,14 +232,12 @@ struct TelemetryType
         }
     };
 
-    std::string str()
-    {
+    std::string str() {
         std::list<string> vs;
         strvec(vs);
         std::string s;
         bool first = true;
-        while (!vs.empty())
-        {
+        while (!vs.empty()) {
             s += vs.front();
             vs.pop_front();
             if (!vs.empty() && !first)
@@ -304,13 +248,9 @@ struct TelemetryType
     }
 };
 
-
-class Miner : public Worker
-{
-public:
-    Miner(std::string const& _name, unsigned _index)
-      : Worker(_name + std::to_string(_index)), m_index(_index)
-    {}
+class Miner : public Worker {
+  public:
+    Miner(std::string const& _name, unsigned _index) : Worker(_name + std::to_string(_index)), m_index(_index) {}
 
     ~Miner() override = default;
 
@@ -331,23 +271,21 @@ public:
     std::atomic<bool> m_hung_miner = {false};
     bool m_initialized = false;
 
-protected:
+  protected:
     virtual bool initDevice() = 0;
     virtual bool initEpoch() = 0;
     void setEpoch(WorkPackage const& _newWp);
     void freeCache();
 
-
     WorkPackage work() const;
     void ReportSolution(const h256& header, uint64_t nonce);
     void ReportDAGDone(uint64_t dagSize, uint32_t dagTime, bool notSplit);
-    void ReportGPUNoMemoryAndPause(
-        std::string mem, uint64_t requiredTotalMemory, uint64_t totalMemory);
+    void ReportGPUNoMemoryAndPause(std::string mem, uint64_t requiredTotalMemory, uint64_t totalMemory);
     void ReportGPUMemoryRequired(uint32_t lightSize, uint64_t dagSize, uint32_t misc);
     void updateHashRate(uint32_t _groupSize, uint32_t _increment) noexcept;
 
-    const unsigned m_index = 0;           // Ordinal index of the Instance (not the device)
-    DeviceDescriptor m_deviceDescriptor;  // Info about the device
+    const unsigned m_index = 0;          // Ordinal index of the Instance (not the device)
+    DeviceDescriptor m_deviceDescriptor; // Info about the device
 
     EpochContext m_epochContext;
 
@@ -362,7 +300,7 @@ protected:
 
     uint32_t m_block_multiple;
 
-private:
+  private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;
 
     WorkPackage m_work;
@@ -373,5 +311,5 @@ private:
     uint64_t m_groupCount = 0;
 };
 
-}  // namespace eth
-}  // namespace dev
+} // namespace eth
+} // namespace dev

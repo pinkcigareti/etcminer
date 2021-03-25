@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -15,8 +16,7 @@
 using namespace std;
 using namespace dev;
 
-int dev::fromHex(char _i, WhenError _throw)
-{
+int dev::fromHex(char _i, WhenError _throw) {
     if (_i >= '0' && _i <= '9')
         return _i - '0';
     if (_i >= 'a' && _i <= 'f')
@@ -29,14 +29,12 @@ int dev::fromHex(char _i, WhenError _throw)
         return -1;
 }
 
-bytes dev::fromHex(string const& _s, WhenError _throw)
-{
+bytes dev::fromHex(string const& _s, WhenError _throw) {
     unsigned s = (_s[0] == '0' && _s[1] == 'x') ? 2 : 0;
     vector<uint8_t> ret;
     ret.reserve((_s.size() - s + 1) / 2);
 
-    if (_s.size() % 2)
-    {
+    if (_s.size() % 2) {
         int h = fromHex(_s[s++], WhenError::DontThrow);
         if (h != -1)
             ret.push_back(h);
@@ -45,8 +43,7 @@ bytes dev::fromHex(string const& _s, WhenError _throw)
         else
             return bytes();
     }
-    for (unsigned i = s; i < _s.size(); i += 2)
-    {
+    for (unsigned i = s; i < _s.size(); i += 2) {
         int h = fromHex(_s[i], WhenError::DontThrow);
         int l = fromHex(_s[i + 1], WhenError::DontThrow);
         if (h != -1 && l != -1)
@@ -59,8 +56,7 @@ bytes dev::fromHex(string const& _s, WhenError _throw)
     return ret;
 }
 
-bool dev::setenv(const char name[], const char value[], bool override)
-{
+bool dev::setenv(const char name[], const char value[], bool override) {
 #if _WIN32
     if (!override && getenv(name) != nullptr)
         return true;
@@ -71,8 +67,7 @@ bool dev::setenv(const char name[], const char value[], bool override)
 #endif
 }
 
-string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
-{
+string dev::getTargetFromDiff(double diff, HexPrefix _prefix) {
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
 
@@ -81,8 +76,7 @@ string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
 
     if (diff == 0)
         product = BigInteger("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-    else
-    {
+    else {
         diff = 1 / diff;
 
         BigInteger idiff(diff);
@@ -92,8 +86,7 @@ string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
         size_t ldiff = sdiff.length();
         size_t offset = sdiff.find(".");
 
-        if (offset != string::npos)
-        {
+        if (offset != string::npos) {
             // Number of decimal places
             size_t precision = (ldiff - 1) - offset;
 
@@ -134,24 +127,20 @@ string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
     return target;
 }
 
-double dev::getHashesToTarget(string _target)
-{
+double dev::getHashesToTarget(string _target) {
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
 
-    static BigInteger dividend(
-        "0xffff000000000000000000000000000000000000000000000000000000000000");
+    static BigInteger dividend("0xffff000000000000000000000000000000000000000000000000000000000000");
     BigInteger divisor(_target);
     return double(dividend / divisor);
 }
 
-string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[],
-    size_t _numsizes, ScaleSuffix _suffix)
-{
+string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[], size_t _numsizes,
+                          ScaleSuffix _suffix) {
     double _newvalue = _value;
     size_t i = 0;
-    while (_newvalue > _divisor && i <= (_numsizes - 1))
-    {
+    while (_newvalue > _divisor && i <= (_numsizes - 1)) {
         _newvalue /= _divisor;
         i++;
     }
@@ -163,27 +152,23 @@ string dev::getScaledSize(double _value, double _divisor, int _precision, string
     return _ret.str();
 }
 
-string dev::getFormattedHashes(double _hr, ScaleSuffix _suffix, int _precision)
-{
+string dev::getFormattedHashes(double _hr, ScaleSuffix _suffix, int _precision) {
     static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
     return dev::getScaledSize(_hr, 1000.0, _precision, suffixes, 4, _suffix);
 }
 
-string dev::getFormattedMemory(double _mem, ScaleSuffix _suffix, int _precision)
-{
+string dev::getFormattedMemory(double _mem, ScaleSuffix _suffix, int _precision) {
     static string suffixes[] = {"B", "KB", "MB", "GB"};
     return dev::getScaledSize(_mem, 1024.0, _precision, suffixes, 4, _suffix);
 }
 
-string dev::padLeft(string _value, size_t _length, char _fillChar)
-{
+string dev::padLeft(string _value, size_t _length, char _fillChar) {
     if (_length > _value.size())
         _value.insert(0, (_length - _value.size()), _fillChar);
     return _value;
 }
 
-string dev::padRight(string _value, size_t _length, char _fillChar)
-{
+string dev::padRight(string _value, size_t _length, char _fillChar) {
     if (_length > _value.size())
         _value.resize(_length, _fillChar);
     return _value;

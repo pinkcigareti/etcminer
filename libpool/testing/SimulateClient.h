@@ -22,9 +22,8 @@ using namespace std;
 using namespace dev;
 using namespace eth;
 
-class SimulateClient : public PoolClient, Worker
-{
-public:
+class SimulateClient : public PoolClient, Worker {
+  public:
     SimulateClient(unsigned const& block);
     ~SimulateClient() override;
 
@@ -35,7 +34,7 @@ public:
     void submitHashrate(uint64_t const& rate, string const& id) override;
     void submitSolution(const Solution& solution) override;
 
-private:
+  private:
     void workLoop() override;
 
     unsigned m_block;

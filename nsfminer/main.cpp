@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -52,11 +53,11 @@ using namespace boost::program_options;
 // Global vars
 bool g_running = false;
 bool g_seqDAG = false;
-bool g_exitOnError = false;  // Whether or not miner should exit on mining threads errors
+bool g_exitOnError = false; // Whether or not miner should exit on mining threads errors
 mutex g_seqDAGMutex;
 
 condition_variable g_shouldstop;
-boost::asio::io_service g_io_service;  // The IO service itself
+boost::asio::io_service g_io_service; // The IO service itself
 
 #if ETH_DBUS
 #include <nsfminer/DBusInt.h>
@@ -64,8 +65,7 @@ boost::asio::io_service g_io_service;  // The IO service itself
 
 static bool should_list;
 
-static void headers(vector<string>& h, bool color)
-{
+static void headers(vector<string>& h, bool color) {
     const string yellow(color ? EthYellow : "");
     const string white(color ? EthWhite : "");
     const string reset(color ? EthReset : "");
@@ -104,8 +104,7 @@ static void headers(vector<string>& h, bool color)
         ss << "CUDA " << v / 1000 << '.' << (v % 100) / 10 << ", ";
 
 #endif
-    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.'
-       << BOOST_VERSION % 100;
+    ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.' << BOOST_VERSION % 100;
     h.push_back(ss.str());
     ss.str("");
     vector<string> sv;
@@ -115,8 +114,7 @@ static void headers(vector<string>& h, bool color)
     h.push_back(ss.str());
 }
 
-static void on_help_module(string m)
-{
+static void on_help_module(string m) {
     static const vector<string> modules({
 #if ETH_ETHASHCL
         "cl",
@@ -139,51 +137,46 @@ static void on_help_module(string m)
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
 
-    throw boost::program_options::error(
-        "The --help-module parameter must be one of the following: "
+    throw boost::program_options::error("The --help-module parameter must be one of the following: "
 #if ETH_ETHASHCL
-        "cl, "
+                                        "cl, "
 #endif
 #if ETH_ETHASHCUDA
-        "cu, "
+                                        "cu, "
 #endif
 #if ETH_ETHASHCPU
-        "cp, "
+                                        "cp, "
 #endif
 #if API_CORE
-        "api, "
+                                        "api, "
 #endif
-        "con, test, misc, exp, "
+                                        "con, test, misc, exp, "
 #ifdef _WIN32
-        "env, "
+                                        "env, "
 #endif
-        "or reboot");
+                                        "or reboot");
 }
 
-static void on_nonce(string n)
-{
+static void on_nonce(string n) {
     for (const auto& c : n)
         if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F'))
             throw boost::program_options::error("The --nonce value must be a hex string");
 }
 
-static void on_verbosity(unsigned u)
-{
+static void on_verbosity(unsigned u) {
     if (u < LOG_NEXT)
         return;
     throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
 }
 
-static void on_hwmon(unsigned u)
-{
+static void on_hwmon(unsigned u) {
     if (u < 3)
         return;
     throw boost::program_options::error("The --HWMON value must be 0, 1 or 2");
 }
 
 #if API_CORE
-static void on_api_port(int i)
-{
+static void on_api_port(int i) {
     if (i >= -65535 && i <= 65535)
         return;
     throw boost::program_options::error("The --api-port value is out of range");
@@ -191,15 +184,13 @@ static void on_api_port(int i)
 #endif
 
 #if ETH_ETHASHCUDA
-static void on_cu_block_size(unsigned b)
-{
+static void on_cu_block_size(unsigned b) {
     if (b == 32 || b == 64 || b == 128 || b == 256)
         return;
     throw boost::program_options::error("The --cu-block value is out of range");
 }
 
-static void on_cu_streams(unsigned s)
-{
+static void on_cu_streams(unsigned s) {
     if (s == 1 || s == 2 || s == 4)
         return;
     throw boost::program_options::error("The --cu-streams value is out of range");
@@ -207,30 +198,22 @@ static void on_cu_streams(unsigned s)
 #endif
 
 #if ETH_ETHASHCL
-static void on_cl_local_work(unsigned b)
-{
+static void on_cl_local_work(unsigned b) {
     if (b == 64 || b == 128 || b == 256)
         return;
     throw boost::program_options::error("The --cl-work value is out of range");
 }
 #endif
 
-class MinerCLI
-{
-public:
-    enum class OperationMode
-    {
-        None,
-        Simulation,
-        Mining
-    };
+class MinerCLI {
+  public:
+    enum class OperationMode { None, Simulation, Mining };
 
-    MinerCLI() : m_cliDisplayTimer(g_io_service), m_io_strand(g_io_service)
-    {
+    MinerCLI() : m_cliDisplayTimer(g_io_service), m_io_strand(g_io_service) {
         // Initialize display timer as sleeper
         m_cliDisplayTimer.expires_from_now(boost::posix_time::pos_infin);
-        m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-            &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+        m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+            boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
 
         // Start io_service in it's own thread
         m_io_thread = thread{boost::bind(&boost::asio::io_service::run, &g_io_service)};
@@ -240,53 +223,44 @@ public:
         // and should not start/stop or even join threads (which heavily time consuming)
     }
 
-    virtual ~MinerCLI()
-    {
+    virtual ~MinerCLI() {
         m_cliDisplayTimer.cancel();
         g_io_service.stop();
         m_io_thread.join();
     }
 
-    void cliDisplayInterval_elapsed(const boost::system::error_code& ec)
-    {
-        if (!ec && g_running)
-        {
-            if (g_logOptions & LOG_MULTI)
-            {
+    void cliDisplayInterval_elapsed(const boost::system::error_code& ec) {
+        if (!ec && g_running) {
+            if (g_logOptions & LOG_MULTI) {
                 list<string> vs;
                 Farm::f().Telemetry().strvec(vs);
                 string s(vs.front());
                 vs.pop_front();
-                while (!vs.empty())
-                {
+                while (!vs.empty()) {
                     cnote << s << vs.front();
                     vs.pop_front();
                 }
-            }
-            else
+            } else
                 cnote << Farm::f().Telemetry().str();
 #if ETH_DBUS
             dbusint.send(Farm::f().Telemetry().str().c_str());
 #endif
             // Restart timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
-            m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-                &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+            m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+                boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
         }
     }
 
-    static void signalHandler(int sig)
-    {
+    static void signalHandler(int sig) {
         dev::setThreadName("main");
 
-        switch (sig)
-        {
+        switch (sig) {
 #if defined(__linux__)
 #define BACKTRACE_MAX_FRAMES 30
         case SIGSEGV:
             static bool in_handler = false;
-            if (!in_handler)
-            {
+            if (!in_handler) {
                 int j, nptrs;
                 void* buffer[BACKTRACE_MAX_FRAMES];
                 char** symbols;
@@ -301,10 +275,9 @@ public:
                 cerr << "backtrace() returned " << nptrs << " addresses\n";
 
                 symbols = backtrace_symbols(buffer, nptrs);
-                if (symbols == NULL)
-                {
+                if (symbols == NULL) {
                     perror("backtrace_symbols()");
-                    exit(EXIT_FAILURE);  // Also exit 128 ??
+                    exit(EXIT_FAILURE); // Also exit 128 ??
                 }
                 for (j = 0; j < nptrs; j++)
                     cerr << symbols[j] << "\n";
@@ -331,14 +304,11 @@ public:
 
 #if API_CORE
 
-    static void ParseBind(
-        const string& inaddr, string& outaddr, int& outport, bool advertise_negative_port)
-    {
+    static void ParseBind(const string& inaddr, string& outaddr, int& outport, bool advertise_negative_port) {
         regex pattern("([\\da-fA-F\\.\\:]*)\\:([\\d\\-]*)");
         smatch matches;
 
-        if (regex_match(inaddr, matches, pattern))
-        {
+        if (regex_match(inaddr, matches, pattern)) {
             // Validate Ip address
             boost::system::error_code ec;
             outaddr = boost::asio::ip::address::from_string(matches[1], ec).to_string();
@@ -347,28 +317,20 @@ public:
 
             // Parse port ( Let exception throw )
             outport = stoi(matches[2]);
-            if (advertise_negative_port)
-            {
+            if (advertise_negative_port) {
                 if (outport < -65535 || outport > 65535 || outport == 0)
-                    throw invalid_argument(
-                        "Invalid port number. Allowed non zero values in range [-65535 .. 65535]");
-            }
-            else
-            {
+                    throw invalid_argument("Invalid port number. Allowed non zero values in range [-65535 .. 65535]");
+            } else {
                 if (outport < 1 || outport > 65535)
-                    throw invalid_argument(
-                        "Invalid port number. Allowed non zero values in range [1 .. 65535]");
+                    throw invalid_argument("Invalid port number. Allowed non zero values in range [1 .. 65535]");
             }
-        }
-        else
-        {
+        } else {
             throw invalid_argument("Invalid syntax");
         }
     }
 #endif
 
-    bool validateArgs(int argc, char** argv)
-    {
+    bool validateArgs(int argc, char** argv) {
         queue<string> warnings;
         bool cl_miner, cuda_miner, cpu_miner;
         vector<string> pools;
@@ -643,36 +605,29 @@ public:
         visible.add(general);
 
         variables_map vm;
-        try
-        {
-            parsed_options parsed =
-                command_line_parser(argc, argv).options(all).allow_unregistered().run();
+        try {
+            parsed_options parsed = command_line_parser(argc, argv).options(all).allow_unregistered().run();
             store(parsed, vm);
             notify(vm);
             vector<string> unknown = collect_unrecognized(parsed.options, include_positional);
-            if (unknown.size())
-            {
+            if (unknown.size()) {
                 cout << endl << "Error: Unknown parameter(s):";
                 for (const auto& u : unknown)
                     cout << ' ' << u;
                 cout << endl << endl;
                 return false;
             }
-        }
-        catch (boost::program_options::error& e)
-        {
+        } catch (boost::program_options::error& e) {
             cout << endl << "Error: " << e.what() << endl << endl;
             return false;
         }
 
-        if (vm.count("help"))
-        {
+        if (vm.count("help")) {
             cout << endl << visible << endl;
             return false;
         }
 
-        if (vm.count("version"))
-        {
+        if (vm.count("version")) {
             vector<string> vs;
             headers(vs, false);
             cout << endl;
@@ -682,93 +637,91 @@ public:
             return false;
         }
 
-        if (vm.count("help-module"))
-        {
+        if (vm.count("help-module")) {
             const string& s = vm["help-module"].as<string>();
             if (s == "con")
-                cout
-                    << "\n\nConnections specifications :\n\n"
-                    << "    Whether you need to connect to a stratum pool or to make use of\n"
-                    << "    getWork polling mode (generally used to solo mine) you need to "
-                       "specify\n"
-                    << "    the connection  making use of -P command line argument filling up the\n"
-                    << "    URL. The URL is in the form:\n\n "
-                    << "    scheme://[user[.workername][:password]@]hostname:port[/...].\n\n"
-                    << "    where 'scheme' can be any of :\n\n"
-                    << "    getwork    for http getWork mode\n"
-                    << "    stratum    for tcp stratum mode\n"
-                    << "    stratums   for tcp encrypted stratum mode\n"
-                    << "    Example 1: -P getwork://127.0.0.1:8545\n"
-                    << "    Example 2: "
-                       "-P "
-                       "stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555\n"
-                    << "    Example 3: "
-                       "-P stratum://0x012345678901234567890234567890123.miner1@nanopool.org:9999/"
-                       "john.doe%40gmail.com\n"
-                    << "    Example 4: "
-                       "-P stratum://0x012345678901234567890234567890123@nanopool.org:9999/miner1/"
-                       "john.doe%40gmail.com\n\n"
-                    << "    Please note: if your user or worker or password do contain characters\n"
-                    << "    which may impair the correct parsing (namely any of . : @ # ?) you "
-                       "have\n"
-                    << "    to enclose those values in backticks( ` ASCII 096) or Url Encode them\n"
-                    << "    Also note that backtick has a special meaning in *nix environments "
-                       "thus\n"
-                    << "    you need to further escape those backticks with backslash.\n\n"
-                    << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555\n"
-                    << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555\n"
-                    << "    (In Windows backslashes are not needed)\n\n"
-                    << "    Common url encoded chars are\n"
-                    << "    . (dot)      %2e\n"
-                    << "    : (column)   %3a\n"
-                    << "    @ (at sign)  %40\n"
-                    << "    ? (question) %3f\n"
-                    << "    # (number)   %23\n"
-                    << "    / (slash)    %2f\n"
-                    << "    + (plus)     %2b\n\n"
-                    << "    You can add as many -P arguments as you want. Every -P specification\n"
-                    << "    after the first one behaves as fail-over connection. When also the\n"
-                    << "    the fail-over disconnects miner passes to the next connection\n"
-                    << "    available and so on till the list is exhausted. At that moment\n"
-                    << "    miner restarts the connection cycle from the first one.\n"
-                    << "    An exception to this behavior is ruled by the --failover-timeout\n"
-                    << "    command line argument. See 'nsfminer -H misc' for details.\n\n"
-                    << "    The special notation '-P exit' stops the failover loop.\n"
-                    << "    When miner reaches this kind of connection it simply quits.\n\n"
-                    << "    When using stratum mode miner tries to auto-detect the correct\n"
-                    << "    flavour provided by the pool. Should be fine in 99% of the cases.\n"
-                    << "    Nevertheless you might want to fine tune the stratum flavour by\n"
-                    << "    any of of the following valid schemes :\n\n"
-                    << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << "\n\n"
-                    << "    where a scheme is made up of two parts, the stratum variant + the tcp\n"
-                    << "    transport protocol\n\n"
-                    << "    Stratum variants :\n\n"
-                    << "        stratum     Stratum\n"
-                    << "        stratum1    Eth Proxy compatible\n"
-                    << "        stratum2    EthereumStratum 1.0.0 (nicehash)\n"
-                    << "        stratum3    EthereumStratum 2.0.0\n\n"
-                    << "    Transport variants :\n\n"
-                    << "        tcp         Unencrypted tcp connection\n"
-                    << "        ssl         Encrypted tcp connection\n\n";
-            else if (s == "test")  // Simulation
+                cout << "\n\nConnections specifications :\n\n"
+                     << "    Whether you need to connect to a stratum pool or to make use of\n"
+                     << "    getWork polling mode (generally used to solo mine) you need to "
+                        "specify\n"
+                     << "    the connection  making use of -P command line argument filling up the\n"
+                     << "    URL. The URL is in the form:\n\n "
+                     << "    scheme://[user[.workername][:password]@]hostname:port[/...].\n\n"
+                     << "    where 'scheme' can be any of :\n\n"
+                     << "    getwork    for http getWork mode\n"
+                     << "    stratum    for tcp stratum mode\n"
+                     << "    stratums   for tcp encrypted stratum mode\n"
+                     << "    Example 1: -P getwork://127.0.0.1:8545\n"
+                     << "    Example 2: "
+                        "-P "
+                        "stratums://0x012345678901234567890234567890123.miner1@ethermine.org:5555\n"
+                     << "    Example 3: "
+                        "-P stratum://0x012345678901234567890234567890123.miner1@nanopool.org:9999/"
+                        "john.doe%40gmail.com\n"
+                     << "    Example 4: "
+                        "-P stratum://0x012345678901234567890234567890123@nanopool.org:9999/miner1/"
+                        "john.doe%40gmail.com\n\n"
+                     << "    Please note: if your user or worker or password do contain characters\n"
+                     << "    which may impair the correct parsing (namely any of . : @ # ?) you "
+                        "have\n"
+                     << "    to enclose those values in backticks( ` ASCII 096) or Url Encode them\n"
+                     << "    Also note that backtick has a special meaning in *nix environments "
+                        "thus\n"
+                     << "    you need to further escape those backticks with backslash.\n\n"
+                     << "    Example : -P stratums://\\`account.121\\`.miner1:x@ethermine.org:5555\n"
+                     << "    Example : -P stratums://account%2e121.miner1:x@ethermine.org:5555\n"
+                     << "    (In Windows backslashes are not needed)\n\n"
+                     << "    Common url encoded chars are\n"
+                     << "    . (dot)      %2e\n"
+                     << "    : (column)   %3a\n"
+                     << "    @ (at sign)  %40\n"
+                     << "    ? (question) %3f\n"
+                     << "    # (number)   %23\n"
+                     << "    / (slash)    %2f\n"
+                     << "    + (plus)     %2b\n\n"
+                     << "    You can add as many -P arguments as you want. Every -P specification\n"
+                     << "    after the first one behaves as fail-over connection. When also the\n"
+                     << "    the fail-over disconnects miner passes to the next connection\n"
+                     << "    available and so on till the list is exhausted. At that moment\n"
+                     << "    miner restarts the connection cycle from the first one.\n"
+                     << "    An exception to this behavior is ruled by the --failover-timeout\n"
+                     << "    command line argument. See 'nsfminer -H misc' for details.\n\n"
+                     << "    The special notation '-P exit' stops the failover loop.\n"
+                     << "    When miner reaches this kind of connection it simply quits.\n\n"
+                     << "    When using stratum mode miner tries to auto-detect the correct\n"
+                     << "    flavour provided by the pool. Should be fine in 99% of the cases.\n"
+                     << "    Nevertheless you might want to fine tune the stratum flavour by\n"
+                     << "    any of of the following valid schemes :\n\n"
+                     << "    " << URI::KnownSchemes(ProtocolFamily::STRATUM) << "\n\n"
+                     << "    where a scheme is made up of two parts, the stratum variant + the tcp\n"
+                     << "    transport protocol\n\n"
+                     << "    Stratum variants :\n\n"
+                     << "        stratum     Stratum\n"
+                     << "        stratum1    Eth Proxy compatible\n"
+                     << "        stratum2    EthereumStratum 1.0.0 (nicehash)\n"
+                     << "        stratum3    EthereumStratum 2.0.0\n\n"
+                     << "    Transport variants :\n\n"
+                     << "        tcp         Unencrypted tcp connection\n"
+                     << "        ssl         Encrypted tcp connection\n\n";
+            else if (s == "test") // Simulation
                 cout << endl << test << endl;
 #if ETH_ETHASHCL
-            else if (s == "cl")  // opencl
+            else if (s == "cl") // opencl
                 cout << endl << cl << endl;
 #endif
 #if ETH_ETHASHCUDA
-            else if (s == "cu")  // cuda
+            else if (s == "cu") // cuda
                 cout << endl << cu << endl;
 #endif
 #if ETH_ETHASHCPU
-            else if (s == "cp")  // cpu
+            else if (s == "cp") // cpu
                 cout << endl << cp << endl;
 #endif
 #if API_CORE
-            else if (s == "api")  // programming interface
+            else if (s == "api") // programming interface
                 cout << endl << api << endl;
 #endif
-            else if (s == "misc")  // miscellaneous
+            else if (s == "misc") // miscellaneous
                 cout << endl << misc << endl;
 #ifdef _WIN32
             else if (s == "env")
@@ -854,14 +807,10 @@ public:
         m_api_bind = vm["api-bind"].as<string>();
         m_api_port = vm["api-port"].as<int>();
         m_api_password = vm["api-password"].as<string>();
-        if (m_api_bind != "")
-        {
-            try
-            {
+        if (m_api_bind != "") {
+            try {
                 ParseBind(m_api_bind, m_api_address, m_api_port, true);
-            }
-            catch (const exception&)
-            {
+            } catch (const exception&) {
                 cout << "Error: --api-bind address invalid\n\n";
                 return false;
             }
@@ -882,61 +831,47 @@ public:
         //  Operation mode Simulation do not require pool definitions
         //  Operation mode Stratum or GetWork do need at least one
 
-        if (m_PoolSettings.benchmarkBlock)
-        {
+        if (m_PoolSettings.benchmarkBlock) {
             m_mode = OperationMode::Simulation;
             pools.clear();
-            m_PoolSettings.connections.push_back(
-                shared_ptr<URI>(new URI("simulation://localhost:0", true)));
-        }
-        else
+            m_PoolSettings.connections.push_back(shared_ptr<URI>(new URI("simulation://localhost:0", true)));
+        } else
             m_mode = OperationMode::Mining;
 
-        if (!m_shouldListDevices && (m_mode != OperationMode::Simulation))
-        {
+        if (!m_shouldListDevices && (m_mode != OperationMode::Simulation)) {
             if (!pools.size())
                 throw invalid_argument("At least one pool definition required. See -P argument.");
 
-            for (size_t i = 0; i < pools.size(); i++)
-            {
+            for (size_t i = 0; i < pools.size(); i++) {
                 string url = pools.at(i);
-                if (url == "exit")
-                {
+                if (url == "exit") {
                     if (i == 0)
-                        throw invalid_argument(
-                            "'exit' failover directive can't be the first in -P arguments list.");
+                        throw invalid_argument("'exit' failover directive can't be the first in -P arguments list.");
                     else
                         url = "stratum+tcp://-:x@exit:0";
                 }
 
-                try
-                {
+                try {
                     shared_ptr<URI> uri = shared_ptr<URI>(new URI(url));
                     m_PoolSettings.connections.push_back(uri);
-                }
-                catch (const exception& _ex)
-                {
+                } catch (const exception& _ex) {
                     string what = _ex.what();
                     throw runtime_error("Bad pool URI : " + what);
                 }
             }
         }
 
-
-        if (m_FarmSettings.tempStop)
-        {
+        if (m_FarmSettings.tempStop) {
             // If temp threshold set HWMON at least to 1
             m_FarmSettings.hwMon = max((unsigned int)m_FarmSettings.hwMon, 1U);
-            if (m_FarmSettings.tempStop <= m_FarmSettings.tempStart)
-            {
+            if (m_FarmSettings.tempStop <= m_FarmSettings.tempStart) {
                 string what = "-tstop must be greater than -tstart";
                 throw invalid_argument(what);
             }
         }
 
         // Output warnings if any
-        while (warnings.size())
-        {
+        while (warnings.size()) {
             cout << warnings.front() << endl;
             warnings.pop();
         }
@@ -944,9 +879,7 @@ public:
         return true;
     }
 
-
-    void execute()
-    {
+    void execute() {
 #if ETH_ETHASHCL
         if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
             CLMiner::enumDevices(m_DevicesCollection);
@@ -965,16 +898,14 @@ public:
             throw runtime_error("No usable mining devices found");
 
         // If requested list detected devices and exit
-        if (should_list)
-        {
+        if (should_list) {
             cout << setw(4) << " Id ";
             cout << setiosflags(ios::left) << setw(13) << "Pci Id    ";
             cout << setw(5) << "Type ";
             cout << setw(30) << "Name                          ";
 
 #if ETH_ETHASHCUDA
-            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            {
+            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed) {
                 cout << setw(5) << "CUDA ";
                 cout << setw(4) << "SM  ";
             }
@@ -993,8 +924,7 @@ public:
             cout << setw(30) << "----------------------------- ";
 
 #if ETH_ETHASHCUDA
-            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            {
+            if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed) {
                 cout << setw(5) << "---- ";
                 cout << setw(4) << "--- ";
             }
@@ -1008,14 +938,12 @@ public:
 
             cout << resetiosflags(ios::left) << endl;
             minerMap::iterator it = m_DevicesCollection.begin();
-            while (it != m_DevicesCollection.end())
-            {
+            while (it != m_DevicesCollection.end()) {
                 auto i = distance(m_DevicesCollection.begin(), it);
                 cout << setw(3) << i << " ";
                 cout << setiosflags(ios::left) << setw(13) << it->first;
                 cout << setw(5);
-                switch (it->second.type)
-                {
+                switch (it->second.type) {
                 case DeviceTypeEnum::Cpu:
                     cout << "Cpu";
                     break;
@@ -1030,8 +958,7 @@ public:
                 }
                 cout << setw(30) << (it->second.boardName).substr(0, 28);
 #if ETH_ETHASHCUDA
-                if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-                {
+                if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed) {
                     cout << setw(5) << (it->second.cuDetected ? "Yes" : "");
                     cout << setw(4) << it->second.cuCompute;
                 }
@@ -1040,8 +967,8 @@ public:
                 if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
                     cout << setw(5) << (it->second.clDetected ? "Yes" : "");
 #endif
-                cout << resetiosflags(ios::left) << setw(13)
-                     << getFormattedMemory((double)it->second.totalMemory) << " ";
+                cout << resetiosflags(ios::left) << setw(13) << getFormattedMemory((double)it->second.totalMemory)
+                     << " ";
                 cout << resetiosflags(ios::left) << endl;
                 it++;
             }
@@ -1054,27 +981,21 @@ public:
 
 #if ETH_ETHASHCUDA
         if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
-            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-            {
-                if (!it->second.cuDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
+            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++) {
+                if (!it->second.cuDetected || it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
                 unsigned d = (unsigned)distance(m_DevicesCollection.begin(), it);
-                if (m_devices.empty() ||
-                    find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
+                if (m_devices.empty() || find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
             }
 #endif
 #if ETH_ETHASHCL
         if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-            {
-                if (!it->second.clDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
+            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++) {
+                if (!it->second.clDetected || it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
                 unsigned d = (unsigned)distance(m_DevicesCollection.begin(), it);
-                if (m_devices.empty() ||
-                    find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
+                if (m_devices.empty() || find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
             }
 #endif
@@ -1110,9 +1031,8 @@ public:
         doMiner();
     }
 
-private:
-    void doMiner()
-    {
+  private:
+    void doMiner() {
         new PoolManager(m_PoolSettings);
         if (m_mode != OperationMode::Simulation)
             for (auto conn : m_PoolSettings.connections)
@@ -1130,8 +1050,8 @@ private:
 
         // Initialize display timer as sleeper with proper interval
         m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
-        m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-            &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+        m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+            boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
 
         // Stay in non-busy wait till signals arrive
         unique_lock<mutex> clilock(m_climtx);
@@ -1153,10 +1073,10 @@ private:
     }
 
     // Global boost's io_service
-    thread m_io_thread;                             // The IO service thread
-    boost::asio::deadline_timer m_cliDisplayTimer;  // The timer which ticks display lines
-    boost::asio::io_service::strand m_io_strand;    // A strand to serialize posts in
-                                                    // multithreaded environment
+    thread m_io_thread;                            // The IO service thread
+    boost::asio::deadline_timer m_cliDisplayTimer; // The timer which ticks display lines
+    boost::asio::io_service::strand m_io_strand;   // A strand to serialize posts in
+                                                   // multithreaded environment
     // Physical Mining Devices descriptor
     minerMap m_DevicesCollection;
 
@@ -1165,11 +1085,11 @@ private:
     OperationMode m_mode = OperationMode::None;
     bool m_shouldListDevices = false;
 
-    FarmSettings m_FarmSettings;  // Operating settings for Farm
-    PoolSettings m_PoolSettings;  // Operating settings for PoolManager
+    FarmSettings m_FarmSettings; // Operating settings for Farm
+    PoolSettings m_PoolSettings; // Operating settings for PoolManager
 
     // -- CLI Interface related params
-    unsigned m_cliDisplayInterval = 5;  // Display stats/info interval in seconds
+    unsigned m_cliDisplayInterval = 5; // Display stats/info interval in seconds
 
     // -- CLI Flow control
     mutex m_climtx;
@@ -1178,10 +1098,10 @@ private:
 
 #if API_CORE
     // -- API and Http interfaces related params
-    string m_api_bind;                 // API interface binding address in form <address>:<port>
-    string m_api_address = "0.0.0.0";  // API interface binding address (Default any)
-    int m_api_port = 0;                // API interface binding port
-    string m_api_password;             // API interface write protection password
+    string m_api_bind;                // API interface binding address in form <address>:<port>
+    string m_api_address = "0.0.0.0"; // API interface binding address (Default any)
+    int m_api_port = 0;               // API interface binding port
+    string m_api_password;            // API interface write protection password
 #endif
 
 #if ETH_DBUS
@@ -1189,8 +1109,7 @@ private:
 #endif
 };
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     // Return values
     // 0 - Normal exit
     // 1 - Invalid/Insufficient command line arguments
@@ -1205,8 +1124,7 @@ int main(int argc, char** argv)
     // UTF-8 characters are displayed correctly in the console
     SetConsoleOutputCP(CP_UTF8);
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut != INVALID_HANDLE_VALUE)
-    {
+    if (hOut != INVALID_HANDLE_VALUE) {
         DWORD dwMode;
         if (GetConsoleMode(hOut, &dwMode))
             SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
@@ -1216,19 +1134,16 @@ int main(int argc, char** argv)
     SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED);
 #endif
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         cout << "No arguments specified.";
         cout << "Try 'nsfminer --help' to get a list of arguments.";
         return 1;
     }
 
-    try
-    {
+    try {
         MinerCLI cli;
 
-        try
-        {
+        try {
             // Set env vars controlling GPU driver behavior.
             setenv("GPU_MAX_HEAP_SIZE", "100");
             setenv("GPU_MAX_ALLOC_PERCENT", "100");
@@ -1243,8 +1158,7 @@ int main(int argc, char** argv)
             if (g_logSyslog)
                 g_logNoColor = true;
 
-            if (!should_list)
-            {
+            if (!should_list) {
                 vector<string> vs;
                 headers(vs, !g_logNoColor);
                 for (auto& v : vs)
@@ -1255,30 +1169,20 @@ int main(int argc, char** argv)
 
             cout << endl << endl;
             return 0;
-        }
-        catch (boost::program_options::error& e)
-        {
+        } catch (boost::program_options::error& e) {
             cout << "\nError: " << e.what() << "\n\n";
             return 1;
-        }
-        catch (runtime_error& e)
-        {
+        } catch (runtime_error& e) {
             cout << "\nError: " << e.what() << "\n\n";
             return 2;
-        }
-        catch (exception& e)
-        {
+        } catch (exception& e) {
             cout << "\nError: " << e.what() << "\n\n";
             return 3;
-        }
-        catch (...)
-        {
+        } catch (...) {
             cout << "\n\nError: Unknown failure occurred.\n\n";
             return 4;
         }
-    }
-    catch (const exception& e)
-    {
+    } catch (const exception& e) {
         cout << "Could not initialize CLI interface\nError: " << e.what() << "\n\n";
         return 4;
     }

@@ -15,8 +15,7 @@
 
 #define _PARALLEL_HASH 4
 
-DEV_INLINE bool compute_hash(uint64_t nonce)
-{
+DEV_INLINE bool compute_hash(uint64_t nonce) {
     // sha3_512(header .. nonce)
     uint2 state[12];
 
@@ -28,23 +27,19 @@ DEV_INLINE bool compute_hash(uint64_t nonce)
     const int thread_id = threadIdx.x & (THREADS_PER_HASH - 1);
     const int mix_idx = thread_id & 3;
 
-    for (int i = 0; i < THREADS_PER_HASH; i += _PARALLEL_HASH)
-    {
+    for (int i = 0; i < THREADS_PER_HASH; i += _PARALLEL_HASH) {
         uint4 mix[_PARALLEL_HASH];
         uint32_t offset[_PARALLEL_HASH];
         uint32_t init0[_PARALLEL_HASH];
 
         // share init among threads
-        for (int p = 0; p < _PARALLEL_HASH; p++)
-        {
+        for (int p = 0; p < _PARALLEL_HASH; p++) {
             uint2 shuffle[8];
-            for (int j = 0; j < 8; j++)
-            {
+            for (int j = 0; j < 8; j++) {
                 shuffle[j].x = SHFL(state[j].x, i + p, THREADS_PER_HASH);
                 shuffle[j].y = SHFL(state[j].y, i + p, THREADS_PER_HASH);
             }
-            switch (mix_idx)
-            {
+            switch (mix_idx) {
             case 0:
                 mix[p] = vectorize2(shuffle[0], shuffle[1]);
                 break;
@@ -61,14 +56,11 @@ DEV_INLINE bool compute_hash(uint64_t nonce)
             init0[p] = SHFL(shuffle[0].x, 0, THREADS_PER_HASH);
         }
 
-        for (uint32_t a = 0; a < ACCESSES; a += 4)
-        {
+        for (uint32_t a = 0; a < ACCESSES; a += 4) {
             int t = bfe(a, 2u, 3u);
 
-            for (uint32_t b = 0; b < 4; b++)
-            {
-                for (int p = 0; p < _PARALLEL_HASH; p++)
-                {
+            for (uint32_t b = 0; b < 4; b++) {
+                for (int p = 0; p < _PARALLEL_HASH; p++) {
                     offset[p] = fnv(init0[p] ^ (a + b), ((uint32_t*)&mix[p])[b]) % d_dag_size;
                     offset[p] = SHFL(offset[p], t, THREADS_PER_HASH);
                     mix[p] = fnv4(mix[p], d_dag[offset[p]].uint4s[thread_id]);
@@ -76,8 +68,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce)
             }
         }
 
-        for (int p = 0; p < _PARALLEL_HASH; p++)
-        {
+        for (int p = 0; p < _PARALLEL_HASH; p++) {
             uint2 shuffle[4];
             uint32_t thread_mix = fnv_reduce(mix[p]);
 
@@ -91,8 +82,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce)
             shuffle[3].x = SHFL(thread_mix, 6, THREADS_PER_HASH);
             shuffle[3].y = SHFL(thread_mix, 7, THREADS_PER_HASH);
 
-            if ((i + p) == thread_id)
-            {
+            if ((i + p) == thread_id) {
                 // move mix into state:
                 state[8] = shuffle[0];
                 state[9] = shuffle[1];

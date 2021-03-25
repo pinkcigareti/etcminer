@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -16,8 +17,8 @@
 #include <unistd.h>
 #endif
 
-#include <libeth/Farm.h>
 #include <ethash/ethash.hpp>
+#include <libeth/Farm.h>
 
 #include <boost/version.hpp>
 
@@ -27,7 +28,6 @@
 #endif
 
 #include "CPUMiner.h"
-
 
 /* Sanity check for defined OS */
 #if defined(__linux__)
@@ -42,28 +42,22 @@ using namespace std;
 using namespace dev;
 using namespace eth;
 
-
 /* ################## OS-specific functions ################## */
 
 /*
  * returns physically available memory (no swap)
  */
-static size_t getTotalPhysAvailableMemory()
-{
+static size_t getTotalPhysAvailableMemory() {
 #if defined(__linux__)
     long pages = sysconf(_SC_AVPHYS_PAGES);
-    if (pages == -1L)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_AVPHYS_PAGES) \""
-              << strerror(errno) << "\"\n";
+    if (pages == -1L) {
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_AVPHYS_PAGES) \"" << strerror(errno) << "\"\n";
         return 0;
     }
 
     long page_size = sysconf(_SC_PAGESIZE);
-    if (page_size == -1L)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_PAGESIZE) \""
-              << strerror(errno) << "\"\n";
+    if (page_size == -1L) {
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_PAGESIZE) \"" << strerror(errno) << "\"\n";
         return 0;
     }
 
@@ -71,8 +65,7 @@ static size_t getTotalPhysAvailableMemory()
 #else
     MEMORYSTATUSEX memInfo;
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
-    if (GlobalMemoryStatusEx(&memInfo) == 0)
-    {
+    if (GlobalMemoryStatusEx(&memInfo) == 0) {
         // Handle Errorcode (GetLastError) ??
         return 0;
     }
@@ -83,15 +76,13 @@ static size_t getTotalPhysAvailableMemory()
 /*
  * return numbers of available CPUs
  */
-unsigned CPUMiner::getNumDevices()
-{
+unsigned CPUMiner::getNumDevices() {
 #if defined(__linux__)
     long cpus_available;
     cpus_available = sysconf(_SC_NPROCESSORS_ONLN);
-    if (cpus_available == -1L)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \""
-              << strerror(errno) << "\"\n";
+    if (cpus_available == -1L) {
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \"" << strerror(errno)
+              << "\"\n";
         return 0;
     }
     return cpus_available;
@@ -102,27 +93,19 @@ unsigned CPUMiner::getNumDevices()
 #endif
 }
 
-
 /* ######################## CPU Miner ######################## */
 
-CPUMiner::CPUMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cpu-", _index)
-{
-    m_deviceDescriptor = _device;
-}
+CPUMiner::CPUMiner(unsigned _index, DeviceDescriptor& _device) : Miner("cpu-", _index) { m_deviceDescriptor = _device; }
 
-
-CPUMiner::~CPUMiner()
-{
+CPUMiner::~CPUMiner() {
     stopWorking();
     kick_miner();
 }
 
-
 /*
  * Bind the current thread to a spcific CPU
  */
-bool CPUMiner::initDevice()
-{
+bool CPUMiner::initDevice() {
     cnote << "Using CPU: " << m_deviceDescriptor.cpCpuNumer << " " << m_deviceDescriptor.boardName
           << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
@@ -134,27 +117,21 @@ bool CPUMiner::initDevice()
     CPU_SET(m_deviceDescriptor.cpCpuNumer, &cpuset);
 
     err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
-    if (err != 0)
-    {
-        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno)
-              << "\"\n";
-        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
-              << "\n";
+    if (err != 0) {
+        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno) << "\"\n";
+        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer << "\n";
     }
 #else
     DWORD_PTR dwThreadAffinityMask = 1i64 << m_deviceDescriptor.cpCpuNumer;
     DWORD_PTR previous_mask;
     previous_mask = SetThreadAffinityMask(GetCurrentThread(), dwThreadAffinityMask);
-    if (previous_mask == NULL)
-    {
-        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer
-              << "\n";
+    if (previous_mask == NULL) {
+        cwarn << "cp-" << m_index << "could not bind thread to cpu" << m_deviceDescriptor.cpCpuNumer << "\n";
         // Handle Errorcode (GetLastError) ??
     }
 #endif
     return true;
 }
-
 
 /*
  * A new epoch was receifed with last work package (called from Miner::initEpoch())
@@ -163,12 +140,10 @@ bool CPUMiner::initDevice()
  * to check again dag sizes. They're changed for sure
  * We've all related infos in m_epochContext (.dagSize, .dagNumItems, .lightSize, .lightNumItems)
  */
-bool CPUMiner::initEpoch()
-{
+bool CPUMiner::initEpoch() {
     m_initialized = true;
     return true;
 }
-
 
 /*
    Miner should stop working on the current block
@@ -177,15 +152,12 @@ bool CPUMiner::initEpoch()
      * miner should stop (eg exit ethminer)   or
      * miner should pause
 */
-void CPUMiner::kick_miner()
-{
+void CPUMiner::kick_miner() {
     m_new_work.store(true, memory_order_relaxed);
     m_new_work_signal.notify_one();
 }
 
-
-void CPUMiner::search(const dev::eth::WorkPackage& w)
-{
+void CPUMiner::search(const dev::eth::WorkPackage& w) {
     constexpr size_t blocksize = 30;
 
     const auto& context = ethash::get_global_epoch_context_full(w.epoch);
@@ -193,9 +165,8 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
     const auto boundary = ethash::hash256_from_bytes(w.boundary.data());
     auto nonce = w.startNonce;
 
-    while (true)
-    {
-        if (m_new_work.load(memory_order_relaxed))  // new work arrived ?
+    while (true) {
+        if (m_new_work.load(memory_order_relaxed)) // new work arrived ?
         {
             m_new_work.store(false, memory_order_relaxed);
             break;
@@ -204,15 +175,12 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
         if (shouldStop())
             break;
 
-
         auto r = ethash::search(context, header, boundary, nonce, blocksize);
-        if (r.solution_found)
-        {
+        if (r.solution_found) {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
             auto sol = Solution{r.nonce, mix, w, chrono::steady_clock::now(), m_index};
 
-            cnote << EthWhite << "Job: " << w.header.abridged()
-                  << " Solution: " << toHex(sol.nonce, HexPrefix::Add);
+            cnote << EthWhite << "Job: " << w.header.abridged() << " Solution: " << toHex(sol.nonce, HexPrefix::Add);
             Farm::f().submitProof(sol);
         }
         nonce += blocksize;
@@ -222,32 +190,27 @@ void CPUMiner::search(const dev::eth::WorkPackage& w)
     }
 }
 
-
 /*
  * The main work loop of a Worker thread
  */
-void CPUMiner::workLoop()
-{
+void CPUMiner::workLoop() {
     WorkPackage current;
     current.header = h256();
 
     if (!initDevice())
         return;
 
-    while (!shouldStop())
-    {
+    while (!shouldStop()) {
         // Wait for work or 3 seconds (whichever the first)
         const WorkPackage w = work();
-        if (!w)
-        {
+        if (!w) {
             unique_lock<mutex> l(miner_work_mutex);
             m_new_work_signal.wait_for(l, chrono::seconds(3));
             continue;
         }
 
         // Epoch change ?
-        if (current.epoch != w.epoch)
-        {
+        if (current.epoch != w.epoch) {
             setEpoch(w);
             initEpoch();
 
@@ -267,13 +230,10 @@ void CPUMiner::workLoop()
     }
 }
 
-
-void CPUMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
-{
+void CPUMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection) {
     unsigned numDevices = getNumDevices();
 
-    for (unsigned i = 0; i < numDevices; i++)
-    {
+    for (unsigned i = 0; i < numDevices; i++) {
         string uniqueId;
         ostringstream s;
         DeviceDescriptor deviceDescriptor;
@@ -287,8 +247,8 @@ void CPUMiner::enumDevices(map<string, DeviceDescriptor>& _DevicesCollection)
 
         s.str("");
         s.clear();
-        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
-          << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
+        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "."
+          << (BOOST_VERSION % 100);
         deviceDescriptor.boardName = s.str();
         deviceDescriptor.uniqueId = uniqueId;
         deviceDescriptor.type = DeviceTypeEnum::Cpu;

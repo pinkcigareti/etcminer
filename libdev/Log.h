@@ -36,8 +36,7 @@ extern unsigned g_logOptions;
 extern bool g_logNoColor;
 extern bool g_logSyslog;
 
-namespace dev
-{
+namespace dev {
 /// A simple log-output function that prints log messages to stdout.
 void simpleDebugOut(std::string const&);
 
@@ -50,43 +49,32 @@ std::string getThreadName();
 /// The default logging channels. Each has an associated verbosity and three-letter prefix
 /// (severity()
 /// ). Channels should inherit from LogChannel and define severity() and verbosity.
-struct LogChannel
-{
+struct LogChannel {
     static int severity();
 };
-struct CritChannel : public LogChannel
-{
+struct CritChannel : public LogChannel {
     static int severity();
 };
-struct WarnChannel : public LogChannel
-{
+struct WarnChannel : public LogChannel {
     static int severity();
 };
-struct NoteChannel : public LogChannel
-{
+struct NoteChannel : public LogChannel {
     static int severity();
 };
 
-class LogOutputStreamBase
-{
-public:
+class LogOutputStreamBase {
+  public:
     LogOutputStreamBase(int error);
 
-    template <class T>
-    void append(T const& _t)
-    {
-        m_sstr << _t;
-    }
+    template <class T> void append(T const& _t) { m_sstr << _t; }
 
-protected:
-    std::stringstream m_sstr;  ///< The accrued log entry.
+  protected:
+    std::stringstream m_sstr; ///< The accrued log entry.
 };
 
 /// Logging class, iostream-like, that can be shifted to.
-template <class I>
-class LogOutputStream : LogOutputStreamBase
-{
-public:
+template <class I> class LogOutputStream : LogOutputStreamBase {
+  public:
     /// Construct a new object.
     /// If _term is true the the prefix info is terminated with a ']' character; if not it ends only
     /// with a '|' character.
@@ -96,9 +84,7 @@ public:
     ~LogOutputStream() { simpleDebugOut(m_sstr.str()); }
 
     /// Shift arbitrary data to the log. Spaces will be added between items as required.
-    template <class T>
-    LogOutputStream& operator<<(T const& _t)
-    {
+    template <class T> LogOutputStream& operator<<(T const& _t) {
         append(_t);
         return *this;
     }
@@ -111,4 +97,4 @@ public:
 #define cnote clog(dev::NoteChannel)
 #define cwarn clog(dev::WarnChannel)
 #define ccrit clog(dev::CritChannel)
-}  // namespace dev
+} // namespace dev

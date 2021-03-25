@@ -17,33 +17,21 @@
 #include <boost/lexical_cast.hpp>
 
 // A simple URI parser specifically for mining pool endpoints
-namespace dev
-{
-enum class SecureLevel
-{
-    NONE = 0,
-    TLS
+namespace dev {
+enum class SecureLevel { NONE = 0, TLS };
+
+enum class ProtocolFamily { GETWORK = 0, STRATUM, SIMULATION };
+
+enum class UriHostNameType {
+    Unknown = 0, // The type of the host name is not supplied
+    Basic = 1,   // The host is set, but the type cannot be determined
+    Dns = 2,     // The host name is a domain name system(DNS) style host name
+    IPV4 = 3,    // The host name is an Internet Protocol(IP) version 4 host address
+    IPV6 = 4     // The host name is an Internet Protocol(IP) version 6 host address.
 };
 
-enum class ProtocolFamily
-{
-    GETWORK = 0,
-    STRATUM,
-    SIMULATION
-};
-
-enum class UriHostNameType
-{
-    Unknown = 0,  // The type of the host name is not supplied
-    Basic = 1,    // The host is set, but the type cannot be determined
-    Dns = 2,      // The host name is a domain name system(DNS) style host name
-    IPV4 = 3,     // The host name is an Internet Protocol(IP) version 4 host address
-    IPV6 = 4      // The host name is an Internet Protocol(IP) version 6 host address.
-};
-
-class URI
-{
-public:
+class URI {
+  public:
     URI() = delete;
     URI(std::string uri, bool _sim = false);
 
@@ -64,8 +52,7 @@ public:
 
     static std::string KnownSchemes(ProtocolFamily family);
 
-    void SetStratumMode(unsigned mode, bool confirmed)
-    {
+    void SetStratumMode(unsigned mode, bool confirmed) {
         m_stratumMode = mode;
         m_stratumModeConfirmed = confirmed;
     }
@@ -79,13 +66,13 @@ public:
     void addDuration(unsigned long _minutes) { m_totalDuration += _minutes; }
     unsigned long getDuration() { return m_totalDuration; }
 
-private:
+  private:
     std::string m_scheme;
-    std::string m_authority;  // Contains all text after scheme
-    std::string m_userinfo;   // Contains the userinfo part
-    std::string m_urlinfo;    // Contains the urlinfo part
-    std::string m_hostinfo;   // Contains the hostinfo part
-    std::string m_pathinfo;   // Contains the pathinfo part
+    std::string m_authority; // Contains all text after scheme
+    std::string m_userinfo;  // Contains the userinfo part
+    std::string m_urlinfo;   // Contains the urlinfo part
+    std::string m_hostinfo;  // Contains the hostinfo part
+    std::string m_pathinfo;  // Contains the pathinfo part
 
     std::string m_host;
     std::string m_path;
@@ -96,13 +83,13 @@ private:
     std::string m_worker;
     std::string m_uri;
 
-    unsigned short m_stratumMode = 999;  // Initial value 999 means not tested yet
+    unsigned short m_stratumMode = 999; // Initial value 999 means not tested yet
     unsigned short m_port = 0;
     bool m_stratumModeConfirmed = false;
     bool m_unrecoverable = false;
     bool m_responds = false;
     UriHostNameType m_hostType = UriHostNameType::Unknown;
     bool m_isLoopBack;
-    unsigned long m_totalDuration;  // Total duration on this connection in minutes
+    unsigned long m_totalDuration; // Total duration on this connection in minutes
 };
-}  // namespace dev
+} // namespace dev

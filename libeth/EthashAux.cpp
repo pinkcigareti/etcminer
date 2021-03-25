@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -14,8 +15,7 @@
 using namespace dev;
 using namespace eth;
 
-Result EthashAux::eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept
-{
+Result EthashAux::eval(int epoch, h256 const& _headerHash, uint64_t _nonce) noexcept {
     auto headerHash = ethash::hash256_from_bytes(_headerHash.data());
     auto& context = ethash::get_global_epoch_context(epoch);
     auto result = ethash::hash(context, headerHash, _nonce);

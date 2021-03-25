@@ -1,3 +1,4 @@
+
 /* Copyright (C) 1883 Thomas Edison - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the GPLv3 license, which unfortunately won't be
@@ -20,41 +21,24 @@ unsigned g_logOptions = 0;
 bool g_logNoColor = false;
 bool g_logSyslog = false;
 
-int LogChannel::severity()
-{
-    return 0;
-}
+int LogChannel::severity() { return 0; }
 
-int CritChannel::severity()
-{
-    return 2;
-}
+int CritChannel::severity() { return 2; }
 
-int WarnChannel::severity()
-{
-    return 1;
-}
+int WarnChannel::severity() { return 1; }
 
-int NoteChannel::severity()
-{
-    return 0;
-}
+int NoteChannel::severity() { return 0; }
 
-LogOutputStreamBase::LogOutputStreamBase(int severity)
-{
+LogOutputStreamBase::LogOutputStreamBase(int severity) {
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else
-        m_sstr << ' '
-               << (severity == 2    ? EthRed :
-                      severity == 1 ? EthYellow :
-                                      EthWhite)
-               << left << setw(5) << getThreadName() << " " EthReset;
+        m_sstr << ' ' << (severity == 2 ? EthRed : severity == 1 ? EthYellow : EthWhite) << left << setw(5)
+               << getThreadName() << " " EthReset;
 }
 
 /// Associate a name with each thread for nice logging.
-struct ThreadLocalLogName
-{
+struct ThreadLocalLogName {
     ThreadLocalLogName(char const* _name) { name = _name; }
     thread_local static char const* name;
 };
@@ -63,8 +47,7 @@ thread_local char const* ThreadLocalLogName::name;
 
 ThreadLocalLogName g_logThreadName("main");
 
-string dev::getThreadName()
-{
+string dev::getThreadName() {
 #if defined(__linux__)
     char buffer[128];
     pthread_getname_np(pthread_self(), buffer, 127);
@@ -78,8 +61,7 @@ string dev::getThreadName()
 #endif
 }
 
-void dev::setThreadName(char const* _n)
-{
+void dev::setThreadName(char const* _n) {
 #if defined(__linux__)
     pthread_setname_np(pthread_self(), _n);
 #else
@@ -87,20 +69,16 @@ void dev::setThreadName(char const* _n)
 #endif
 }
 
-void dev::simpleDebugOut(string const& _s)
-{
-    try
-    {
-        if (!g_logNoColor)
-        {
+void dev::simpleDebugOut(string const& _s) {
+    try {
+        if (!g_logNoColor) {
             cout << _s + '\n';
             cout.flush();
             return;
         }
         bool skip = false;
         stringstream ss;
-        for (auto it : _s)
-        {
+        for (auto it : _s) {
             if (!skip && it == '\x1b')
                 skip = true;
             else if (skip && it == 'm')
@@ -111,9 +89,7 @@ void dev::simpleDebugOut(string const& _s)
         ss << '\n';
         cout << ss.str();
         cout.flush();
-    }
-    catch (...)
-    {
+    } catch (...) {
         return;
     }
 }

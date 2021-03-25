@@ -15,13 +15,10 @@
 
 #include <functional>
 
-namespace dev
-{
-namespace eth
-{
-class CPUMiner : public Miner
-{
-public:
+namespace dev {
+namespace eth {
+class CPUMiner : public Miner {
+  public:
     CPUMiner(unsigned _index, DeviceDescriptor& _device);
     ~CPUMiner() override;
 
@@ -30,15 +27,15 @@ public:
 
     void search(const dev::eth::WorkPackage& w);
 
-protected:
+  protected:
     bool initDevice() override;
     bool initEpoch() override;
     void kick_miner() override;
 
-private:
+  private:
     atomic<bool> m_new_work = {false};
     void workLoop() override;
 };
 
-}  // namespace eth
-}  // namespace dev
+} // namespace eth
+} // namespace dev
