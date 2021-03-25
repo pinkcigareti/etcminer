@@ -1,2 +1,0 @@
-#!/bin/bash
-scp nsfminer/nsfminer miner@miner0:
