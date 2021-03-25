@@ -4,3 +4,6 @@
 *.h text eol=lf
 *.py text eol=lf
 *.sh text eol=lf
+*.cu text eol=lf
+*.cuh text eol=lf
+*.cl text eol=lf
