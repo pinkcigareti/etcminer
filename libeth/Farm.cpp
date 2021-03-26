@@ -403,7 +403,7 @@ void Farm::collectData(const boost::system::error_code& ec) {
         if (m_Settings.hwMon) {
             HwMonitorInfo hwInfo = miner->hwmonInfo();
 
-            unsigned int tempC = 0, fanpcnt = 0, powerW = 0;
+            unsigned int tempC = 0, memtempC = 0, fanpcnt = 0, powerW = 0;
 
             if (hwInfo.deviceType == HwMonitorInfoType::NVIDIA && nvmlh) {
                 int devIdx = hwInfo.deviceIndex;
@@ -419,6 +419,7 @@ void Farm::collectData(const boost::system::error_code& ec) {
 
                 if (devIdx >= 0) {
                     wrap_nvml_get_tempC(nvmlh, devIdx, &tempC);
+                    wrap_nvml_get_mem_tempC(nvmlh, devIdx, &memtempC);
                     wrap_nvml_get_fanpcnt(nvmlh, devIdx, &fanpcnt);
 
                     if (m_Settings.hwMon == 2)
@@ -440,6 +441,7 @@ void Farm::collectData(const boost::system::error_code& ec) {
 
                     if (devIdx >= 0) {
                         wrap_amdsysfs_get_tempC(sysfsh, devIdx, &tempC);
+                        wrap_amdsysfs_get_mem_tempC(sysfsh, devIdx, &memtempC);
                         wrap_amdsysfs_get_fanpcnt(sysfsh, devIdx, &fanpcnt);
 
                         if (m_Settings.hwMon == 2)
@@ -462,6 +464,7 @@ void Farm::collectData(const boost::system::error_code& ec) {
 
                     if (devIdx >= 0) {
                         wrap_adl_get_tempC(adlh, devIdx, &tempC);
+                        wrap_adl_get_mem_tempC(adlh, devIdx, &memtempC);
                         wrap_adl_get_fanpcnt(adlh, devIdx, &fanpcnt);
 
                         if (m_Settings.hwMon == 2)
@@ -482,6 +485,7 @@ void Farm::collectData(const boost::system::error_code& ec) {
             }
 
             m_telemetry.miners.at(minerIdx).sensors.tempC = tempC;
+            m_telemetry.miners.at(minerIdx).sensors.memtempC = memtempC;
             m_telemetry.miners.at(minerIdx).sensors.fanP = fanpcnt;
             m_telemetry.miners.at(minerIdx).sensors.powerW = powerW / ((double)1000.0);
         }

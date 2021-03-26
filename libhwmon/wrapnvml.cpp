@@ -33,13 +33,10 @@ wrap_nvml_handle* wrap_nvml_create() {
 #define libnvidia_ml2 "%WINDIR%/system32/nvml.dll"
 #define libnvidia_ml3 "%PROGRAMFILES%/NVIDIA Corporation/NVSMI/nvml.dll"
 
-#elif defined(__linux) && (defined(__i386__) || defined(__ARM_ARCH_7A__))
+#elif defined(__linux)
 
 /* In rpm based linux distributions link name is with extension .1 */
 /* 32-bit linux assumed */
-#define libnvidia_ml "libnvidia-ml.so.1"
-#elif defined(__linux)
-/* 64-bit linux assumed */
 #define libnvidia_ml "libnvidia-ml.so.1"
 
 #else
@@ -92,11 +89,14 @@ wrap_nvml_handle* wrap_nvml_create() {
     nvmlh->nvmlDeviceGetPowerUsage =
         (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetPowerUsage");
     nvmlh->nvmlShutdown = (wrap_nvmlReturn_t(*)())wrap_dlsym(nvmlh->nvml_dll, "nvmlShutdown");
+    nvmlh->nvmlDeviceGetFieldValues = (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, int, wrap_nvmlFieldValue*))wrap_dlsym(
+        nvmlh->nvml_dll, "nvmlDeviceGetFieldValues");
 
     if (nvmlh->nvmlInit == nullptr || nvmlh->nvmlShutdown == nullptr || nvmlh->nvmlDeviceGetCount == nullptr ||
         nvmlh->nvmlDeviceGetHandleByIndex == nullptr || nvmlh->nvmlDeviceGetPciInfo == nullptr ||
         nvmlh->nvmlDeviceGetName == nullptr || nvmlh->nvmlDeviceGetTemperature == nullptr ||
-        nvmlh->nvmlDeviceGetFanSpeed == nullptr || nvmlh->nvmlDeviceGetPowerUsage == nullptr) {
+        nvmlh->nvmlDeviceGetFanSpeed == nullptr || nvmlh->nvmlDeviceGetPowerUsage == nullptr ||
+        nvmlh->nvmlDeviceGetFieldValues == nullptr) {
         cwarn << "Failed to obtain all required NVML function pointers";
         cwarn << "NVIDIA hardware monitoring disabled";
 
@@ -162,6 +162,18 @@ int wrap_nvml_get_tempC(wrap_nvml_handle* nvmlh, int gpuindex, unsigned int* tem
         WRAPNVML_SUCCESS)
         return -1;
 
+    return 0;
+}
+
+int wrap_nvml_get_mem_tempC(wrap_nvml_handle* nvmlh, int gpuindex, unsigned int* tempC) {
+    if (gpuindex < 0 || gpuindex >= nvmlh->nvml_gpucount)
+        return -1;
+    wrap_nvmlFieldValue f;
+    f.fieldId = 82;
+    if ((nvmlh->nvmlDeviceGetFieldValues(nvmlh->devs[gpuindex], 1, &f) != WRAPNVML_SUCCESS) ||
+        (f.nvmlReturn != WRAPNVML_SUCCESS))
+        return -1;
+    *tempC = f.value.uiVal;
     return 0;
 }
 

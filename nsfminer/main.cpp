@@ -462,13 +462,7 @@ class MinerCLI {
                 "GPU hardware monitoring level. Can be one of:\n"
                 "0 - No monitoring\n"
                 "1 - Monitor temperature and fan percentage\n"
-                "2 - As 1 plus monitor power drain"
-#ifdef DEV_BUILD
-                "32 - to log socket (dis)connections\n"
-                "64 - to log timing of job switches\n"
-                "128 - to log time for solution submission\n"
-#endif
-                )
+                "2 - As 1 plus monitor power drain")
 
             ("exit",
 
