@@ -221,7 +221,7 @@ int wrap_amdsysfs_get_mem_tempC(wrap_amdsysfs_handle* sysfsh, int index, unsigne
         return -1;
 
     char dbuf[120];
-    snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp2_input", gpuindex, hwmonindex);
+    snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp3_input", gpuindex, hwmonindex);
 
     unsigned int temp = 0;
     getFileContentValue(dbuf, temp);
