@@ -128,7 +128,7 @@ static void on_help_module(string m) {
 #if API_CORE
             "api",
 #endif
-            "con", "test", "misc", "exp",
+            "con", "test", "misc", "exp", "test",
 #ifdef _WIN32
             "env",
 #endif
@@ -764,10 +764,14 @@ class MinerCLI {
         m_PoolSettings.noResponseTimeout = vm["response-timeout"].as<unsigned>();
         m_PoolSettings.reportHashrate = vm.count("report-hashrate");
         m_PoolSettings.poolFailoverTimeout = vm["failover-timeout"].as<unsigned>();
-        if (vm.count("simulate"))
+        if (vm.count("simulate")) {
+            m_bench = true;
             m_PoolSettings.benchmarkBlock = vm["simulate"].as<unsigned>();
-        if (vm.count("benchmark"))
+        }
+        if (vm.count("benchmark")) {
+            m_bench = true;
             m_PoolSettings.benchmarkBlock = vm["benchmark"].as<unsigned>();
+        }
 
         m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
         should_list = m_shouldListDevices = vm.count("list-devices");
@@ -830,7 +834,7 @@ class MinerCLI {
         //  Operation mode Simulation do not require pool definitions
         //  Operation mode Stratum or GetWork do need at least one
 
-        if (m_PoolSettings.benchmarkBlock) {
+        if (m_bench) {
             m_mode = OperationMode::Simulation;
             pools.clear();
             m_PoolSettings.connections.push_back(shared_ptr<URI>(new URI("simulation://localhost:0", true)));
@@ -1094,6 +1098,8 @@ class MinerCLI {
     mutex m_climtx;
 
     vector<unsigned> m_devices;
+
+    bool m_bench = false;
 
 #if API_CORE
     // -- API and Http interfaces related params

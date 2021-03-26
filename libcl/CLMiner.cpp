@@ -743,8 +743,9 @@ bool CLMiner::initEpoch() {
 
         const uint32_t workItems = m_dagItems * 2; // GPU computes partial 512-bit DAG items.
 
-        uint32_t start;
-        const uint32_t chunk = m_deviceDescriptor.clGroupSize * m_block_multiple;
+        uint32_t start, chunk = m_deviceDescriptor.clGroupSize * m_block_multiple;
+        if (chunk > workItems)
+            chunk = workItems;
         for (start = 0; start <= workItems - chunk; start += chunk) {
             m_dagKernel.setArg(0, start);
             m_queue->enqueueNDRangeKernel(m_dagKernel, cl::NullRange, chunk, m_deviceDescriptor.clGroupSize);
