@@ -38,6 +38,33 @@ typedef struct {
     unsigned int res3;
 } wrap_nvmlPciInfo_t;
 
+typedef enum {
+    NVML_VALUE_TYPE_DOUBLE = 0,
+    NVML_VALUE_TYPE_UNSIGNED_INT = 1,
+    NVML_VALUE_TYPE_UNSIGNED_LONG = 2,
+    NVML_VALUE_TYPE_UNSIGNED_LONG_LONG = 3,
+    NVML_VALUE_TYPE_SIGNED_LONG_LONG = 4,
+    NVML_VALUE_TYPE_COUNT
+} wrap_nvmlValueType;
+
+typedef union {
+    double dVal;
+    unsigned int uiVal;
+    unsigned long ulVal;
+    unsigned long long ullVal;
+    signed long long sllVal;
+} wrap_nvmlValue;
+
+typedef struct {
+    unsigned int fieldId;
+    unsigned int scopeId;
+    long long timestamp;
+    long long latencyUsec;
+    wrap_nvmlValueType valueType;
+    int nvmlReturn;
+    wrap_nvmlValue value;
+} wrap_nvmlFieldValue;
+
 /*
  * Handle to hold the function pointers for the entry points we need,
  * and the shared library itself.
@@ -58,6 +85,7 @@ typedef struct {
     wrap_nvmlReturn_t (*nvmlDeviceGetFanSpeed)(wrap_nvmlDevice_t, unsigned int*);
     wrap_nvmlReturn_t (*nvmlDeviceGetPowerUsage)(wrap_nvmlDevice_t, unsigned int*);
     wrap_nvmlReturn_t (*nvmlShutdown)(void);
+    wrap_nvmlReturn_t (*nvmlDeviceGetFieldValues)(wrap_nvmlDevice_t, int, wrap_nvmlFieldValue*);
 } wrap_nvml_handle;
 
 wrap_nvml_handle* wrap_nvml_create();
@@ -78,6 +106,8 @@ int wrap_nvml_get_gpu_name(wrap_nvml_handle* nvmlh, int gpuindex, char* namebuf,
  * Query the current GPU temperature (Celsius), from the CUDA device ID
  */
 int wrap_nvml_get_tempC(wrap_nvml_handle* nvmlh, int gpuindex, unsigned int* tempC);
+
+int wrap_nvml_get_mem_tempC(wrap_nvml_handle* nvmlh, int gpuindex, unsigned int* tempC);
 
 /*
  * Query the current GPU fan speed (percent) from the CUDA device ID

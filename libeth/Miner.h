@@ -74,10 +74,14 @@ struct SolutionAccountType {
 
 struct HwSensorsType {
     int tempC = 0;
+    int memtempC = 0;
     int fanP = 0;
     double powerW = 0.0;
     string str() {
-        string _ret = to_string(tempC) + "C " + to_string(fanP) + "%";
+        string _ret = to_string(tempC);
+        if (memtempC)
+            _ret += '/' + to_string(memtempC);
+        _ret += "C " + to_string(fanP) + "%";
         if (powerW)
             _ret.append(" " + boost::str(boost::format("%0.2f") % powerW) + "W");
         return _ret;

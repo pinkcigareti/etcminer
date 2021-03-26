@@ -200,7 +200,8 @@ and expect back a response like this:
           "sensors": [                                  // An array made of ...
             47,                                         //  + Detected temp
             70,                                         //  + Fan percent
-            0                                           //  + Power drain in watts
+            0,                                          //  + Power drain in watts
+            55                                          //  + Detected memory temp
           ],
           "type": "GPU"                                 // Device Type : "CPU" / "GPU" / "ACCELERATOR"
         },
@@ -277,7 +278,8 @@ and expect back a response like this:
     "off;off;off;off;off;off",              // Detailed DCR hashrate in KH/s per GPU (not used)
     "53;90;50;90;56;90;58;90;61;90;60;90",  // Temp and fan speed pairs per GPU
     "eu1.ethermine.org:4444",               // Mining pool currently active
-    "0;0;0;0"                               // ETH invalid shares, ETH pool switches, DCR invalid shares, DCR pool switches
+    "0;0;0;0",                              // ETH invalid shares, ETH pool switches, DCR invalid shares, DCR pool switches
+    "0;59;68"                               // Memory temp per GPU, 0 if unavailable
   ]
 }
 ```

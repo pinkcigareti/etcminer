@@ -210,6 +210,28 @@ int wrap_amdsysfs_get_tempC(wrap_amdsysfs_handle* sysfsh, int index, unsigned in
     return 0;
 }
 
+int wrap_amdsysfs_get_mem_tempC(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* tempC) {
+    if (index < 0 || index >= sysfsh->sysfs_gpucount)
+        return -1;
+
+    int gpuindex = sysfsh->sysfs_device_id[index];
+
+    int hwmonindex = sysfsh->sysfs_hwmon_id[index];
+    if (hwmonindex < 0)
+        return -1;
+
+    char dbuf[120];
+    snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp2_input", gpuindex, hwmonindex);
+
+    unsigned int temp = 0;
+    getFileContentValue(dbuf, temp);
+
+    if (temp > 0)
+        *tempC = temp / 1000;
+
+    return 0;
+}
+
 int wrap_amdsysfs_get_fanpcnt(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* fanpcnt) {
     if (index < 0 || index >= sysfsh->sysfs_gpucount)
         return -1;

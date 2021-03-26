@@ -746,6 +746,7 @@ Json::Value ApiConnection::getMinerStat1() {
     ostringstream detailedMhEth;
     ostringstream detailedMhDcr;
     ostringstream tempAndFans;
+    ostringstream memTemps;
     ostringstream poolAddresses;
     ostringstream invalidStats;
 
@@ -763,11 +764,10 @@ Json::Value ApiConnection::getMinerStat1() {
         detailedMhEth << fixed << setprecision(0) << t.miners.at(gpuIndex).hashrate / 1000.0f
                       << (((numGpus - 1) > gpuIndex) ? ";" : "");
         detailedMhDcr << "off" << (((numGpus - 1) > gpuIndex) ? ";" : ""); // DualMining not supported
-    }
-
-    for (gpuIndex = 0; gpuIndex < numGpus; gpuIndex++) {
         tempAndFans << t.miners.at(gpuIndex).sensors.tempC << ";" << t.miners.at(gpuIndex).sensors.fanP
                     << (((numGpus - 1) > gpuIndex) ? ";" : ""); // Fetching Temp and Fans
+        memTemps << t.miners.at(gpuIndex).sensors.memtempC
+                 << (((numGpus - 1) > gpuIndex) ? ";" : ""); // Fetching Temp and Fans
     }
 
     Json::Value jRes;
@@ -784,6 +784,7 @@ Json::Value ApiConnection::getMinerStat1() {
     jRes[7] = poolAddresses.str(); // current mining pool. For dual mode, there will be two pools here.
     jRes[8] = invalidStats.str();  // number of ETH invalid shares, number of ETH pool switches,
                                    // number of DCR invalid shares, number of DCR pool switches.
+    jRes[9] = memTemps.str();      // Memory temps
 
     return jRes;
 }
@@ -817,6 +818,7 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(const TelemetryType& _t, s
     sensors.append(_t.miners.at(_index).sensors.tempC);
     sensors.append(_t.miners.at(_index).sensors.fanP);
     sensors.append(_t.miners.at(_index).sensors.powerW);
+    sensors.append(_t.miners.at(_index).sensors.memtempC);
 
     hwinfo["sensors"] = sensors;
 

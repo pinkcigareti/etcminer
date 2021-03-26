@@ -201,6 +201,21 @@ int wrap_adl_get_tempC(wrap_adl_handle* adlh, int gpuindex, unsigned int* tempC)
     return 0;
 }
 
+int wrap_adl_get_mem_tempC(wrap_adl_handle* adlh, int gpuindex, unsigned int* tempC) {
+
+    if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
+        return -1;
+
+    ADLTemperature* temperature = new ADLTemperature();
+
+    if (adlh->adlOverdrive5TemperatureGet(adlh->phys_logi_device_id[gpuindex], 1, temperature) != WRAPADL_OK)
+        return -1;
+
+    *tempC = unsigned(temperature->iTemperature / 1000);
+    delete temperature;
+    return 0;
+}
+
 int wrap_adl_get_fanpcnt(wrap_adl_handle* adlh, int gpuindex, unsigned int* fanpcnt) {
 
     if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
