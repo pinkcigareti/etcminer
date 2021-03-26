@@ -604,12 +604,15 @@ bool CLMiner::initEpoch() {
             m_searchBuffer = new cl::Buffer(*m_context, CL_MEM_WRITE_ONLY, sizeof(SearchResults));
             m_header = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, 32);
             m_light = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
-            try {
-                m_dag[0] = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize);
-                m_dag[1] = nullptr;
-            } catch (cl::Error const&) {
+            if (!m_deviceDescriptor.clSplit) {
+                try {
+                    m_dag[0] = new cl::Buffer(*m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize);
+                    m_dag[1] = nullptr;
+                } catch (cl::Error const&) {
+                    dagOk = false;
+                }
+            } else
                 dagOk = false;
-            }
 
             if (!dagOk) {
                 unsigned delta = (m_epochContext.dagNumItems & 1) ? 64 : 0;

@@ -560,6 +560,10 @@ class MinerCLI {
 
                 "Set the work group size, valid values are 64 128 or 256")
 
+            ("cl-split",
+
+                "Force split-DAG mode. May improve performance on older GPU models.")
+
             ("cl-bin",
 
                 "Try to load binary kernel");
@@ -785,6 +789,7 @@ class MinerCLI {
 #if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
         m_FarmSettings.clBin = vm.count("cl-bin");
+        m_FarmSettings.clSplit = vm.count("cl-split");
 #endif
 
         m_FarmSettings.tempStop = vm["tstop"].as<unsigned>();

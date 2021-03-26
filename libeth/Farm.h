@@ -48,7 +48,8 @@ struct FarmSettings {
     unsigned cuBlockSize = 0;
     unsigned cuStreams = 0;
     unsigned clGroupSize = 0;
-    bool clBin;
+    bool clSplit = false;
+    bool clBin = false;
 };
 
 typedef std::map<string, DeviceDescriptor> minerMap;
