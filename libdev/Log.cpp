@@ -10,6 +10,7 @@
 
 #include "Log.h"
 
+#include <chrono>
 #include <map>
 #include <thread>
 
@@ -32,9 +33,13 @@ int NoteChannel::severity() { return 0; }
 LogOutputStreamBase::LogOutputStreamBase(int severity) {
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
-    else
-        m_sstr << ' ' << (severity == 2 ? EthRed : severity == 1 ? EthYellow : EthWhite) << left << setw(5)
-               << getThreadName() << " " EthReset;
+    else {
+        auto now = chrono::system_clock::now();
+        auto t = std::chrono::system_clock::to_time_t(now);
+        m_sstr << EthGray << put_time(localtime(&t), "%X") << ' '
+               << (severity == 2 ? EthRed : severity == 1 ? EthYellow : EthWhite) << left << setw(5) << getThreadName()
+               << " " EthReset;
+    }
 }
 
 /// Associate a name with each thread for nice logging.
