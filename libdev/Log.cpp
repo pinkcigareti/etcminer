@@ -34,8 +34,7 @@ LogOutputStreamBase::LogOutputStreamBase(int severity) {
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else {
-        auto now = chrono::system_clock::now();
-        auto t = std::chrono::system_clock::to_time_t(now);
+        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
         m_sstr << EthGray << put_time(localtime(&t), "%X") << ' '
                << (severity == 2 ? EthRed : severity == 1 ? EthYellow : EthWhite) << left << setw(5) << getThreadName()
                << " " EthReset;
