@@ -15,7 +15,11 @@
 #include <algorithm>
 #include <condition_variable>
 
+#include <boost/function.hpp>
 #include <boost/program_options.hpp>
+#include <boost/token_functions.hpp>
+#include <boost/token_iterator.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <openssl/crypto.h>
 
