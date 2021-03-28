@@ -128,33 +128,21 @@ static void on_help_module(string m) {
 #if API_CORE
             "api",
 #endif
-            "con", "test", "misc", "exp", "test",
 #ifdef _WIN32
             "env",
 #endif
-            "reboot"
+            "con", "test", "misc", "exp", "test", "conf", "reboot"
     });
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
 
-    throw boost::program_options::error("The --help-module parameter must be one of the following: "
-#if ETH_ETHASHCL
-                                        "cl, "
-#endif
-#if ETH_ETHASHCUDA
-                                        "cu, "
-#endif
-#if ETH_ETHASHCPU
-                                        "cp, "
-#endif
-#if API_CORE
-                                        "api, "
-#endif
-                                        "con, test, misc, exp, "
-#ifdef _WIN32
-                                        "env, "
-#endif
-                                        "or reboot");
+    string msg("The --help-module parameter must be one of the following:\n    ");
+    bool first = true;
+    for (auto& m : modules) {
+        msg += first ? "" : ", " + m;
+        first = false;
+    }
+    throw boost::program_options::error(msg);
 }
 
 static void on_nonce(string n) {
@@ -303,7 +291,6 @@ class MinerCLI {
     }
 
 #if API_CORE
-
     static void ParseBind(const string& inaddr, string& outaddr, int& outport, bool advertise_negative_port) {
         regex pattern("([\\da-fA-F\\.\\:]*)\\:([\\d\\-]*)");
         smatch matches;
@@ -337,6 +324,7 @@ class MinerCLI {
 
         options_description general("General options");
         options_description test("Test options");
+        options_description misc("Miscellaneous options");
 #if ETH_ETHASHCL
         options_description cl("OpenCL options");
 #endif
@@ -349,7 +337,6 @@ class MinerCLI {
 #if API_CORE
         options_description api("API options");
 #endif
-        options_description misc("Miscellaneous options");
 
         // clang-format off
 
@@ -375,7 +362,7 @@ class MinerCLI {
 #ifdef _WIN32
                 "env, "
 #endif
-                "con, test, or reboot")
+                "con, test, conf or reboot")
 
             ("version,V",
 
@@ -387,6 +374,11 @@ class MinerCLI {
                 "scheme://[user[.workername][:password]@]hostname:port[/...]\n\n"
                 "For details and some samples how to fill in this value please use\n"
                 "nsfminer --help-module con\n\n")
+
+            ("config,F", value<string>(),
+
+                "Configuration file name. See '-H conf' for details.")
+
 #if ETH_ETHASHCL
             ("opencl,G",
 
@@ -584,7 +576,6 @@ class MinerCLI {
 
         options_description all("All options");
         all.add(general)
-            .add(test)
 #if ETH_ETHASHCL
             .add(cl)
 #endif
@@ -597,6 +588,7 @@ class MinerCLI {
 #if API_CORE
             .add(api)
 #endif
+            .add(test)
             .add(misc);
 
         options_description visible("General options");
@@ -604,8 +596,28 @@ class MinerCLI {
 
         variables_map vm;
         try {
+
             parsed_options parsed = command_line_parser(argc, argv).options(all).allow_unregistered().run();
             store(parsed, vm);
+
+            if (vm.count("config")) {
+                ifstream ifs(vm["config"].as<string>().c_str());
+                if (!ifs) {
+                    string msg("Could not open file '");
+                    msg += vm["config"].as<string>() + "'.";
+                    throw boost::program_options::error(msg);
+                }
+                // Read the whole file into a string
+                stringstream ss;
+                ss << ifs.rdbuf();
+                boost::char_separator<char> sep(" \n\r");
+                string sstr = ss.str();
+                boost::tokenizer<boost::char_separator<char>> tok(sstr, sep);
+                vector<string> args;
+                copy(tok.begin(), tok.end(), back_inserter(args));
+                store(command_line_parser(args).options(all).run(), vm);
+            }
+
             notify(vm);
             vector<string> unknown = collect_unrecognized(parsed.options, include_positional);
             if (unknown.size()) {
@@ -721,6 +733,16 @@ class MinerCLI {
 #endif
             else if (s == "misc") // miscellaneous
                 cout << endl << misc << endl;
+            else if (s == "conf") // configuration
+                cout << "\nConfiguration file details:\n\n"
+                     << "Place command line options in a file, for example:\n\n"
+                     << "  --api-port 40000\n"
+                     << "  --report-hashrate\n"
+                     << "  --HWMON 1\n"
+                     << "  -P\n"
+                     << "    stratums://0x2ceCE0...b3caa0F6e86.rig0@eth-us-east.flexpool.io:5555\n"
+                     << "    stratums://0x2ceCE0...b3caa0F6e86.rig0@eth-us-west.flexpool.io:5555\n"
+                     << "  -v 7 --display-interval 15\n\n";
 #ifdef _WIN32
             else if (s == "env")
                 cout << "\nEnvironment variables :\n\n"
