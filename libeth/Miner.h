@@ -150,7 +150,6 @@ struct TelemetryAccountType {
     bool paused = false;
     HwSensorsType sensors;
     SolutionAccountType solutions;
-    double effectiveShares = 0;
 };
 
 /// Keeps track of progress for farm and miners
@@ -194,22 +193,14 @@ struct TelemetryType {
 
         const static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
-        float ehr;
         int magnitude = 0;
         while (hr > 1000.0f && magnitude <= 3) {
             hr /= 1000.0f;
             magnitude++;
         }
 
-        double t(std::chrono::duration_cast<std::chrono::microseconds>(duration + hours).count() / 1e6);
-
-        if (g_logOptions & LOG_EFFECTIVE) {
-            ehr = float((farm.effectiveShares / t) / pow(1000.0f, magnitude));
-            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset "("
-               << ehr << ')' << " - ";
-        } else
-            ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset
-               << " - ";
+        ss << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset
+           << " - ";
         telemetry.push_back(ss.str());
 
         int i = -1; // Current miner index
@@ -218,13 +209,8 @@ struct TelemetryType {
             i++;
             hr = miner.hashrate / pow(1000.0f, magnitude);
 
-            if (g_logOptions & LOG_EFFECTIVE) {
-                ehr = float((miner.effectiveShares / t) / pow(1000.0f, magnitude));
-                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " " << EthTeal << std::fixed
-                   << std::setprecision(2) << hr << '(' << std::fixed << ehr << ")" EthReset;
-            } else
-                ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " " << EthTeal << std::fixed
-                   << std::setprecision(2) << hr << EthReset;
+            ss << (miner.paused || hr < 1 ? EthRed : EthWhite) << miner.prefix << i << " " << EthTeal << std::fixed
+               << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
                 ss << " " << EthTeal << miner.sensors.str() << EthReset;
