@@ -9,7 +9,7 @@
         .dims x
         .cws worksize, 1, 1
         .sgprsnum 52
-        .vgprsnum 72
+        .vgprsnum 64
         .floatmode 0xc0
         .dx10clamp
         .ieeemode
@@ -32,7 +32,10 @@
     .text
 
         MAX_SEARCH_RESULTS = 4
-        result_count_offset = (MAX_SEARCH_RESULTS * 64)
+        result_count_offset = 0
+        result_hashcount_offset = 4
+        result_abort_offset = 8
+        result_gid_offset = 12
 
         mix0 = %v24
         mix1 = %v25
@@ -122,9 +125,6 @@
 
         local_id = %v63
 
-        mix_save0       = %v[64:67]
-        mix_save1       = %v[68:71]
-
         kernarg         = %s[4:5]
         args            = %s[6:7]
         group_id        = %s8
@@ -138,7 +138,6 @@
         arg_dag_size    = 0x50
         arg_start_nonce = 0x58
         arg_target      = 0x60
-        arg_isolate     = 0x68
 
         output          = %s[2:3]
         header          = %s[10:11]
@@ -163,7 +162,6 @@
         keccak_round    = %s41
         first_work_item_in_group = %s42
         exec_mask       = %s[46:47]
-        dag1            = %s[44:45]
 
         v_mov_b32       local_id, v0
         s_mov_b32       fnv_prime, 0x1000193
@@ -172,7 +170,7 @@
         s_waitcnt       lgkmcnt(0)
 
         /* take early exit of abort flag is on */
-        s_add_u32       scalar_double_temp0[0], output[0], result_count_offset + 8
+        s_add_u32       scalar_double_temp0[0], output[0], result_abort_offset
         s_addc_u32      scalar_double_temp0[1], output[1], 0
         v_mov_b32       mix_double_temp0[0], scalar_double_temp0[0]
         v_mov_b32       mix_double_temp0[1], scalar_double_temp0[1]
@@ -183,7 +181,6 @@
 
         s_load_dwordx2  header,         args,    arg_header
         s_load_dwordx2  dag0,           args,    arg_dag0
-        s_load_dwordx2  dag1,           args,    arg_dag1
         s_load_dword    dag_size,       args,    arg_dag_size
         s_load_dwordx2  start_nonce,    args,    arg_start_nonce
         s_load_dwordx2  target,         args,    arg_target
@@ -204,7 +201,7 @@
 
         s_mul_i32       first_work_item_in_group, group_id, worksize
 
-        v_add_co_u32       state8, vcc, first_work_item_in_group, local_id
+        v_add_co_u32    state8, vcc, first_work_item_in_group, local_id
         v_mov_b32       state9, 0
         v_mov_b32       temp0, start_nonce[1]
         v_add_co_u32    state8, vcc, state8, start_nonce[0]
@@ -680,14 +677,8 @@
         ds_bpermute_b32 mix_double_temp0[0], temp0, mix_temp0
         s_waitcnt       lgkmcnt(0)
 
-        v_and_b32       mix_double_temp0[1], mix_double_temp0[0], 1
-        v_mov_b32       mix_double_temp1[0], dag1[0]
-        v_mov_b32       mix_double_temp1[1], dag1[1]
-        v_sub_co_u32    mix_double_temp0[1], vcc, mix_double_temp0[1], 1
-        s_and_saveexec_b64 exec_mask, vcc
         v_mov_b32       mix_double_temp1[0], dag0[0]
         v_mov_b32       mix_double_temp1[1], dag0[1]
-        s_mov_b64       exec, exec_mask
 
         v_mov_b32       mix_double_temp0[1], 0
         s_waitcnt       lgkmcnt(0)
@@ -773,16 +764,6 @@
         s_cmp_ge_i32    pass, 2
         s_cbranch_scc1  .test
 
-        /* stash the mix hash */
-        v_mov_b32       mix_save0[0], state16
-        v_mov_b32       mix_save0[1], state17
-        v_mov_b32       mix_save0[2], state18
-        v_mov_b32       mix_save0[3], state19
-        v_mov_b32       mix_save1[0], state20
-        v_mov_b32       mix_save1[1], state21
-        v_mov_b32       mix_save1[2], state22
-        v_mov_b32       mix_save1[3], state23
-
         v_mov_b32       state49, 0
         v_mov_b32       state48, 0
         v_mov_b32       state47, 0
@@ -817,7 +798,7 @@
         /* increment hash count */
         v_cmp_eq_u32    vcc, 0, local_id
         s_and_saveexec_b64 exec_mask, vcc
-        s_add_u32       scalar_double_temp0[0], output[0], result_count_offset + 4
+        s_add_u32       scalar_double_temp0[0], output[0], result_hashcount_offset
         s_addc_u32      scalar_double_temp0[1], output[1], 0
         v_mov_b32       temp0, 1
         v_mov_b32       mix_double_temp0[0], scalar_double_temp0[0]
@@ -843,8 +824,7 @@
 
         /* got solution, set the abort flag */
         s_waitcnt       lgkmcnt(0)
-        s_add_u32       scalar_double_temp0[0], output[0], result_count_offset + 8
-        s_add_u32       scalar_double_temp0[0], output[0], result_count_offset
+        s_add_u32       scalar_double_temp0[0], output[0], result_abort_offset
         s_addc_u32      scalar_double_temp0[1], output[1], 0
         v_mov_b32       temp0, 1
         v_mov_b32       mix_double_temp0[0], scalar_double_temp0[0]
@@ -852,7 +832,7 @@
         flat_atomic_add temp0, mix_double_temp0, temp0 glc
 
         /* increment the solution count */
-        v_sub_co_u32    mix_double_temp0[0], vcc, mix_double_temp0[0], 8
+        v_sub_co_u32    mix_double_temp0[0], vcc, mix_double_temp0[0], result_abort_offset - result_count_offset
         v_subb_co_u32   mix_double_temp0[1], vcc, mix_double_temp0[1], 0, vcc
         flat_atomic_add temp0, mix_double_temp0, temp0 glc
         s_waitcnt       vmcnt(0) & lgkmcnt(0)
@@ -860,20 +840,15 @@
         /* store the solution */
         v_min_u32       mix_double_temp0[0], MAX_SEARCH_RESULTS - 1, temp0
         v_mov_b32       mix_double_temp0[1], 0
-        v_lshlrev_b64   mix_double_temp0, 6, mix_double_temp0
-        v_add_co_u32    mix_double_temp1[0], vcc, output[0], mix_double_temp0[0]
-        v_mov_b32       mix_double_temp0[0], output[1]
+        v_lshlrev_b64   mix_double_temp0, 2, mix_double_temp0
+
+        s_add_u32       scalar_double_temp1[0], output[0], result_gid_offset
+        s_addc_u32      scalar_double_temp1[1], output[1], 0
+        v_mov_b32       mix_double_temp0[0], scalar_double_temp0[0]
+        v_mov_b32       mix_double_temp0[1], scalar_double_temp0[1]
         v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp0[0], mix_double_temp0[1], vcc
+
         flat_store_dword mix_double_temp1, temp1
-
-        /* store the mix hash */
-        v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], 4
-        v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
-        flat_store_dwordx4 mix_double_temp1, mix_save0
-
-        v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], 16
-        v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
-        flat_store_dwordx4 mix_double_temp1, mix_save1
         s_waitcnt       vmcnt(0) & lgkmcnt(0)
 
         s_mov_b64       exec, exec_mask

@@ -135,7 +135,7 @@ static void on_help_module(string m) {
 #ifdef _WIN32
             "env",
 #endif
-            "con", "test", "misc", "exp", "test", "conf", "reboot"
+            "con", "test", "misc", "test", "conf", "reboot"
     });
     if (find(modules.begin(), modules.end(), m) != modules.end())
         return;
@@ -158,7 +158,7 @@ static void on_nonce(string n) {
 static void on_verbosity(unsigned u) {
     if (u < LOG_NEXT)
         return;
-    throw boost::program_options::error("The --verbosity value must be less than " + to_string(u));
+    throw boost::program_options::error("The --verbosity value must be less than " + to_string(LOG_NEXT));
 }
 
 static void on_hwmon(unsigned u) {
@@ -409,8 +409,6 @@ class MinerCLI {
                 "Set output verbosity level. Use the sum of :\n"
                 "1 - log per GPU status lines\n"
                 "2 - log per GPU solutions\n"
-                "4 - log per GPU calculated effective hash rate\n"
-                "    (Experimental, see -H exp)"
 #ifdef DEV_BUILD
                 "\n16 - log stratum messages\n"
                 "32 - log connection events\n"
@@ -497,11 +495,6 @@ class MinerCLI {
                 "Resume mining on previously overheated GPU when "
                 "temp drops below this threshold. Implies --HWMON 1. "
                 "Must be lower than --tstart")
-
-            ("multi,m",
-
-                "[DEPRECATED] Use --verbosity instead.\n"
-                "Use multi-line status display")
 
             ("nonce,n", value<string>()->default_value("")->notifier(on_nonce),
 
@@ -767,13 +760,6 @@ class MinerCLI {
                      << "    the search path.\n\n"
                      << "    For Linux:   reboot.sh\n\n"
                      << "    For Windows: reboot.bat\n\n";
-            else if (s == "exp")
-                cout << "\nMiner experimental features:\n\n"
-                     << "    The 'log effective hash rate' verbosity option enables\n"
-                     << "    the calculation and per GPU display of the effective hash rate\n"
-                     << "    based on shares accepted over time.\n"
-                     << "    Effective hash rates will only become statistically significant\n"
-                     << "    after many hours.\n\n";
             return false;
         }
 
@@ -801,8 +787,6 @@ class MinerCLI {
 
         m_cliDisplayInterval = vm["display-interval"].as<unsigned>();
         should_list = m_shouldListDevices = vm.count("list-devices");
-        if (vm.count("multi"))
-            g_logOptions |= LOG_MULTI;
 
         if (vm.count("devices"))
             for (auto& d : vm["devices"].as<vector<unsigned>>())

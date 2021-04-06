@@ -1,12 +1,11 @@
 SDIR=./isa
 BUILD=./bin
 
-ASFLAGS=-I$(SDIR)
+ASFLAGS=-I$(SDIR) -b amdcl2
 AS=clrxasm
 
 .PHONY: all
-#all: ellesmere tonga baffin gfx900 gfx901 gfx906
-all: gfx900
+all: ellesmere tonga baffin gfx900 gfx901 gfx906 gfx1010
 	@echo "Built ethash kernel for Ellesmere, Tonga, Baffin, Gfx900 and Gfx901 architectures."
 
 .PHONY: clean
@@ -41,3 +40,8 @@ gfx901: gfx901_lws64.bin gfx901_lws128.bin gfx901_lws256.bin
 .PHONY: gfx906
 gfx906: gfx906_lws64.bin gfx906_lws128.bin gfx906_lws256.bin
 		@echo "Built gfx906 kernels..."
+
+.PHONY: gfx1010
+gfx1010: gfx1010_lws64.bin gfx1010_lws128.bin gfx1010_lws256.bin
+		@echo "Built gfx1010 kernels..."
+
