@@ -24,7 +24,7 @@ commands:
       - run: git submodule update --init --recursive
       - restore_cache_cmd
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -H. -Bbuild
-      - run: cmake --build build -- -j4
+      - run: cmake --build build -- -j2
       - save_cache_cmd
       - store_artifacts:
           path: build/nsfminer/nsfminer
@@ -32,9 +32,7 @@ commands:
           
   test:
     steps:
-      - run: pwd
-      - run: ls
-      - run: find . -name nsfminer
+      - run: ./build/nsfminer/nsfminer --version
 
 executors:
  docker-executor-u20n11:
