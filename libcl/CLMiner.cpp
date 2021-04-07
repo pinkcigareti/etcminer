@@ -666,60 +666,11 @@ bool CLMiner::initEpoch() {
         /* If we have a binary kernel, we load it in tandem with the opencl,
            that way, we can use the dag generate opencl code and fall back on
            the default kernel if loading fails for whatever reason */
-        bool loadedBinary = false;
         string device_name = m_deviceDescriptor.clArch;
-        if (m_deviceDescriptor.clBin) {
-            ifstream kernel_file;
-            vector<unsigned char> bin_data;
-            stringstream fname_strm;
-
-            /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
-            transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
-            fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/ethash_" << device_name
-                       << "_lws" << m_deviceDescriptor.clGroupSize << ".bin";
-            cnote << "Loading binary kernel " << fname_strm.str();
-            try {
-                kernel_file.open(fname_strm.str(), ios::in | ios::binary);
-
-                if (kernel_file.good()) {
-                    /* Load the data vector with file data */
-                    kernel_file.unsetf(ios::skipws);
-                    bin_data.insert(bin_data.begin(), istream_iterator<unsigned char>(kernel_file),
-                                    istream_iterator<unsigned char>());
-
-                    /* Setup the program */
-                    cl::Program::Binaries blobs({bin_data});
-                    cl::Program program(*m_context, {m_device}, blobs);
-                    try {
-                        program.build({m_device}, options);
-                        cnote << "Build info success:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
-                        binaryProgram = program;
-                        loadedBinary = true;
-                    } catch (cl::Error const&) {
-                        cwarn << "Build failed! Info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
-                        cwarn << fname_strm.str();
-                        cwarn << "Falling back to OpenCL kernel...";
-                    }
-                } else {
-                    cwarn << "Failed to load binary kernel: " << fname_strm.str();
-                    cwarn << "Falling back to OpenCL kernel...";
-                }
-            } catch (...) {
-                cwarn << "Failed to load binary kernel: " << fname_strm.str();
-                cwarn << "Falling back to OpenCL kernel...";
-            }
-        }
 
         try {
-            // If we have a binary kernel to use, let's try it
-            // otherwise just do a normal opencl load
-            if (loadedBinary)
-                m_searchKernel = cl::Kernel(binaryProgram, "search");
-            else
-                m_searchKernel = cl::Kernel(program, "search");
-
+            m_searchKernel = cl::Kernel(program, "search");
             m_dagKernel = cl::Kernel(program, "GenerateDAG");
-
             m_queue->enqueueWriteBuffer(*m_light, CL_TRUE, 0, m_epochContext.lightSize, m_epochContext.lightCache);
         } catch (cl::Error const& err) {
             cwarn << ethCLErrorHelper("Creating opencl failed", err);
