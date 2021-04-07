@@ -14,12 +14,11 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <string>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/function.hpp>
 #include <boost/program_options.hpp>
-#include <boost/token_functions.hpp>
-#include <boost/token_iterator.hpp>
-#include <boost/tokenizer.hpp>
 
 #include <openssl/crypto.h>
 
@@ -115,6 +114,18 @@ static void headers(vector<string>& h, bool color) {
     string s(SSLeay_version(SSLEAY_VERSION));
     boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
     ss << white << "3rd Party: OpenSSL " << sv[1] << ", Ethash " << ethash::version;
+    h.push_back(ss.str());
+    char username[64];
+#if defined(__linux__)
+    if (getlogin_r(username, sizeof(username)))
+        strcpy(username, "unknown");
+#else
+    DWORD size = sizeof(username) - 1;
+    if (!GetUserName(username, &size))
+        strcpy(username, "unknown");
+#endif
+    ss.str("");
+    ss << (color ? EthWhite : "") << "Running as user: " << username;
     h.push_back(ss.str());
 }
 
@@ -607,11 +618,8 @@ class MinerCLI {
                 // Read the whole file into a string
                 stringstream ss;
                 ss << ifs.rdbuf();
-                boost::char_separator<char> sep(" \n\r");
-                string sstr = ss.str();
-                boost::tokenizer<boost::char_separator<char>> tok(sstr, sep);
                 vector<string> args;
-                copy(tok.begin(), tok.end(), back_inserter(args));
+                boost::split(args, ss.str(), boost::is_any_of(" \n\r\t"), boost::token_compress_on);
                 store(command_line_parser(args).options(all).run(), vm);
             }
 
