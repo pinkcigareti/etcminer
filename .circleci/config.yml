@@ -30,9 +30,9 @@ commands:
           path: build/nsfminer/nsfminer
           destination: nsfminer
           
-   test:
-     steps:
-       - run: nsfminer --version
+  test:
+    steps:
+      - run: nsfminer --version
 
 executors:
  docker-executor-u20n11:
