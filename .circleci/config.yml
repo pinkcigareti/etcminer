@@ -32,7 +32,7 @@ commands:
           
   test:
     steps:
-      - run: nsfminer --version
+      - run: nsfminer/nsfminer --version
 
 executors:
  docker-executor-u20n11:
