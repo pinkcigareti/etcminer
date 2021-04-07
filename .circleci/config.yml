@@ -29,6 +29,10 @@ commands:
       - store_artifacts:
           path: build/nsfminer/nsfminer
           destination: nsfminer
+          
+   test:
+     steps:
+       - run: nsfminer --version
 
 executors:
  docker-executor-u20n11:
@@ -40,6 +44,7 @@ jobs:
     executor: docker-executor-u20n11
     steps:
       - build
+      - test
     environment:
         TZ: "America/New_York"
 
