@@ -199,7 +199,6 @@ bool Farm::start() {
                 minerTelemetry.prefix = "cl";
                 if (m_Settings.clGroupSize)
                     it->second.clGroupSize = m_Settings.clGroupSize;
-                it->second.clBin = m_Settings.clBin;
                 it->second.clSplit = m_Settings.clSplit;
                 m_miners.push_back(shared_ptr<Miner>(new CLMiner(m_miners.size(), it->second)));
             }

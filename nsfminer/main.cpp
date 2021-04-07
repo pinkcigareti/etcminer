@@ -62,10 +62,6 @@ mutex g_seqDAGMutex;
 condition_variable g_shouldstop;
 boost::asio::io_service g_io_service; // The IO service itself
 
-#if ETH_DBUS
-#include <nsfminer/DBusInt.h>
-#endif
-
 static bool should_list;
 
 static void headers(vector<string>& h, bool color) {
@@ -245,9 +241,6 @@ class MinerCLI {
                 }
             } else
                 cnote << Farm::f().Telemetry().str();
-#if ETH_DBUS
-            dbusint.send(Farm::f().Telemetry().str().c_str());
-#endif
             // Restart timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
             m_cliDisplayTimer.async_wait(m_io_strand.wrap(
@@ -562,11 +555,7 @@ class MinerCLI {
 
             ("cl-split",
 
-                "Force split-DAG mode. May improve performance on older GPU models.")
-
-            ("cl-bin",
-
-                "Try to load binary kernel");
+                "Force split-DAG mode. May improve performance on older GPU models.");
 #endif
         test.add_options()
 
@@ -810,7 +799,6 @@ class MinerCLI {
 
 #if ETH_ETHASHCL
         m_FarmSettings.clGroupSize = vm["cl-work"].as<unsigned>();
-        m_FarmSettings.clBin = vm.count("cl-bin");
         m_FarmSettings.clSplit = vm.count("cl-split");
 #endif
 
@@ -1127,9 +1115,6 @@ class MinerCLI {
     string m_api_password;            // API interface write protection password
 #endif
 
-#if ETH_DBUS
-    DBusInt dbusint;
-#endif
 };
 
 int main(int argc, char** argv) {
