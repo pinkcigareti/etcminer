@@ -10,6 +10,7 @@
 
 #if defined(__linux__)
 #include <execinfo.h>
+#include <pwd.h>
 #endif
 
 #include <algorithm>
@@ -113,8 +114,9 @@ static void headers(vector<string>& h, bool color) {
     h.push_back(ss.str());
     char username[64];
 #if defined(__linux__)
-    if (getlogin_r(username, sizeof(username)))
-        strcpy(username, "unknown");
+    uid_t uid = geteuid();
+    struct passwd* pw = getpwuid(uid);
+    strcpy(username, pw ? pw->pw_name : "unknown");
 #else
     DWORD size = sizeof(username) - 1;
     if (!GetUserName(username, &size))
