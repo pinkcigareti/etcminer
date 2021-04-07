@@ -21,9 +21,7 @@ using namespace eth;
 
 namespace dev {
 namespace eth {
-// WARNING: Do not change the value of the following constant
-// unless you are prepared to make the neccessary adjustments
-// to the assembly code for the binary kernels.
+
 const size_t c_maxSearchResults = 4;
 
 /**
@@ -652,7 +650,7 @@ bool CLMiner::initEpoch() {
 
         // create miner OpenCL program
         cl::Program::Sources sources{{code.data(), code.size()}};
-        cl::Program program(*m_context, sources), binaryProgram;
+        cl::Program program(*m_context, sources);
         try {
             program.build({m_device}, options);
         } catch (cl::BuildError const& buildErr) {
@@ -662,11 +660,6 @@ bool CLMiner::initEpoch() {
             free_buffers();
             return false;
         }
-
-        /* If we have a binary kernel, we load it in tandem with the opencl,
-           that way, we can use the dag generate opencl code and fall back on
-           the default kernel if loading fails for whatever reason */
-        string device_name = m_deviceDescriptor.clArch;
 
         try {
             m_searchKernel = cl::Kernel(program, "search");
