@@ -1472,7 +1472,7 @@ void EthStratumClient::onRecvSocketDataCompleted(const boost::system::error_code
                         try {
                             // Run in sync so no 2 different async reads may overlap
                             processResponse(jMsg);
-                        } catch (const exception& _ex) {
+                        } catch (const exception&) {
                             cwarn << "Stratum got invalid Json message";
                         }
                     } else
