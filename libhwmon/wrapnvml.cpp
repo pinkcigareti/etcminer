@@ -64,13 +64,15 @@ wrap_nvml_handle* wrap_nvml_create() {
 #else
     nvml_dll = wrap_dlopen(libnvidia_ml);
 #endif
-    if (nvml_dll == nullptr) {
+    if (!nvml_dll) {
         cwarn << "Failed to load NVML library";
         cwarn << "NVIDIA hardware monitoring disabled";
         return nullptr;
     }
 
     nvmlh = (wrap_nvml_handle*)calloc(1, sizeof(wrap_nvml_handle));
+    if (nvmlh == nullptr)
+        return nullptr;
 
     nvmlh->nvml_dll = nvml_dll;
 
@@ -109,6 +111,13 @@ wrap_nvml_handle* wrap_nvml_create() {
     nvmlh->nvmlDeviceGetCount(&nvmlh->nvml_gpucount);
 
     nvmlh->devs = (wrap_nvmlDevice_t*)calloc(nvmlh->nvml_gpucount, sizeof(wrap_nvmlDevice_t));
+    if (!nvmlh->devs) {
+        cwarn << "Failed to load NVML library";
+        cwarn << "NVIDIA hardware monitoring disabled";
+        wrap_dlclose(nvmlh->nvml_dll);
+        free(nvmlh);
+        return nullptr;
+    }
     nvmlh->nvml_pci_domain_id = (unsigned int*)calloc(nvmlh->nvml_gpucount, sizeof(unsigned int));
     nvmlh->nvml_pci_bus_id = (unsigned int*)calloc(nvmlh->nvml_gpucount, sizeof(unsigned int));
     nvmlh->nvml_pci_device_id = (unsigned int*)calloc(nvmlh->nvml_gpucount, sizeof(unsigned int));
