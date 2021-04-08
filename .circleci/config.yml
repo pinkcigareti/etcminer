@@ -23,7 +23,7 @@ commands:
       - checkout
       - run: git submodule update --init --recursive
       - restore_cache_cmd
-      - run: cmake -DHUNTER_JOBS_NUMBER=4 -H. -Bbuild
+      - run: cmake -DHUNTER_JOBS_NUMBER=4 -H. -Bbuild -DOLDCXX=ON
       - run: cmake --build build -- -j2
       - save_cache_cmd
       - store_artifacts:

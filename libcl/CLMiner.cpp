@@ -556,7 +556,7 @@ bool CLMiner::initDevice() {
         s << " (" << m_deviceDescriptor.clDeviceVersion;
 
     s << ") Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
-    cnote << s.str();
+    cextr << s.str();
 
     return true;
 }
