@@ -49,16 +49,20 @@ std::string getThreadName();
 /// (severity()
 /// ). Channels should inherit from LogChannel and define severity() and verbosity.
 struct LogChannel {
-    static int severity();
+    static const int severity = 0;
 };
 struct CritChannel : public LogChannel {
-    static int severity();
+    static const int severity = 2;
 };
 struct WarnChannel : public LogChannel {
-    static int severity();
+    static const int severity = 1;
 };
 struct NoteChannel : public LogChannel {
-    static int severity();
+    static const int severity = 0;
+};
+
+struct ExtraChannel : public LogChannel {
+    static const int severity = 3;
 };
 
 class LogOutputStreamBase {
@@ -77,7 +81,7 @@ template <class I> class LogOutputStream : LogOutputStreamBase {
     /// Construct a new object.
     /// If _term is true the the prefix info is terminated with a ']' character; if not it ends only
     /// with a '|' character.
-    LogOutputStream() : LogOutputStreamBase(I::severity()) {}
+    LogOutputStream() : LogOutputStreamBase(I::severity) {}
 
     /// Destructor. Posts the accrued log entry to the g_logPost function.
     ~LogOutputStream() { simpleDebugOut(m_sstr.str()); }
@@ -96,4 +100,5 @@ template <class I> class LogOutputStream : LogOutputStreamBase {
 #define cnote clog(dev::NoteChannel)
 #define cwarn clog(dev::WarnChannel)
 #define ccrit clog(dev::CritChannel)
+#define cextr clog(dev::ExtraChannel)
 } // namespace dev

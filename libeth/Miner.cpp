@@ -38,14 +38,14 @@ void Miner::ReportSolution(const h256& header, uint64_t nonce) {
 }
 
 void Miner::ReportDAGDone(uint64_t dagSize, uint32_t dagTime, bool notSplit) {
-    cnote << EthYellow << dev::getFormattedMemory(float(dagSize)) << " of " << (notSplit ? "" : "(split) ")
+    cextr << dev::getFormattedMemory(float(dagSize)) << " of " << (notSplit ? "" : "(split) ")
           << "DAG data generated in " << fixed << setprecision(1) << dagTime / 1000.0f << " seconds";
 }
 
 void Miner::ReportGPUMemoryRequired(uint32_t lightSize, uint64_t dagSize, uint32_t misc) {
-    cnote << EthYellow << "Required GPU mem: Total " << dev::getFormattedMemory(float(lightSize + dagSize + misc))
-          << ", Cache " << dev::getFormattedMemory(float(lightSize)) << ", DAG "
-          << dev::getFormattedMemory(float(dagSize)) << ", Miscellaneous " << dev::getFormattedMemory(float(misc));
+    cextr << "Required GPU mem: Total " << dev::getFormattedMemory(float(lightSize + dagSize + misc)) << ", Cache "
+          << dev::getFormattedMemory(float(lightSize)) << ", DAG " << dev::getFormattedMemory(float(dagSize))
+          << ", Miscellaneous " << dev::getFormattedMemory(float(misc));
 }
 
 void Miner::ReportGPUNoMemoryAndPause(string mem, uint64_t requiredMemory, uint64_t totalMemory) {

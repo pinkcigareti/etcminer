@@ -32,7 +32,7 @@ CUDAMiner::~CUDAMiner() {
 #define DeviceToHost(dst, src, siz) CUDA_CALL(cudaMemcpy(dst, src, siz, cudaMemcpyDeviceToHost))
 
 bool CUDAMiner::initDevice() {
-    cnote << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.boardName
+    cextr << "Using Pci " << m_deviceDescriptor.uniqueId << ": " << m_deviceDescriptor.boardName
           << " (Compute " + m_deviceDescriptor.cuCompute + ") Memory : "
           << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 

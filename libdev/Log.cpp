@@ -22,22 +22,14 @@ unsigned g_logOptions = 0;
 bool g_logNoColor = false;
 bool g_logSyslog = false;
 
-int LogChannel::severity() { return 0; }
-
-int CritChannel::severity() { return 2; }
-
-int WarnChannel::severity() { return 1; }
-
-int NoteChannel::severity() { return 0; }
-
 LogOutputStreamBase::LogOutputStreamBase(int severity) {
+    static const char* color[4] = {EthWhite, EthYellow, EthRed, EthGreen};
     if (g_logSyslog)
         m_sstr << left << setw(5) << getThreadName() << " " EthReset;
     else {
         auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        m_sstr << EthGray << put_time(localtime(&t), "%X") << ' '
-               << (severity == 2 ? EthRed : severity == 1 ? EthYellow : EthWhite) << left << setw(5) << getThreadName()
-               << " " EthReset;
+        m_sstr << EthGray << put_time(localtime(&t), "%X") << ' ' << color[severity] << left << setw(5)
+               << getThreadName() << " " EthReset;
     }
 }
 
