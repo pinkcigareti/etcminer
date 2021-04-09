@@ -1515,7 +1515,7 @@ void EthStratumClient::onRecvSocketDataCompleted(const boost::system::error_code
 
 void EthStratumClient::send(Json::Value const& jReq) {
     string* line = new string(Json::writeString(m_jSwBuilder, jReq));
-    m_txQueue.push(line);
+    m_txQueue.bounded_push(line);
 
     bool ex = false;
     if (m_txPending.compare_exchange_strong(ex, true, memory_order_relaxed))
@@ -1595,7 +1595,7 @@ void EthStratumClient::enqueue_response_plea() {
     if (m_response_pleas_count++ == 0) {
         m_response_plea_older.store(response_plea_time.time_since_epoch(), memory_order_relaxed);
     }
-    m_response_plea_times.push(response_plea_time);
+    m_response_plea_times.bounded_push(response_plea_time);
 }
 
 chrono::milliseconds EthStratumClient::dequeue_response_plea() {
@@ -1619,8 +1619,7 @@ void EthStratumClient::clear_response_pleas() {
     using namespace chrono;
     steady_clock::time_point response_plea_time;
     m_response_pleas_count.store(0, memory_order_relaxed);
-    while (m_response_plea_times.pop(response_plea_time)) {
-    };
+    while (m_response_plea_times.pop(response_plea_time));
     m_response_plea_older.store(((steady_clock::time_point)steady_clock::now()).time_since_epoch(),
                                 memory_order_relaxed);
 }

@@ -416,7 +416,7 @@ void EthGetworkClient::send(Json::Value const& jReq) { send(string(Json::writeSt
 
 void EthGetworkClient::send(string const& sReq) {
     string* line = new string(sReq);
-    m_txQueue.push(line);
+    m_txQueue.bounded_push(line);
 
     bool ex = false;
     if (m_txPending.compare_exchange_strong(ex, true, memory_order_relaxed))
