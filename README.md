@@ -42,6 +42,7 @@ For a full list of available command, please run:
 ```sh
 nsfminer --help
 ```
+Complete list of command options [here](docs/Options.md).
 
 ### Examples connecting to pools
 
