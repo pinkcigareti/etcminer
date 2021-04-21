@@ -604,6 +604,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
+                cnote << "HTTP Request " << http_method << " " << http_path << " not supported (405).";
                 return;
             }
 
@@ -619,6 +620,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
+                cnote << "HTTP Request " << http_method << " " << http_path << " not found (404).";
                 return;
             }
 
@@ -641,6 +643,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                        << "Content-Type: text/html; charset=utf-8\r\n"
                        << "Content-Length: " << body.size() << "\r\n\r\n"
                        << body;
+                    cnote << "HTTP Request " << http_method << " " << http_path << " 200 OK (" << ss.str().size() << " bytes).";
                 } catch (const exception& _ex) {
                     string what = "Internal error : " + string(_ex.what());
                     ss.clear();
@@ -650,6 +653,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                        << "Content-Type: text/plain\r\n"
                        << "Content-Length: " << what.size() << "\r\n\r\n"
                        << what;
+                    cnote << "HTTP Request " << http_method << " " << http_path << " 500 Error (" << _ex.what() << ").";
                 }
             }
 
