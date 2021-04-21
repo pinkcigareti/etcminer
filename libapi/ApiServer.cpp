@@ -601,7 +601,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
-                   << what << "\r\n";
+                   << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
                 return;
@@ -616,7 +616,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
-                   << what << "\r\n";
+                   << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
                 return;
@@ -636,11 +636,11 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                     string body = getHttpMinerStatDetail();
                     ss.clear();
                     ss << http_ver << " "
-                       << "200 Ok Error\r\n"
+                       << "200 OK\r\n"
                        << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                        << "Content-Type: text/html; charset=utf-8\r\n"
                        << "Content-Length: " << body.size() << "\r\n\r\n"
-                       << body << "\r\n";
+                       << body;
                 } catch (const exception& _ex) {
                     string what = "Internal error : " + string(_ex.what());
                     ss.clear();
@@ -649,7 +649,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                        << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                        << "Content-Type: text/plain\r\n"
                        << "Content-Length: " << what.size() << "\r\n\r\n"
-                       << what << "\r\n";
+                       << what;
                 }
             }
 
