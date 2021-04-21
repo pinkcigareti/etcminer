@@ -57,6 +57,7 @@ class ApiConnection {
     Json::Value getMinerStatDetail();
     Json::Value getMinerStatDetailPerMiner(const TelemetryType& _t, std::shared_ptr<Miner> _miner);
 
+    std::string getHttpMinerMetrics();
     std::string getHttpMinerStatDetail();
 
     Disconnected m_onDisconnected;

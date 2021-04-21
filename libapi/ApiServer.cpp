@@ -601,14 +601,15 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
-                   << what << "\r\n";
+                   << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
+                cnote << "HTTP Request " << http_method << " " << http_path << " not supported (405).";
                 return;
             }
 
             // Do we support path ?
-            if (http_path != "/" && http_path != "/getstat1") {
+            if (http_path != "/" && http_path != "/getstat1" && http_path != "/metrics") {
                 string what = "The requested resource " + http_path + " not found on this server";
                 stringstream ss;
                 ss << http_ver << " "
@@ -616,9 +617,10 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                    << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
-                   << what << "\r\n";
+                   << what;
                 sendSocketData(ss.str(), true);
                 m_message.clear();
+                cnote << "HTTP Request " << http_method << " " << http_path << " not found (404).";
                 return;
             }
 
@@ -631,16 +633,24 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
 
             stringstream ss; // Builder of the response
 
-            if (http_method == "GET" && (http_path == "/" || http_path == "/getstat1")) {
+            if (http_method == "GET" && (http_path == "/" || http_path == "/getstat1" || http_path == "/metrics")) {
                 try {
-                    string body = getHttpMinerStatDetail();
+                    string body, content_type;
+                    if (http_path == "/metrics") {
+                        body = getHttpMinerMetrics();
+                        content_type = "text/plain";
+                    } else {
+                        body = getHttpMinerStatDetail();
+                        content_type = "text/html";
+                    }
                     ss.clear();
                     ss << http_ver << " "
-                       << "200 Ok Error\r\n"
+                       << "200 OK\r\n"
                        << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
-                       << "Content-Type: text/html; charset=utf-8\r\n"
+                       << "Content-Type: " << content_type << "; charset=utf-8\r\n"
                        << "Content-Length: " << body.size() << "\r\n\r\n"
-                       << body << "\r\n";
+                       << body;
+                    cnote << "HTTP Request " << http_method << " " << http_path << " 200 OK (" << ss.str().size() << " bytes).";
                 } catch (const exception& _ex) {
                     string what = "Internal error : " + string(_ex.what());
                     ss.clear();
@@ -649,7 +659,8 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                        << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
                        << "Content-Type: text/plain\r\n"
                        << "Content-Length: " << what.size() << "\r\n\r\n"
-                       << what << "\r\n";
+                       << what;
+                    cnote << "HTTP Request " << http_method << " " << http_path << " 500 Error (" << _ex.what() << ").";
                 }
             }
 
@@ -845,6 +856,98 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(const TelemetryType& _t, s
     jRes["mining"] = mininginfo;
 
     return jRes;
+}
+
+string ApiConnection::getHttpMinerMetrics() {
+    Json::Value jStat = getMinerStatDetail();
+    Json::StreamWriterBuilder builder;
+
+    ostringstream ss;
+    ss << "host=" << jStat["host"]["name"] << ",version=" << jStat["host"]["version"];
+    string labels = ss.str();
+    stringstream _ret;
+    _ret
+        << "# HELP miner_process_runtime Number of seconds miner process has been running.\n"
+        << "# TYPE miner_process_runtime gauge\n"
+	    << "miner_process_runtime{" << labels << "} " << jStat["host"]["runtime"] << "\n"
+        << "# HELP miner_process_connected Connection status.\n"
+        << "# TYPE miner_process_connected gauge\n"
+	    << "miner_process_connected{" << labels << ",uri=" << jStat["connection"]["uri"] << "} " << jStat["connection"]["connected"].asUInt() << "\n"
+        << "# HELP miner_process_connection_switches Connection switches.\n"
+        << "# TYPE miner_process_connection_switches gauge\n"
+	    << "miner_process_connection_switches{" << labels << "} " << jStat["connection"]["switches"] << "\n";
+
+    // Per device help/type info.
+
+    double total_power = 0;
+    for (Json::Value::ArrayIndex i = 0; i != jStat["devices"].size(); i++) {
+        Json::Value device = jStat["devices"][i];
+        ostringstream ss;
+        ss << labels
+           << ",id=\"" << device["_index"] << "\""
+           << ",name=" << device["hardware"]["name"]
+           << ",pci=" << device["hardware"]["pci"]
+           << ",device_type=" << device["hardware"]["type"]
+           << ",mode=" << device["_mode"];
+        string device_labels = ss.str();
+
+        double hashrate = stoul(device["mining"]["hashrate"].asString(), nullptr, 16);
+        double power = device["hardware"]["sensors"][2].asDouble();
+
+        _ret
+            << "# HELP miner_device_hashrate Device hash rate in hashes/sec.\n"
+            << "# TYPE miner_device_hashrate gauge\n"
+            << "miner_device_hashrate{" << device_labels << "} " << hashrate << "\n"
+            << "# HELP miner_device_temp_celsius Device temperature in degrees celsius.\n"
+            << "# TYPE miner_device_temp_celsius gauge\n"
+            << "miner_device_temp_celsius{" << device_labels << "} " << device["hardware"]["sensors"][0].asDouble() << "\n"
+            << "# HELP miner_device_memory_temp_celsius Memory temperature in degrees celsius.\n"
+            << "# TYPE miner_device_memory_temp_celsius gauge\n"
+            << "miner_device_memory_temp_celsius{" << device_labels << "} " << device["hardware"]["sensors"][3].asDouble() << "\n"
+            << "# HELP miner_device_fanspeed Device fanspeed (percentage 0-100).\n"
+            << "# TYPE miner_device_fanspeed gauge\n"
+            << "miner_device_fanspeed{" << device_labels << "} " << device["hardware"]["sensors"][1].asUInt() << "\n"
+            << "# HELP miner_device_fanspeed Device fanspeed (percentage 0-100).\n"
+            << "# TYPE miner_device_fanspeed gauge\n"
+            << "miner_device_fanspeed{" << device_labels << "} " << device["hardware"]["sensors"][1].asUInt() << "\n"
+            << "# HELP miner_device_shares_total Number of shares processed by devices and status (failed, found, or rejected).\n"
+            << "# TYPE miner_device_shares_total counter\n"
+            << "miner_device_shares_total{" << device_labels << ",status=\"found\"} " << device["mining"]["shares"][0].asUInt() << "\n"
+            << "miner_device_shares_total{" << device_labels << ",status=\"rejected\"} " << device["mining"]["shares"][1].asUInt() << "\n"
+            << "miner_device_shares_total{" << device_labels << ",status=\"failed\"} " << device["mining"]["shares"][2].asUInt() << "\n"
+            << "# HELP miner_device_shares_last_found_seconds Time since device last found share (seconds).\n"
+            << "# TYPE miner_device_shares_last_found_seconds gauge\n"
+            << "miner_device_shares_last_found_seconds{" << device_labels << "} " << device["mining"]["shares"][3].asUInt() << "\n"
+            << "# HELP miner_device_paused True if device is paused.\n"
+            << "# TYPE miner_device_paused gauge\n"
+            << "miner_device_paused{" << device_labels << "} " << (device["mining"]["paused"].asBool() ? 1 : 0) << "\n";
+
+        total_power += power;
+    }
+    double total_hashrate = stoul(jStat["mining"]["hashrate"].asString(), nullptr, 16);
+    _ret << "# HELP miner_total_hashrate Total miner process hashrate across all devices (hashes/sec).\n"
+         << "# TYPE miner_total_hashrate gauge\n"
+         << "miner_total_hashrate{" << labels << "} " << total_hashrate << "\n"
+         << "# HELP miner_total_power Total power consumption across all devices (watts).\n"
+         << "# TYPE miner_total_power gauge\n"
+         << "miner_total_power{" << labels << "} " << total_power << "\n"
+         << "# HELP miner_shares_total Total number of shares across all devices.\n"
+         << "# TYPE miner_shares_total counter\n"
+         << "miner_shares_total{" << labels << ",status=\"found\"} " << jStat["mining"]["shares"][0].asUInt() << "\n"
+         << "miner_shares_total{" << labels << ",status=\"rejected\"} " << jStat["mining"]["shares"][1].asUInt() << "\n"
+         << "miner_shares_total{" << labels << ",status=\"failed\"} " << jStat["mining"]["shares"][2].asUInt() << "\n"
+         << "# HELP miner_difficulty Difficulty mining.\n"
+         << "# TYPE miner_difficulty gauge\n"
+         << "miner_difficulty{" << labels << "} " << jStat["mining"]["difficulty"].asDouble() << "\n"
+         << "# HELP miner_shares_last_found_seconds Time since last found share across all devices (seconds).\n"
+         << "# TYPE miner_shares_last_found_seconds gauge\n"
+         << "miner_shares_last_found_secs{" << labels << "} " << jStat["mining"]["shares"][3].asUInt() << "\n";
+
+    // For debugging
+    //_ret << Json::writeString(builder, jStat);
+
+    _ret << "# EOF\n";
+    return _ret.str();
 }
 
 string ApiConnection::getHttpMinerStatDetail() {
