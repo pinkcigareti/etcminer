@@ -43,7 +43,6 @@ option(ETHASHCUDA "Build with CUDA mining" ON)
 option(ETHASHCPU "Build with CPU mining (only for development)" OFF)
 option(APICORE "Build with API Server support" ON)
 option(DEVBUILD "Log developer metrics" OFF)
-option(OLDCXX "" OFF)
 
 # propagates CMake configuration options to the compiler
 function(configureProject)
