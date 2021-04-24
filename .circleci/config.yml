@@ -24,7 +24,7 @@ commands:
       - run: git submodule update --init --recursive
       - restore_cache_cmd
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -H. -Bbuild
-      - run: cmake --build build -- -j2
+      - run: cmake --build build -- -j`nproc`
       - save_cache_cmd
       - store_artifacts:
           path: build/nsfminer/nsfminer
