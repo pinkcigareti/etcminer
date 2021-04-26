@@ -28,22 +28,22 @@ else()
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_60,code=sm_60")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_61,code=sm_61")
 	list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_62,code=sm_62")
-	if(NOT CUDA_VERSION VERSION_LESS 9.0)
+	if(CUDA_VERSION VERSION_GREATER_EQUAL 9.0)
 		# Volta
 		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_70,code=sm_70")
 		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_70,code=sm_72")
-	endif()
-	if(NOT CUDA_VERSION VERSION_LESS 10.0)
-		# Turing
-		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_75,code=sm_75")
-	endif()
-	if(NOT CUDA_VERSION VERSION_LESS 11.0)
-		# Ampere NVIDIA A100 and NVIDIA DGX-A100
-		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_80,code=sm_80")
-	endif()
-	if(NOT CUDA_VERSION VERSION_LESS 11.1)
-		# Tesla GA10x cards, RTX Ampere – RTX 3080/3090, RTX A6000, RTX A40
-		list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_86,code=sm_86")
+		if(CUDA_VERSION VERSION_GREATER_EQUAL 10.0)
+			# Turing
+			list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_75,code=sm_75")
+			if(CUDA_VERSION VERSION_GREATER_EQUAL 11.0)
+				# Ampere NVIDIA A100 and NVIDIA DGX-A100
+				list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_80,code=sm_80")
+				if(CUDA_VERSION VERSION_GREATER_EQUAL 11.1)
+					# Tesla GA10x cards, RTX Ampere – RTX 3080/3090, RTX A6000, RTX A40
+					list(APPEND CUDA_NVCC_FLAGS "-gencode arch=compute_86,code=sm_86")
+				endif()
+			endif()
+		endif()
 	endif()
 endif()
 
