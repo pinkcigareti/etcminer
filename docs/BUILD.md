@@ -122,6 +122,7 @@ if not exist "build\" mkdir "build\"
 
 rem For CUDA 9.x pass also `-T v140`
 cmake -G "Visual Studio 15 2017 Win64" -H. -Bbuild -DETHASHCL=ON -DETHASHCUDA=ON -DAPICORE=ON ..
+cd "build\"
 cmake --build . --config Release --target package
 
 endlocal
