@@ -130,6 +130,7 @@ The servers are listed in alphabetical order. To get best results reorder them f
 | [dwarfpool.org](#dwarfpoolorg) | <https://dwarfpool.com/> | <https://dwarfpool.com/eth> |
 | [ethermine.org](#ethermineorg) | <https://ethermine.org/> | <https://ethermine.org/> |
 | [ethpool.org](#ethpoolorg) | <https://www.ethpool.org/> | <https://www.ethpool.org/> |
+| [ezil.me](#ezilme) | <https://ezil.me/> | <https://ezil.me/start> |
 | [f2pool.com](#f2poolcom) | <https://www.f2pool.com/> | <https://www.f2pool.com/help/?#tab-content-eth> |
 | [flexpool.io](#flexpoolio) | <https://flexpool.io/> | <https://flexpool.io/docs/getting-started/> |
 | [miningpoolhub.com](#miningpoolhubcom) | <https://miningpoolhub.com/> | <https://ethereum.miningpoolhub.com/> |
@@ -213,6 +214,24 @@ SSL connection:
  -P stratum1+tcp://ETH_WALLET.WORKERNAME@eu1.ethpool.org:3333
  -P stratum1+tcp://ETH_WALLET.WORKERNAME@us1.ethpool.org:3333
  ```
+
+### ezil.me
+
+Non-SSL connection:
+```
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@asia.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-east.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-west.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@eu.ezil.me:5555
+```
+
+SSL connection:
+```
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@asia.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-east.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-west.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@eu.ezil.me:25443
+```
 
 ### f2pool.com
 
