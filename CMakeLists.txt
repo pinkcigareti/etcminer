@@ -28,8 +28,8 @@ cable_configure_toolchain(DEFAULT cxx17)
 set(HUNTER_CONFIGURATION_TYPES Release CACHE STRING "Build type of Hunter packages")
 set(HUNTER_JOBS_NUMBER 6 CACHE STRING "Number of parallel builds used by Hunter")
 HunterGate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.23.299.tar.gz"
-    SHA1 "3d215b4bfac80824778fe9a93510e5f651d79e3a"
+    URL "https://github.com/cpp-pm/hunter/archive/v0.23.300.tar.gz"
+    SHA1 "1151d539465d9cdbc880ee30f794864aec11c448"
     LOCAL
 )
 
