@@ -22,6 +22,7 @@
 #include <boost/program_options.hpp>
 
 #include <openssl/crypto.h>
+#include <openssl/opensslv.h>
 
 #include <nsfminer/buildinfo.h>
 
@@ -107,10 +108,7 @@ static void headers(vector<string>& h, bool color) {
     ss << "Boost " << BOOST_VERSION / 100000 << '.' << BOOST_VERSION / 100 % 1000 << '.' << BOOST_VERSION % 100;
     h.push_back(ss.str());
     ss.str("");
-    vector<string> sv;
-    string s(SSLeay_version(SSLEAY_VERSION));
-    boost::split(sv, s, boost::is_any_of(" "), boost::token_compress_on);
-    ss << white << "3rd Party: OpenSSL " << sv[1] << ", Ethash " << ethash::version;
+    ss << white << "3rd Party: " << OPENSSL_VERSION_TEXT;
     h.push_back(ss.str());
     char username[64];
 #if defined(__linux__)

@@ -15,7 +15,7 @@ set(SOURCES
 include_directories(BEFORE ..)
 
 add_library(eth ${SOURCES})
-target_link_libraries(eth PUBLIC dev ethash::ethash PRIVATE hwmon)
+target_link_libraries(eth PUBLIC dev PRIVATE hwmon)
 
 if(ETHASHCL)
 	target_link_libraries(eth PRIVATE cl)

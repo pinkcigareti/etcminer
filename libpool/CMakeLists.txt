@@ -19,5 +19,5 @@ hunter_add_package(OpenSSL)
 find_package(OpenSSL REQUIRED)
 
 add_library(pool ${SOURCES})
-target_link_libraries(pool PRIVATE dev nsfminer-buildinfo ethash::ethash Boost::system jsoncpp_lib_static OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(pool PRIVATE dev nsfminer-buildinfo Boost::system jsoncpp_lib_static OpenSSL::SSL OpenSSL::Crypto ethash)
 target_include_directories(pool PRIVATE ..)

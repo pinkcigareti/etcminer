@@ -69,9 +69,6 @@ find_package(Boost CONFIG REQUIRED COMPONENTS system filesystem thread program_o
 hunter_add_package(jsoncpp)
 find_package(jsoncpp CONFIG REQUIRED)
 
-hunter_add_package(ethash)
-find_package(ethash CONFIG REQUIRED)
-
 configureProject()
 
 message("----------------------------------------------------------------------------")
@@ -97,6 +94,7 @@ add_subdirectory(libdev)
 add_subdirectory(libeth)
 add_subdirectory(libhwmon)
 add_subdirectory(libpool)
+add_subdirectory(ethash)
 
 if (ETHASHCL)
     add_subdirectory(libcl)
