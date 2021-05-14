@@ -80,7 +80,7 @@ Miscellaneous options:
                                zero no temp control is performed
   --tstart arg (=0)            Resume mining on previously overheated GPU when 
                                temp drops below this threshold. Implies --HWMON
-                               1. Must be lower than --tstart
+                               1. Must be lower than --tstop
   -n [ --nonce ] arg           Hex string specifying the upper bits of miner's 
                                start nonce. Can be used to ensure multiple 
                                miners are not searching overlapping nonce 
