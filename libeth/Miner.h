@@ -191,10 +191,10 @@ struct TelemetryType {
         ss << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2) << minutes.count()
            << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset << " ";
 
-        const static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
+        const static string suffixes[] = {"h", "Kh", "Mh", "Gh", "Th", "Ph"};
         float hr = farm.hashrate;
         int magnitude = 0;
-        while (hr > 1000.0f && magnitude <= 3) {
+        while (hr > 1000.0f && magnitude <= 5) {
             hr /= 1000.0f;
             magnitude++;
         }
