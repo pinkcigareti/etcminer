@@ -352,6 +352,8 @@ void Farm::submitProof(Solution const& _s) {
 
 void Farm::submitProofAsync(Solution const& _s) {
     Result r = EthashAux::eval(_s.work.epoch, _s.work.header, _s.nonce);
+    double d = dev::getHashesToTarget(r.value.hex(HexPrefix::Add));
+    cnote << EthYellow << "Difficulty of found solution: " << dev::getFormattedHashes(d);
     if (r.value > _s.work.boundary) {
         accountSolution(_s.midx, SolutionAccountingEnum::Failed);
         cwarn << "GPU " << _s.midx << " gave incorrect result. Lower overclocking values if it happens frequently.";
