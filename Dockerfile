@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.3.0-devel-ubuntu18.04 AS build
+FROM nvidia/cuda:11.2.0-devel-ubuntu18.04 AS build
 
 RUN apt-get update && apt-get install -y git perl python3-pip mesa-common-dev libdbus-1-dev
 RUN pip3 install cmake --upgrade
@@ -21,13 +21,8 @@ RUN cmake --build .
 # For run nvidia container toolkit needs to be installed on host
 # How to: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 # Run docker: docker build -t nsfminer . && docker run --gpus all nsfminer 
-FROM nvidia/cuda:11.3.0-base-ubuntu18.04
+FROM nvidia/cuda:11.2.0-base-ubuntu18.04
 WORKDIR /app
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update
-RUN apt-get install -y nvidia-driver-460
-RUN rmmod nvidia_uvm; rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia
 
 COPY --from=build /app/ ./
 
