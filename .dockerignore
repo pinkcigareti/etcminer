@@ -2,3 +2,4 @@ build/
 Dockerfile
 .dockerignore
 .Dockerfile.swp
+docker-readme.md

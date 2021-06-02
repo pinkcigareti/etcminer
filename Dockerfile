@@ -15,7 +15,7 @@ COPY . .
 RUN mkdir build
 WORKDIR /app/build
 
-RUN cmake .. -DETHASHCUDA=ON -DETHASHCL=OFF
+RUN cmake .. -DETHASHCUDA=ON -DETHASHCL=ON
 RUN cmake --build .
 
 # For run nvidia container toolkit needs to be installed on host
