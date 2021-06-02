@@ -20,10 +20,10 @@ RUN cmake --build .
 
 # For run nvidia container toolkit needs to be installed on host
 # How to: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
-# Run docker: docker build -t nsfminer . && docker run --gpus all nsfminer 
+# Run docker: docker build -t nsfminer . && docker run --gpus all -e POOL="stratum+tcp://ikru.eth:x@us-east.ethash-hub.miningpoolhub.com:20535" nsfminer 
 FROM nvidia/cuda:11.2.0-base-ubuntu18.04
+ENV POOL="Pool connection"
 WORKDIR /app
-
 COPY --from=build /app/ ./
 
-CMD nvidia-smi && ./build/nsfminer/nsfminer -U -P stratum+tcp://ikru.eth:x@us-east.ethash-hub.miningpoolhub.com:20535
+CMD nvidia-smi && ./build/nsfminer/nsfminer -U -P "${POOL}"
