@@ -1,7 +1,11 @@
 FROM nvidia/cuda:11.2.0-devel-ubuntu18.04 AS build
 
-RUN apt-get update && apt-get install -y git perl python3-pip mesa-common-dev libdbus-1-dev
+RUN apt-get update && apt-get install -y git perl python3-pip mesa-common-dev libdbus-1-dev software-properties-common
+RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
+RUN apt-get update && apt-get install -y g++-10
 RUN pip3 install cmake --upgrade
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
 
 WORKDIR /app
 
