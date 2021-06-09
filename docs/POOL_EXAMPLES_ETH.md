@@ -219,18 +219,18 @@ SSL connection:
 
 Non-SSL connection:
 ```
--P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@asia.ezil.me:5555
--P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-east.ezil.me:5555
--P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-west.ezil.me:5555
--P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@eu.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME@asia.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME@us-east.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME@us-west.ezil.me:5555
+-P stratum1+tcp://ETH_WALLET.ZIL_WALLET.WORKERNAME@eu.ezil.me:5555
 ```
 
 SSL connection:
 ```
--P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@asia.ezil.me:25443
--P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-east.ezil.me:25443
--P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@us-west.ezil.me:25443
--P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME:x@eu.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME@asia.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME@us-east.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME@us-west.ezil.me:25443
+-P stratum1+ssl://ETH_WALLET.ZIL_WALLET.WORKERNAME@eu.ezil.me:25443
 ```
 
 ### f2pool.com
