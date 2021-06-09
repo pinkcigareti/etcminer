@@ -34,7 +34,7 @@ HunterGate(
 )
 
 project(nsfminer)
-set(PROJECT_VERSION 1.3.13) # Update version
+set(PROJECT_VERSION 1.3.14) # Update version
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
 
