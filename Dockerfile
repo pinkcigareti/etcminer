@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.2.0-devel-ubuntu18.04 AS build
+FROM nvidia/cuda:11.3.0-devel-ubuntu18.04 AS build
 
 RUN apt-get update && apt-get install -y git perl python3-pip mesa-common-dev libdbus-1-dev software-properties-common
 RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
@@ -28,7 +28,7 @@ RUN cmake --build .
 # For run nvidia container toolkit needs to be installed on host
 # How to: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#docker
 # Run docker: docker build -t nsfminer . && docker run --gpus all -e POOL="stratum+tcp://ikru.eth:x@us-east.ethash-hub.miningpoolhub.com:20535" nsfminer 
-FROM nvidia/cuda:11.2.0-base-ubuntu18.04
+FROM nvidia/cuda:11.3.0-base-ubuntu18.04
 ENV POOL="Pool connection"
 WORKDIR /app
 COPY --from=build /app/ ./
