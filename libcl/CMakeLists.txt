@@ -36,5 +36,4 @@ include_directories(..)
 
 add_library(cl ${SOURCES})
 target_link_libraries(cl PUBLIC eth)
-target_link_libraries(cl PRIVATE OpenCL::OpenCL)
-target_link_libraries(cl PRIVATE Boost::filesystem Boost::thread)
+target_link_libraries(cl PRIVATE OpenCL::OpenCL Boost::filesystem Boost::thread ethash)
