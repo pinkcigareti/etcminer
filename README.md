@@ -1,8 +1,5 @@
 # etcminer
 
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
-[![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
-
 > Ethereum (ethash) miner with OpenCL, CUDA and stratum support
 
 **etcminer** is an Ethash GPU mining application: with etcminer you can mine every coin which relies on an Ethash Proof of Work.
@@ -11,7 +8,6 @@ This is a direct descendent of the Ethminer project at https://github.com/ethere
 is largely abandoned and unmanaged this personal version is published with the hope that it may continue to be useful. In the spirit
 of open source problem reports and pull requests are welcome, but please use git-clang-format on your requests.
 
-**Project Owner & Developer** @jean-m-cyr
 
 ## Features
 
@@ -62,9 +58,6 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 [Specifications](docs/API_DOCUMENTATION.md)
 
-## Contribute
-
-[![Gitter](https://img.shields.io/gitter/room/no-fee-ethereum-mining/etcminer.svg)][Gitter]
 
 To meet the community, ask general questions and chat about the miner join [the etcminer channel on Gitter][Gitter].
 
@@ -72,4 +65,4 @@ To meet the community, ask general questions and chat about the miner join [the 
 
 Licensed under the [GNU General Public License, Version 3](LICENSE).
 
-[Gitter]: https://gitter.im/no-fee-ethereum-mining/etcminer
+
