@@ -1,8 +1,8 @@
 # etcminer
 
-> Ethereum (ethash) miner with OpenCL, CUDA and stratum support
+> Ethereum (etchash) miner with OpenCL, CUDA and stratum support
 
-**etcminer** is an Ethash GPU mining application: with etcminer you can mine every coin which relies on an Ethash Proof of Work.
+**etcminer** is an Etchash GPU mining application: with etcminer you can mine every coin which relies on an Etchash Proof of Work.
 
 This is a direct descendent of the Ethminer project at https://github.com/ethereum-mining/ethminer. Since that project
 is largely abandoned and unmanaged this personal version is published with the hope that it may continue to be useful. In the spirit
@@ -44,11 +44,6 @@ Complete list of command options [here](docs/Options.md).
 
 Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to different pools.
 
-## Build
-
-### Master branch build status
-
-[![CircleCI](https://circleci.com/gh/no-fee-ethereum-mining/etcminer.svg?style=svg)](https://circleci.com/gh/no-fee-ethereum-mining/etcminer)
 
 ### Building from source
 
