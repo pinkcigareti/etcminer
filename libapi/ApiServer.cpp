@@ -10,7 +10,7 @@
 
 #include "ApiServer.h"
 
-#include <nsfminer/buildinfo.h>
+#include <etcminer/buildinfo.h>
 
 #include <libeth/Farm.h>
 
@@ -598,7 +598,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                 stringstream ss;
                 ss << http_ver << " "
                    << "405 Method not allowed\r\n"
-                   << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
+                   << "Server: " << etcminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
                    << what;
@@ -614,7 +614,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                 stringstream ss;
                 ss << http_ver << " "
                    << "404 Not Found\r\n"
-                   << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
+                   << "Server: " << etcminer_get_buildinfo()->project_name_with_version << "\r\n"
                    << "Content-Type: text/plain\r\n"
                    << "Content-Length: " << what.size() << "\r\n\r\n"
                    << what;
@@ -646,7 +646,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                     ss.clear();
                     ss << http_ver << " "
                        << "200 OK\r\n"
-                       << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
+                       << "Server: " << etcminer_get_buildinfo()->project_name_with_version << "\r\n"
                        << "Content-Type: " << content_type << "; charset=utf-8\r\n"
                        << "Content-Length: " << body.size() << "\r\n\r\n"
                        << body;
@@ -656,7 +656,7 @@ void ApiConnection::onRecvSocketDataCompleted(const boost::system::error_code& e
                     ss.clear();
                     ss << http_ver << " "
                        << "500 Internal Server Error\r\n"
-                       << "Server: " << nsfminer_get_buildinfo()->project_name_with_version << "\r\n"
+                       << "Server: " << etcminer_get_buildinfo()->project_name_with_version << "\r\n"
                        << "Content-Type: text/plain\r\n"
                        << "Content-Length: " << what.size() << "\r\n\r\n"
                        << what;
@@ -783,7 +783,7 @@ Json::Value ApiConnection::getMinerStat1() {
 
     Json::Value jRes;
 
-    jRes[0] = nsfminer_get_buildinfo()->project_name_with_version; // miner version.
+    jRes[0] = etcminer_get_buildinfo()->project_name_with_version; // miner version.
     jRes[1] = toString(runningTime.count());                       // running time, in minutes.
     jRes[2] = totalMhEth.str();    // total ETH hashrate in MH/s, number of ETH shares, number of ETH
                                    // rejected shares.
@@ -1065,7 +1065,7 @@ Json::Value ApiConnection::getMinerStatDetail() {
 
     /* Host Info */
     Json::Value hostinfo;
-    hostinfo["version"] = nsfminer_get_buildinfo()->project_name_with_version; // miner version.
+    hostinfo["version"] = etcminer_get_buildinfo()->project_name_with_version; // miner version.
     hostinfo["runtime"] = uint64_t(runningTime.count());                       // running time, in seconds.
 
     {

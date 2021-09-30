@@ -31,12 +31,15 @@ extern "C" {
 #define ETHASH_FULL_DATASET_ITEM_SIZE 128
 #define ETHASH_NUM_DATASET_ACCESSES 64
 
+#define ETCHASH_EPOCH_LENGTH 60000
+#define ETCHASH_ACTIVATION_BLOCK 11700000
 
 struct ethash_epoch_context
 {
     const int epoch_number;
     const int light_cache_num_items;
     const union ethash_hash512* const light_cache;
+    const uint32_t* const l1_cache;
     const int full_dataset_num_items;
 };
 

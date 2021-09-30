@@ -12,7 +12,7 @@ General options:
                             
                             For details and some samples how to fill in this 
                             value please use
-                            nsfminer --help-module con
+                            etcminer --help-module con
                             
                             
   -F [ --config ] arg       Configuration file name. See '-H conf' for details.
@@ -134,7 +134,7 @@ Connections specifications :
     available and so on till the list is exhausted. At that moment
     miner restarts the connection cycle from the first one.
     An exception to this behavior is ruled by the --failover-timeout
-    command line argument. See 'nsfminer -H misc' for details.
+    command line argument. See 'etcminer -H misc' for details.
 
     The special notation '-P exit' stops the failover loop.
     When miner reaches this kind of connection it simply quits.

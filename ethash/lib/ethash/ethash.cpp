@@ -24,7 +24,9 @@ constexpr static int light_cache_rounds = 3;
 constexpr static int full_dataset_init_size = 1 << 30;
 constexpr static int full_dataset_growth = 1 << 23;
 constexpr static int full_dataset_item_parents = 256;
-
+// ECIP-1099
+constexpr static int ecip_1099_activation_epoch = 390; // classic mainnet
+// constexpr static int ecip_1099_activation_epoch = 84; // mordor
 // Verify constants:
 static_assert(sizeof(hash512) == ETHASH_LIGHT_CACHE_ITEM_SIZE, "");
 static_assert(sizeof(hash1024) == ETHASH_FULL_DATASET_ITEM_SIZE, "");
@@ -133,8 +135,15 @@ epoch_context_full* create_epoch_context(
     static_assert(sizeof(epoch_context_full) < sizeof(hash512), "epoch_context too big");
     static constexpr size_t context_alloc_size = sizeof(hash512);
 
-    const int light_cache_num_items = calculate_light_cache_num_items(epoch_number);
-    const int full_dataset_num_items = calculate_full_dataset_num_items(epoch_number);
+    // TODO - iquidus
+    int epoch_ecip1099 = epoch_number;
+    if (epoch_number >= ecip_1099_activation_epoch) {
+        // note, int truncates, it doesnt round, 10 == 10.5. So this is ok.
+        epoch_ecip1099 = epoch_number / 2;
+    }
+
+    const int light_cache_num_items = calculate_light_cache_num_items(epoch_ecip1099);
+    const int full_dataset_num_items = calculate_full_dataset_num_items(epoch_ecip1099);
     const size_t light_cache_size = get_light_cache_size(light_cache_num_items);
     const size_t full_dataset_size = full ? static_cast<size_t>(full_dataset_num_items) * sizeof(hash1024) : 0;
 
@@ -156,7 +165,8 @@ epoch_context_full* create_epoch_context(
     epoch_context_full* const context = new (alloc_data) epoch_context_full{
         epoch_number,
         light_cache_num_items,
-        light_cache,
+        light_cache, 
+        l1_cache,
         full_dataset_num_items,
         full_dataset,
     };

@@ -1,1 +1,1 @@
-sudo cp nsfminer/nsfminer /opt/mmp/miners/nsfminer
+sudo cp etcminer/etcminer /opt/mmp/miners/etcminer

@@ -12,20 +12,20 @@ aux_source_directory(. SRC_LIST)
 
 include_directories(BEFORE ..)
 
-set(EXECUTABLE nsfminer)
+set(EXECUTABLE etcminer)
 
 file(GLOB HEADERS "*.h")
 
 add_executable(${EXECUTABLE} ${SRC_LIST} ${HEADERS})
 if(MSVC)
-	target_sources(${EXECUTABLE} PRIVATE nsfminer.rc)
+	target_sources(${EXECUTABLE} PRIVATE etcminer.rc)
 endif()
 
 hunter_add_package(Boost COMPONENTS program_options)
 find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
 
-target_link_libraries(nsfminer PRIVATE
-        eth pool dev nsfminer-buildinfo Boost::system Boost::thread Boost::program_options ethash)
+target_link_libraries(etcminer PRIVATE
+        eth pool dev etcminer-buildinfo Boost::system Boost::thread Boost::program_options ethash)
 
 if(ETHDBUS)
 	find_package(PkgConfig)
@@ -33,15 +33,15 @@ if(ETHDBUS)
 	pkg_check_modules(DBUS dbus-1)
 	include_directories(${DBUS_INCLUDE_DIRS})
 	link_directories(${DBUS_LIBRARY_DIRS})
-	target_link_libraries(nsfminer PRIVATE ${DBUS_LIBRARIES})
+	target_link_libraries(etcminer PRIVATE ${DBUS_LIBRARIES})
 endif()
 
 if(APICORE)
-	target_link_libraries(nsfminer PRIVATE api)
+	target_link_libraries(etcminer PRIVATE api)
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS nsfminer DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS etcminer DESTINATION ${CMAKE_INSTALL_BINDIR})
 if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:nsfminer> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:etcminer> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()

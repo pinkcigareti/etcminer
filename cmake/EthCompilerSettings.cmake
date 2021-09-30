@@ -12,7 +12,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     eth_add_cxx_compiler_flag_if_supported(-fdata-sections)
     eth_add_cxx_compiler_flag_if_supported(-flto)
     eth_add_cxx_linker_flag_if_supported(-Wl,--gc-sections)
-    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -Wl,-Map=nsfminer.map")
+    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -Wl,-Map=etcminer.map")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 

@@ -33,7 +33,7 @@ HunterGate(
     LOCAL
 )
 
-project(nsfminer)
+project(etcminer)
 set(PROJECT_VERSION 1.3.14) # Update version
 
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release RelWithDebInfo)
@@ -109,7 +109,7 @@ if (APICORE)
     add_subdirectory(libapi)
 endif()
 
-add_subdirectory(nsfminer)
+add_subdirectory(etcminer)
 
 
 if(WIN32)

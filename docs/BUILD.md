@@ -100,7 +100,7 @@ These are sufficient for Ubuntu LTS releases. Other packages may be needed depen
 
 Complete sample Windows batch file - **adapt it to your system**. Assumes that:
 
-* it's placed one folder up from the nsfminer source folder
+* it's placed one folder up from the etcminer source folder
 * you have CMake installed
 * you have Perl installed
 
@@ -115,8 +115,8 @@ rem add Perl in PATH; it's needed for OpenSSL build
 set "PERL_PATH=C:\Perl\perl\bin"
 set "PATH=%PERL_PATH%;%PATH%"
 
-rem switch to nsfminer's source folder
-cd "%~dp0\nsfminer\"
+rem switch to etcminer's source folder
+cd "%~dp0\etcminer\"
 
 if not exist "build\" mkdir "build\"
 

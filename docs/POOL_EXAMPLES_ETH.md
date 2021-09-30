@@ -15,7 +15,7 @@ where `scheme` can be any of:
 * `stratum2+tcp` for plain stratum NiceHash compatible mode
 
 ## A note about this form of notation
-This notation is called URI notation and gives us great flexibility allowing nsfminer to specify all needed arguments per single connection (other miners offer single dedicated CLI arguments which are valid for all connections).
+This notation is called URI notation and gives us great flexibility allowing etcminer to specify all needed arguments per single connection (other miners offer single dedicated CLI arguments which are valid for all connections).
 An URI is formed like this
 
 ```
@@ -69,7 +69,7 @@ The above samples produce the very same result.
 
 ## Secure socket communications for stratum only
 
-nsfminer supports secure socket communications (where pool implements and offers it) to avoid the risk of a [man-in-the-middle attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)
+etcminer supports secure socket communications (where pool implements and offers it) to avoid the risk of a [man-in-the-middle attack](https://en.wikipedia.org/wiki/Man-in-the-middle_attack)
 To enable it simply replace tcp with either:
 
 * `ssl` to enable secure socket communication **allowing only TLS 1.2** encryption
@@ -94,7 +94,7 @@ Some examples:
 ## Only for version 0.16+ (older versions not affected)
 
 Stratum autodetection has been introduced to mitigate user's duty to guess/find which stratum flavour to apply (stratum or stratum1 or stratum2).
-If you want to let nsfminer do the tests for you simply enter scheme as `stratum://` (note `+tcp` is missing) or `stratums://` for secure socket or `stratumss://` for secure socket **allowing only TLS 1.2** encryption.
+If you want to let etcminer do the tests for you simply enter scheme as `stratum://` (note `+tcp` is missing) or `stratums://` for secure socket or `stratumss://` for secure socket **allowing only TLS 1.2** encryption.
 
 ## Common samples
 
