@@ -37,9 +37,6 @@
 #if ETH_ETHASHCUDA
 #include <libcuda/CUDAMiner.h>
 #endif
-#if ETH_ETHASHCPU
-#include <libcpu/CPUMiner.h>
-#endif
 #include <libpool/PoolManager.h>
 
 #if API_CORE
@@ -327,7 +324,7 @@ class MinerCLI {
 
     bool validateArgs(int argc, char** argv) {
         queue<string> warnings;
-        bool cl_miner, cuda_miner, cpu_miner;
+        bool cl_miner, cuda_miner;
         vector<string> pools;
 
         options_description general("General options");
@@ -338,9 +335,6 @@ class MinerCLI {
 #endif
 #if ETH_ETHASHCUDA
         options_description cu("CUDA options");
-#endif
-#if ETH_ETHASHCPU
-        options_description cp("CPU options");
 #endif
 #if API_CORE
         options_description api("API options");
@@ -359,9 +353,6 @@ class MinerCLI {
 #endif
 #if ETH_ETHASHCUDA
                 "cu, "
-#endif
-#if ETH_ETHASHCPU
-                "cp, "
 #endif
 #if API_CORE
                 "api, "
@@ -396,11 +387,6 @@ class MinerCLI {
             ("cuda,U",
 
                 "Mine/Benchmark using CUDA only")
-#endif
-#if ETH_ETHASHCPU
-            ("cpu",
-
-                "Development ONLY ! (NO MINING)")
 #endif
             ;
 
@@ -481,7 +467,7 @@ class MinerCLI {
                 "Use syslog appropriate output (drop timestamp "
                 "and channel prefix)")
 
-#if ETH_ETHASHCL || ETH_ETHASHCUDA || ETH_ETHASH_CPU
+#if ETH_ETHASHCL || ETH_ETHASHCUDA
 
             ("list-devices,L",
 
@@ -717,10 +703,6 @@ class MinerCLI {
             else if (s == "cu") // cuda
                 cout << endl << cu << endl;
 #endif
-#if ETH_ETHASHCPU
-            else if (s == "cp") // cpu
-                cout << endl << cp << endl;
-#endif
 #if API_CORE
             else if (s == "api") // programming interface
                 cout << endl << api << endl;
@@ -807,7 +789,6 @@ class MinerCLI {
 
         cl_miner = vm.count("opencl");
         cuda_miner = vm.count("cuda");
-        cpu_miner = vm.count("cpu");
         if (vm.count("pool"))
             for (auto& p : vm["pool"].as<vector<string>>())
                 pools.push_back(p);
@@ -830,8 +811,6 @@ class MinerCLI {
             m_minerType = MinerType::CL;
         else if (cuda_miner)
             m_minerType = MinerType::CUDA;
-        else if (cpu_miner)
-            m_minerType = MinerType::CPU;
         else if (cl_miner && cuda_miner)
             m_minerType = MinerType::Mixed;
         else
@@ -897,10 +876,6 @@ class MinerCLI {
         if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
             CUDAMiner::enumDevices(m_DevicesCollection);
 #endif
-#if ETH_ETHASHCPU
-        if (m_minerType == MinerType::CPU)
-            CPUMiner::enumDevices(m_DevicesCollection);
-#endif
 
         // Can't proceed without any GPU
         if (!m_DevicesCollection.size())
@@ -953,9 +928,6 @@ class MinerCLI {
                 cout << setiosflags(ios::left) << setw(13) << it->first;
                 cout << setw(5);
                 switch (it->second.type) {
-                case DeviceTypeEnum::Cpu:
-                    cout << "Cpu";
-                    break;
                 case DeviceTypeEnum::Gpu:
                     cout << "Gpu";
                     break;
@@ -1007,11 +979,6 @@ class MinerCLI {
                 if (m_devices.empty() || find(m_devices.begin(), m_devices.end(), d) != m_devices.end())
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
             }
-#endif
-#if ETH_ETHASHCPU
-        if (m_minerType == MinerType::CPU)
-            for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
-                it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cpu;
 #endif
         // Count of subscribed devices
         int subscribedDevices = 0;

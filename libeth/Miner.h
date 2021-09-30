@@ -37,13 +37,12 @@ enum class DeviceSubscriptionTypeEnum {
     None,
     OpenCL,
     Cuda,
-    Cpu
 
 };
 
-enum class MinerType { Mixed, CL, CUDA, CPU };
+enum class MinerType { Mixed, CL, CUDA };
 
-enum class HwMonitorInfoType { UNKNOWN, NVIDIA, AMD, CPU };
+enum class HwMonitorInfoType { UNKNOWN, NVIDIA, AMD };
 
 enum class ClPlatformTypeEnum { Unknown, Amd, Clover, Nvidia, Intel };
 
@@ -95,8 +94,6 @@ struct DeviceDescriptor {
     string uniqueId;    // For GPUs this is the PCI ID
     size_t totalMemory; // Total memory available by device
     string boardName;
-
-    int cpCpuNumer; // For CPU
 
     bool cuDetected; // For CUDA detected devices
     unsigned int cuDeviceOrdinal;
